@@ -14,7 +14,7 @@ autoload -U $ZSH/functions/*(:t)
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000
-DIRSTACKSIZE=8
+DIRSTACKSIZE=10
 
 setopt NO_BG_NICE # don't nice background tasks
 setopt NO_HUP
@@ -28,11 +28,6 @@ setopt PROMPT_SUBST
 setopt CORRECT
 setopt COMPLETE_IN_WORD
 setopt IGNORE_EOF
-setopt AUTOPUSHD # make cd act like pushd
-setopt PUSHDMINUS # swap the meaning of cd +1 and cd -1
-setopt PUSHDSILENT
-setopt PUSHDTOHOME
-setopt EXTENDED_GLOB
 
 setopt APPEND_HISTORY # adds history
 setopt INC_APPEND_HISTORY SHARE_HISTORY  # adds history incrementally and share it across sessions
