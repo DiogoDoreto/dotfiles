@@ -1,0 +1,90 @@
+# Setting the prefix from C-b to C-a
+set -g prefix C-a
+
+# Free the original Ctrl-b prefix keybinding
+unbind C-b
+
+#setting the delay between prefix and command
+set -sg escape-time 1
+
+# Ensure that we can send Ctrl-A to other apps
+bind C-a send-prefix
+
+# Set the base index for windows to 1 instead of 0
+set -g base-index 1
+
+# Set the base index for panes to 1 instead of 0
+setw -g pane-base-index 1
+
+# Reload the file with Prefix r
+bind r source-file ~/.tmux.conf \; display "Reloaded!"
+
+# splitting panes
+bind | split-window -h
+bind - split-window -v
+
+# moving between panes
+bind h select-pane -L
+bind j select-pane -D
+bind k select-pane -U
+bind l select-pane -R
+
+# Quick pane selection
+bind -r C-h select-window -t :-
+bind -r C-l select-window -t :+
+
+# Pane resizing
+bind -r H resize-pane -L 5
+bind -r J resize-pane -D 5
+bind -r K resize-pane -U 5
+bind -r L resize-pane -R 5
+
+# mouse support - set to on if you want to use the mouse
+setw -g mode-mouse off
+set -g mouse-select-pane off
+set -g mouse-resize-pane off
+set -g mouse-select-window off
+
+# Set the default terminal mode to 256color mode
+set -g default-terminal "screen-256color"
+
+# enable activity alerts
+setw -g monitor-activity on
+
+# UTF-8
+set -g status-utf8 on
+
+# Center the window list
+set -g status-justify centre
+
+# enable vi keys.
+setw -g mode-keys vi
+
+unbind [
+bind Escape copy-mode
+unbind p
+bind p paste-buffer
+bind -t vi-copy 'v' begin-selection
+bind -t vi-copy 'y' copy-selection
+
+# color scheme
+set -g status-left-length 52
+set -g status-right-length 451
+set -g status-fg white
+set -g status-bg colour234
+set -g pane-border-fg colour245
+set -g pane-active-border-fg colour39
+set -g message-fg colour235
+set -g message-bg colour20
+set -g message-attr bold
+set -g status-left "#[fg=colour235,bg=colour252,bold] #S #[fg=colour235,bg=colour20,nobold] #(ifconfig eth0 | grep 'inet ' | awk '{print $2}' | sed s/addr://) "
+set -g window-status-format " #[nobold]#I: #[bold]#W "
+set -g window-status-current-format " #[nobold]#I: #[bold]#W "
+set -gw window-status-attr none
+set -gw window-status-bg colour234
+set -gw window-status-fg white
+set -gw window-status-current-bg colour39
+set -gw window-status-current-fg white
+set -gw window-status-activity-attr none
+set -gw window-status-activity-fg colour10
+
