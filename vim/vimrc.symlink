@@ -374,6 +374,16 @@
 
         " Makefile config
         au FileType Makefile setlocal noexpandtab
+
+        " Coffeescript config
+        au FileType coffee setlocal tabstop=2
+        au FileType coffee setlocal softtabstop=2
+        au FileType coffee setlocal shiftwidth=2
+
+        " Jade config
+        au FileType jade setlocal tabstop=2
+        au FileType jade setlocal softtabstop=2
+        au FileType jade setlocal shiftwidth=2
     augroup END
 
     " Delete trailing white space on save
