@@ -1,4 +1,385 @@
-syntax on
+" vim:fdm=marker
 
-" Wrap gitcommit file types at the appropriate length
-filetype indent plugin on
+" General configuration {{{
+    set nocompatible    " Required, fix lot of stuff
+
+    let mapleader=","
+
+    " Allow to change buffer even if the current one is not written
+    set hidden
+
+    " Turn on modelines
+    set modeline
+
+    " Better command-line completion
+    set wildmenu
+    set wildmode=longest,list,full
+
+    " Show partial commands in the last line of the screen
+    set showcmd
+
+    " Allow backspacing over autoindent, line breaks and start of insert action
+    set backspace=indent,eol,start
+
+    " When opening a new line and no filetype-specific indenting is enabled, keep
+    " the same indent as the line you're currently on. Useful for READMEs, etc.
+    set autoindent
+
+    " Stop certain movements from always going to the first character of a line.
+    " While this behaviour deviates from that of Vi, it does what most users
+    " coming from other editors would expect.
+    set nostartofline
+
+    " Display the cursor position on the last line of the screen or in the status
+    " line of a window
+    set ruler
+
+    " Always display the status line, even if only one window is displayed
+    set laststatus=2
+
+    " Hide the default mode text (e.g. -- INSERT -- below the statusline
+    set noshowmode
+
+    " Instead of failing a command because of unsaved changes, instead raise a
+    " dialogue asking if you wish to save changed files.
+    set confirm
+
+    " Set the command window height to 2 lines, to avoid many cases of having to
+    " "press <Enter> to continue"
+    set cmdheight=2
+
+    " Display line numbers on the left
+    set number
+    set relativenumber
+
+    " Quickly time out on keycodes, but never time out on mappings
+    set notimeout ttimeout ttimeoutlen=200
+
+    " Use <F2> to toggle between 'paste' and 'nopaste'
+    set pastetoggle=<F2>
+
+    " automatically reload file when its modified outside vim
+    set autoread
+
+    " Don't redraw while executing macros, registers and other commands that
+    " have not been typed
+    set lazyredraw
+
+    " Highlight corresponding bracket when typing
+    set showmatch
+
+    " Fast reload of vimrc configs
+    autocmd! bufwritepost .vimrc source $MYVIMRC
+
+    " Show whitespace
+    set listchars=tab:>-,trail:~,extends:>,precedes:<
+    set list
+
+    " Folding
+    set foldenable
+    set foldlevelstart=10
+    set foldnestmax=10
+    set foldmethod=syntax
+
+    " Open new split panes to right and bottom, which feels more natural
+    set splitbelow
+    set splitright
+
+    " Set utf8 as standard encoding
+    set encoding=utf8
+
+    " Turn backup off, since most stuff is in SVN, git et.c anyway...
+    set nobackup
+    set nowb
+    set noswapfile
+
+    "Start scrolling when we're 8 lines away from margins
+    set scrolloff=8
+" }}}
+" Plugins {{{
+    " Manage plugins with Vundle.git - https://github.com/gmarik/Vundle.vim
+    filetype off  " Vundle needs it to be set to off
+    set rtp+=~/.vim/bundle/Vundle.vim
+    call vundle#begin()
+    Plugin 'gmarik/Vundle.vim'
+
+    " Autocomplete and snippets
+    Plugin 'Valloric/YouCompleteMe'
+    Plugin 'SirVer/ultisnips'
+    Plugin 'honza/vim-snippets'
+
+    " Visuals
+    Plugin 'bling/vim-airline'
+    Plugin 'chriskempson/base16-vim'
+
+    " Create submode (used for windows resizing mappings)
+    Plugin 'kana/vim-submode'
+
+    " Overview the structure of a file
+    Plugin 'majutsushi/tagbar'
+
+    " Fuzzy search on files
+    Plugin 'kien/ctrlp.vim'
+
+    " Code helpers
+    Plugin 'tpope/vim-surround'
+    Plugin 'jiangmiao/auto-pairs'
+    Plugin 'scrooloose/nerdcommenter'
+    Plugin 'Yggdroot/indentLine'
+
+    " Go
+    Plugin 'fatih/vim-go'
+    Plugin 'garyburd/go-explorer'
+    Plugin 'nsf/gocode', {'rtp': 'vim/'}
+
+    " Other languages
+    Plugin 'strogonoff/vim-coffee-script'
+    Plugin 'digitaltoad/vim-jade'
+    Plugin 'plasticboy/vim-markdown'
+    Plugin 'wavded/vim-stylus'
+
+    call vundle#end()
+    filetype plugin indent on
+    syntax on  " Enable syntax highlighting
+" }}}
+" Plugins Configuration {{{
+    " bling/vim-airline {{{
+    let g:airline#extensions#tabline#enabled = 1
+    let g:airline_theme                      = 'base16'
+    let g:airline_left_sep                   = ''
+    let g:airline_left_alt_sep               = ''
+    let g:airline_right_sep                  = ''
+    let g:airline_right_alt_sep              = ''
+    " }}}
+    " chriskempson/base16-vim {{{
+    let base16colorspace=256
+    set background=dark
+    silent! colorscheme base16-default
+    " }}}
+    " SirVer/ultisnips {{{
+    " Trigger configuration. Do not use <tab> if you use
+    " https://github.com/Valloric/YouCompleteMe.
+    let g:UltiSnipsExpandTrigger       = "<c-h>"
+    let g:UltiSnipsJumpForwardTrigger  = "<c-n>"
+    let g:UltiSnipsJumpBackwardTrigger = "<c-m>"
+    let g:UltiSnipsEditSplit           = "vertical"
+    " }}}
+    " majutsushi/tagbar {{{
+    nmap <F8> :TagbarToggle<CR>
+
+    let g:tagbar_type_go = {
+        \ 'ctagstype' : 'go',
+        \ 'kinds'     : [
+            \ 'p:package',
+            \ 'i:imports:1',
+            \ 'c:constants',
+            \ 'v:variables',
+            \ 't:types',
+            \ 'n:interfaces',
+            \ 'w:fields',
+            \ 'e:embedded',
+            \ 'm:methods',
+            \ 'r:constructor',
+            \ 'f:functions'
+        \ ],
+        \ 'sro' : '.',
+        \ 'kind2scope' : {
+            \ 't' : 'ctype',
+            \ 'n' : 'ntype'
+        \ },
+        \ 'scope2kind' : {
+            \ 'ctype' : 't',
+            \ 'ntype' : 'n'
+        \ },
+        \ 'ctagsbin'  : 'gotags',
+        \ 'ctagsargs' : '-sort -silent'
+        \ }
+    " }}}
+    " fatih/vim-go {{{
+    let g:go_fmt_command = "goimports"
+    " }}}
+    " jiangmiao/auto-pairs {{{
+    let g:AutoPairsFlyMode = 1
+    " }}}
+" }}}
+" Mappings {{{
+    " insert newline in normal
+    noremap <Leader><CR> i<CR><esc>
+
+    " <Leader><Space> turn off search highlighting until the next search
+    nnoremap <Leader><Space> :nohl<CR><C-L>
+
+    " <C-Y> in insert mode will past like p in normal mode
+    inoremap <C-Y> <C-O>p
+
+    " When a line is longer than the screen j and k behave like its different lines
+    noremap j gj
+    noremap k gk
+
+    " Remap VIM 0 to first non-blank character
+    noremap <Leader>0 0
+    noremap 0 ^
+
+    " Fast save and quit
+    noremap <Leader>w     :w<CR>
+    noremap <Leader>x     :x<CR>
+    noremap <Leader>q     :q<CR>
+
+    " Make G gg going at the end and begin of the line
+    noremap G G$
+    noremap gg gg0
+
+    " Go to 80column
+    noremap <Leader><tab> 80\|
+
+    " In visual mode use A to select all of the file
+    vnoremap aa <esc>gg0vG$
+
+    " Quickly insert an empty new line without entering insert mode
+    nnoremap <Leader>o o<Esc>0D
+    nnoremap <Leader>O O<Esc>0D
+
+    " Make Y act like D and C
+    nnoremap Y y$
+
+    " Configure Alt shortcuts
+    execute "set <M-k>=\ek"
+    execute "set <M-j>=\ej"
+
+    " Move a line of text using ALT+[jk]
+    nnoremap <M-j> mz:m+<cr>`z
+    nnoremap <M-k> mz:m-2<cr>`z
+    vnoremap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
+    vnoremap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
+    inoremap <M-j> <Esc>:m .+1<CR>==gi
+    inoremap <M-k> <Esc>:m .-2<CR>==gi
+"}}}
+" Manage buffers {{{
+    " show buffer list and allow to type the buffer name to use with <Leader>bb
+    noremap <Leader>bb :ls<CR>:b
+    " change buffers
+    noremap gb :bn<CR>
+    noremap gB :bN<CR>
+    " close a buffer with <Leader>bc
+    noremap <Leader>bc :bd<CR>
+"}}}
+" Manage windows {{{
+    " resize wuindows with <Leader>arow key
+    " submodes are used to repeat the mapping without hitting the key several times
+    try
+        call submode#enter_with('grow/shrink', 'n', '', '<leader><UP>', '<C-w>+')
+        call submode#enter_with('grow/shrink', 'n', '', '<leader><DOWN>', '<C-w>-')
+        call submode#enter_with('grow/shrink', 'n', '', '<leader><LEFT>', '<C-w><')
+        call submode#enter_with('grow/shrink', 'n', '', '<leader><RIGHT>', '<C-w>>')
+        call submode#map('grow/shrink', 'n', '', '<DOWN>', '<C-w>-')
+        call submode#map('grow/shrink', 'n', '', '<UP>', '<C-w>+')
+        call submode#map('grow/shrink', 'n', '', '<LEFT>', '<C-w><')
+        call submode#map('grow/shrink', 'n', '', '<RIGHT>', '<C-w>>')
+        let g:submode_keep_leaving_key = 1
+        let g:submode_timeout = 0
+    catch
+    endtry
+"}}}
+" Text, tab and indent related configuration {{{
+    " Use spaces instead of tabs
+    set expandtab
+    " Be smart when using tabs ;)
+    set smarttab
+
+    " 1 tab == 4 spaces
+    set shiftwidth=4
+    set tabstop=4
+
+    " Linebreak on 500 characters
+    set lbr
+    set tw=500
+
+    set ai   " Auto indent
+    set si   " Smart indent
+    set wrap " Wrap lines
+"}}}
+" Set up smarter search behaviour {{{
+    set incsearch   " Lookahead as search pattern is specified
+    set ignorecase  " Ignore case in all searches...
+    set smartcase   " unless uppercase letters used
+    set hlsearch    " Highlight all matches
+
+    highlight clear Search
+    highlight       Search    ctermbg=Yellow ctermfg=Black
+    highlight       IncSearch ctermbg=Yellow ctermfg=Black
+
+    " This rewires n and N to do the highlighing...
+    nnoremap <silent> n   n:call HLNext(0.1)<cr>
+    nnoremap <silent> N   N:call HLNext(0.1)<cr>
+
+    " Highlighting function
+    function! HLNext (blinktime)
+        highlight WhiteOnRed ctermfg=white ctermbg=red
+        let [bufnum, lnum, col, off] = getpos('.')
+        let matchlen = strlen(matchstr(strpart(getline('.'),col-1),@/))
+        let target_pat = '\c\%#\%('.@/.'\)'
+        let ring = matchadd('WhiteOnRed', target_pat, 101)
+        redraw
+        exec 'sleep ' . float2nr(a:blinktime * 1000) . 'm'
+        call matchdelete(ring)
+        redraw
+    endfunction
+"}}}
+" Make :help appear in a full-screen tab, instead of a window {{{
+    "Only apply to .txt files...
+    augroup HelpInTabs
+        autocmd!
+        autocmd BufEnter  *.txt   call HelpInNewTab()
+    augroup END
+
+    ""Only apply to help files...
+    function! HelpInNewTab ()
+        if &buftype == 'help'
+            "Convert the help window to a tab
+            "execute "normal \<C-W>T"
+            "Convert the help window to a buffer
+            execute "normal \<C-W>o"
+        endif
+    endfunction
+
+    function! s:help(subject)
+        let buftype = &buftype
+        let &buftype = 'help'
+        let v:errmsg = ''
+        let cmd = "help " . a:subject
+        silent! execute  cmd
+        if v:errmsg != ''
+            let &buftype = buftype
+            return cmd
+        else
+            call setbufvar('#', '&buftype', buftype)
+        endif
+    endfunction
+    command! -nargs=? -bar -complete=help H execute <SID>help(<q-args>)
+"}}}
+" Autocommands {{{
+    augroup configgroup
+        " Delete trailing white space on save
+        au BufWritePre *.go,*.js,*.coffee,*.md,*.jade,*.styl :call DeleteTrailingWS()
+
+        " Go config
+        au FileType go setlocal noexpandtab
+        au FileType go nmap <leader>r <Plug>(go-run)
+        au FileType go nmap <leader>b <Plug>(go-build)
+        au FileType go nmap <leader>t <Plug>(go-test)
+        au FileType go nmap <Leader>gd <Plug>(go-doc)
+        au FileType go nmap <Leader>gv <Plug>(go-doc-vertical)
+        au FileType go nmap <Leader>i <Plug>(go-info)
+        au FileType go nmap <Leader>e <Plug>(go-rename)
+
+        " Makefile config
+        au FileType Makefile setlocal noexpandtab
+    augroup END
+
+    " Delete trailing white space on save
+    func! DeleteTrailingWS()
+        exe "normal mz"
+        %s/\s\+$//ge
+        exe "normal `z"
+    endfunc
+" }}}
