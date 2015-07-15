@@ -201,6 +201,10 @@
     " jiangmiao/auto-pairs {{{
     let g:AutoPairsFlyMode = 1
     " }}}
+    " kien/ctrlp.vim {{{
+    nmap <F3> :CtrlP<CR>
+    let g:ctrlp_custom_ignore = '\v[\/](\.(git|hg|svn)|node_modules)$'
+    " }}}
 " }}}
 " Mappings {{{
     " insert newline in normal
