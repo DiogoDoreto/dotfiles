@@ -132,6 +132,11 @@
     Plugin 'garyburd/go-explorer'
     Plugin 'nsf/gocode', {'rtp': 'vim/'}
 
+    " TypeScript
+    Plugin 'Shougo/vimproc.vim'
+    Plugin 'Quramy/tsuquyomi'
+    Plugin 'leafgarland/typescript-vim'
+
     " Other languages
     Plugin 'strogonoff/vim-coffee-script'
     Plugin 'digitaltoad/vim-jade'
@@ -364,7 +369,7 @@
 " Autocommands {{{
     augroup configgroup
         " Delete trailing white space on save
-        au BufWritePre *.go,*.js,*.coffee,*.md,*.jade,*.styl :call DeleteTrailingWS()
+        au BufWritePre *.go,*.js,*.coffee,*.md,*.jade,*.styl,*.ts :call DeleteTrailingWS()
 
         " Go config
         au FileType go setlocal noexpandtab

@@ -6,3 +6,6 @@ git clone https://github.com/Valloric/YouCompleteMe.git $HOME/.vim/bundle/YouCom
 cd $HOME/.vim/bundle/YouCompleteMe && git submodule update --init --recursive \
    && ./install.sh --gocode-completer
 
+# Install and make vimproc (needed for typescript's plugin tsuquyomi)
+git clone https://github.com/Shougo/vimproc.vim.git $HOME/.vim/bundle/vimproc.vim
+cd $HOME/.vim/bundle/vimproc.vim && make
