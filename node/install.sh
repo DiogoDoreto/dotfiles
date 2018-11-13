@@ -1,4 +1,1 @@
-if test ! $(which spoof)
-then
-  sudo npm install spoof -g
-fi
+git clone https://github.com/creationix/nvm.git ~/.nvm
