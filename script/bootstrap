@@ -140,5 +140,9 @@ install_dotfiles () {
 setup_gitconfig
 install_dotfiles
 
+# Fix permissions
+sudo chown -R `whoami`:root $DOTFILES_ROOT
+sudo chmod -R 755 $DOTFILES_ROOT
+
 echo ''
 echo '  All installed!'
