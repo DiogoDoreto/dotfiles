@@ -1,0 +1,19 @@
+[include]
+	path = ~/.config/git/config.private
+[alias]
+	co = checkout
+	st = status -sb
+	lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	fm = fetch origin master:master
+	pf = push --force-with-lease
+	undo = reset --soft HEAD~1
+	ri = rebase -i
+	rc = rebase --continue
+	ra = rebase --abort
+[core]
+	excludesfile = ~/.config/git/gitignore_global
+[pull]
+	ff = only
+[rebase]
+	autoSquash = true
+

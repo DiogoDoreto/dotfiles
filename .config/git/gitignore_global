@@ -1,0 +1,14 @@
+# VSCode
+.vscode/*
+*.code-workspace
+
+# npm/yarn
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# custom
+/.cfg
+_diogo.*
+.vimrc.lua
+
