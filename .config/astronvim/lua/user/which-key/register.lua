@@ -3,6 +3,7 @@ local utils = require("user.utils")
 return {
   n = {
     ["<leader>"] = {
+      e = { "<cmd>RnvimrToggle<cr>", "Ranger File Manager" },
       s = {
         p = { "<cmd>Telescope projects<cr>", "Projects" },
       },

@@ -4,6 +4,10 @@ return {
   -- remove in nvim 0.9
   ["gpanders/editorconfig.nvim"] = {},
 
+  -- replace file manager
+  ["nvim-neo-tree/neo-tree.nvim"] = { disable = true },
+  ["kevinhwang91/rnvimr"] = require "user.plugins.rnvimr",
+
   ["jose-elias-alvarez/typescript.nvim"] = require "user.plugins.typescript",
 
   ["kylechui/nvim-surround"] = { config = function() require "nvim-surround".setup() end },

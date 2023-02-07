@@ -1,6 +1,7 @@
 if status is-interactive
   abbr --add e nvim
   abbr --add g lazygit
+  abbr --add r ranger
   abbr --add ll exa --icons --long
   abbr --add la exa --icons --long --all
 
