@@ -8,4 +8,8 @@ function M.vim_opt_toggle(opt, on, off, name)
   M.quick_notification(name .. " " .. (is_off and "Enabled" or "Disabled"))
 end
 
+function M.v_count(def_val)
+  return vim.v.count > 0 and vim.v.count or def_val
+end
+
 return M

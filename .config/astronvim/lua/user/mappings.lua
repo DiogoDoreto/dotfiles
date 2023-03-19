@@ -1,3 +1,5 @@
+local utils = require("user.utils")
+
 local maps = { i = {}, n = {}, v = {}, t = {}, x = {} }
 
 maps.n["<leader>j"] = { name = "Hop / Jump" }
@@ -11,14 +13,14 @@ maps.n["<C-Up>"] = false
 maps.n["<C-q>"] = false
 
 -- switch tabs with H and L
-maps.n.L = { function() require("astronvim.utils.buffer").nav(vim.v.count > 0 and vim.v.count or 1) end, desc = "Next buffer" }
-maps.n.H = { function() require("astronvim.utils.buffer").nav(-(vim.v.count > 0 and vim.v.count or 1)) end, desc = "Previous buffer" }
+maps.n.L = { function() require("core.utils.buffer").nav(utils.v_count(1)) end, desc = "Next buffer" }
+maps.n.H = { function() require("core.utils.buffer").nav(-(utils.v_count(1))) end, desc = "Previous buffer" }
 
 -- resize with arrows
-maps.n["<Up>"] = { function() require("smart-splits").resize_up(vim.v.count > 0 and vim.v.count or 2) end, desc = "Resize split up" }
-maps.n["<Down>"] = { function() require("smart-splits").resize_down(vim.v.count > 0 and vim.v.count or 2) end, desc = "Resize split down" }
-maps.n["<Left>"] = { function() require("smart-splits").resize_left(vim.v.count > 0 and vim.v.count or 2) end, desc = "Resize split left" }
-maps.n["<Right>"] = { function() require("smart-splits").resize_right(vim.v.count > 0 and vim.v.count or 2) end, desc = "Resize split right" }
+maps.n["<Up>"] = { function() require("smart-splits").resize_up(utils.v_count(2)) end, desc = "Resize split up" }
+maps.n["<Down>"] = { function() require("smart-splits").resize_down(utils.v_count(2)) end, desc = "Resize split down" }
+maps.n["<Left>"] = { function() require("smart-splits").resize_left(utils.v_count(2)) end, desc = "Resize split left" }
+maps.n["<Right>"] = { function() require("smart-splits").resize_right(utils.v_count(2)) end, desc = "Resize split right" }
 
 -- easy linebreaks
 maps.n["<C-CR>"] = { "o<Esc>", desc = "Add line below" }
