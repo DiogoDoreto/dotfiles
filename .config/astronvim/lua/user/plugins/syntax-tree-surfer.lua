@@ -1,4 +1,5 @@
 return {
+  "ziontee113/syntax-tree-surfer",
   after = "nvim-treesitter",
   cmd = {
     "STSSwapUpNormal",
@@ -12,9 +13,7 @@ return {
     "STSSwapNextVisual",
     "STSSwapPrevVisual",
   },
-  config = function()
-    require("syntax-tree-surfer").setup {
-      highlight_group = "HopNextKey"
-    }
-  end,
+  opts = {
+    highlight_group = "HopNextKey"
+  },
 }
