@@ -4,6 +4,8 @@ local maps = { i = {}, n = {}, v = {}, t = {}, x = {} }
 
 maps.n["<leader>j"] = { name = "Hop / Jump" }
 maps.v["<leader>j"] = { name = "Hop / Jump" }
+maps.n["<leader>z"] = { name = "Zk Notes" }
+maps.v["<leader>z"] = { name = "Zk Notes" }
 
 -- disable default bindings
 maps.n["<C-Down>"] = false
@@ -13,8 +15,8 @@ maps.n["<C-Up>"] = false
 maps.n["<C-q>"] = false
 
 -- switch tabs with H and L
-maps.n.L = { function() require("core.utils.buffer").nav(utils.v_count(1)) end, desc = "Next buffer" }
-maps.n.H = { function() require("core.utils.buffer").nav(-(utils.v_count(1))) end, desc = "Previous buffer" }
+maps.n.L = { function() require("core.utils").nav_buf(utils.v_count(1)) end, desc = "Next buffer" }
+maps.n.H = { function() require("core.utils").nav_buf(-(utils.v_count(1))) end, desc = "Previous buffer" }
 
 -- resize with arrows
 maps.n["<Up>"] = { function() require("smart-splits").resize_up(utils.v_count(2)) end, desc = "Resize split up" }
@@ -35,7 +37,7 @@ maps.n["<c-down>"] = { "<cmd>STSSwapDownNormal<cr>", desc = "Swap next tree-sitt
 maps.n["<c-right>"] = { "<cmd>STSSwapDownNormal<cr>", desc = "Swap next tree-sitter object" }
 maps.n["<c-up>"] = { "<cmd>STSSwapUpNormal<cr>", desc = "Swap previous tree-sitter object" }
 maps.n["<c-left>"] = { "<cmd>STSSwapUpNormal<cr>", desc = "Swap previous tree-sitter object" }
-maps.n["<leader>js"] = { "<cmd>STSSelectMasterode<cr>", desc = "Surf" }
+maps.n["<leader>js"] = { "<cmd>STSSelectMasterNode<cr>", desc = "Surf" }
 maps.n["<leader>jS"] = { "<cmd>STSSelectCurrentode<cr>", desc = "Surf Node" }
 maps.x["J"] = { "<cmd>STSSelectNextSiblingNode<cr>", desc = "Surf next tree-sitter object" }
 maps.x["K"] = { "<cmd>STSSelectPrevSiblingNode<cr>", desc = "Surf previous tree-sitter object" }
@@ -66,6 +68,17 @@ maps.n["<leader>tJ"] = { function() require "jester".run_file() end, desc = "Run
 
 -- UI group
 maps.n["<leader>uz"] = { function() utils.vim_opt_toggle("foldenable", true, false, "Fold") end, desc = "Toggle fold" }
+
+-- Zk Notes group
+maps.n["<leader>zn"] = { function() require("zk").new({ title = vim.fn.input("Title: ") }) end, desc = "New note" }
+maps.v["<leader>zn"] = { "<cmd>ZkNewFromTitleSelection<cr>", desc = "New from title selection" }
+maps.v["<leader>zc"] = { "<cmd>ZkNewFromContentSelection<cr>", desc = "New from content selection" }
+maps.n["<leader>zb"] = { "<cmd>ZkBacklinks<cr>", desc = "Backlinks of current note" }
+maps.n["<leader>zl"] = { "<cmd>ZkLinks<cr>", desc = "Links of current note" }
+maps.n["<leader>zi"] = { "<cmd>ZkInsertLink<cr>", desc = "Insert link" }
+maps.v["<leader>zi"] = { "<cmd>ZkInsertLinkAtSelection<cr>", desc = "Insert link" }
+maps.n["<leader>zs"] = { "<cmd>ZkNotes<cr>", desc = "Search notes" }
+maps.n["<leader>zt"] = { "<cmd>ZkTags<cr>", desc = "Search tags" }
 
 -- terminal mappings
 maps.t["<esc><esc>"] = { "<c-\\><c-n>", desc = "Terminal normal mode" }

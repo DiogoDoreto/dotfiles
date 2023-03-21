@@ -1,6 +1,8 @@
 return {
   "ziontee113/syntax-tree-surfer",
-  after = "nvim-treesitter",
+  dependencies = {
+    "nvim-treesitter/nvim-treesitter",
+  },
   cmd = {
     "STSSwapUpNormal",
     "STSSwapDownNormal",

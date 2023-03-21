@@ -2,6 +2,12 @@ return {
   { "dag/vim-fish" },
   { "jose-elias-alvarez/typescript.nvim" },
   {
+    "nvim-treesitter/nvim-treesitter",
+    opts = {
+      auto_install = true,
+    },
+  },
+  {
     "williamboman/mason-lspconfig.nvim",
     opts = {
       ensure_installed = {
