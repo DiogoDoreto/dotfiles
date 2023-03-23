@@ -1,5 +1,9 @@
 return {
   "stevearc/overseer.nvim",
+  cmd = {
+    "OverseerRun",
+    "OverseerToggle",
+  },
   opts = {
     task_list = {
       bindings = {
