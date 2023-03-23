@@ -14,9 +14,11 @@ maps.n["<C-Right>"] = false
 maps.n["<C-Up>"] = false
 maps.n["<C-q>"] = false
 
+maps.i["<C-Tab>"] = { function() require("luasnip").expand() end }
+
 -- switch tabs with H and L
-maps.n.L = { function() require("core.utils").nav_buf(utils.v_count(1)) end, desc = "Next buffer" }
-maps.n.H = { function() require("core.utils").nav_buf(-(utils.v_count(1))) end, desc = "Previous buffer" }
+maps.n.L = { function() require("astronvim.utils.buffer").nav(utils.v_count(1)) end, desc = "Next buffer" }
+maps.n.H = { function() require("astronvim.utils.buffer").nav(-(utils.v_count(1))) end, desc = "Previous buffer" }
 
 -- resize with arrows
 maps.n["<Up>"] = { function() require("smart-splits").resize_up(utils.v_count(2)) end, desc = "Resize split up" }
