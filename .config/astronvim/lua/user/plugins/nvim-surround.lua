@@ -1,5 +1,5 @@
 return {
   "kylechui/nvim-surround",
-  event = "BufEnter",
+  event = "User AstroFile",
   opts = {},
 }

@@ -14,7 +14,11 @@ maps.n["<C-Right>"] = false
 maps.n["<C-Up>"] = false
 maps.n["<C-q>"] = false
 
+-- quick expand known snippets
 maps.i["<C-Tab>"] = { function() require("luasnip").expand() end }
+
+maps.n["<Leader>bx"] = { "<cmd>tabclose<cr>", desc = "Close tab" }
+maps.n["<leader>o"] = { "<cmd>Telescope file_browser<cr>", desc = "Telescope file browser" }
 
 -- switch tabs with H and L
 maps.n.L = { function() require("astronvim.utils.buffer").nav(utils.v_count(1)) end, desc = "Next buffer" }
@@ -32,7 +36,10 @@ maps.n["<S-C-CR>"] = { "O<Esc>", desc = "Add line above" }
 maps.i["<C-CR>"] = { "<Esc>o", desc = "Add line below" }
 maps.i["<S-C-CR>"] = { "<Esc>O", desc = "Add line above" }
 
-maps.n["<leader>o"] = { "<cmd>Telescope file_browser<cr>", desc = "Telescope file browser" }
+-- Git
+maps.n["<Leader>gt"] = { "<cmd>DiffviewOpen<cr>", desc = "Git status" }
+maps.n["<Leader>gd"] = { ":DiffviewOpen ", desc = "Git diff" }
+maps.n["<Leader>gL"] = { ":DiffviewFileHistory --range=", desc = "Git log" }
 
 -- Treesitter Surfer
 maps.n["<c-down>"] = { "<cmd>STSSwapDownNormal<cr>", desc = "Swap next tree-sitter object" }

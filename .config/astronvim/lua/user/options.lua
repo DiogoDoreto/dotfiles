@@ -2,8 +2,7 @@ local opt = {
   foldenable = false,
   foldexpr = "nvim_treesitter#foldexpr()", -- set Treesitter based folding
   foldmethod = "expr",
-
-  list = true, -- show whitespace characters
+  list = true,                             -- show whitespace characters
   listchars = {
     tab = "│→",
     extends = "⟩",
@@ -12,18 +11,20 @@ local opt = {
     multispace = "·",
     nbsp = "␣",
   },
-
+  fillchars = {
+    diff = "•",
+  },
   linebreak = true,
   wrap = true,
   whichwrap = "b,s,<,>,[,]",
-
   wildignorecase = true,
 }
 
 local function win_opts()
   return {
     shell = vim.fn.executable "pwsh" and "pwsh" or "powershell",
-    shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;",
+    shellcmdflag =
+    "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;",
     shellredir = "-RedirectStandardOutput %s -NoNewWindow -Wait",
     shellpipe = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode",
     shellquote = "",
