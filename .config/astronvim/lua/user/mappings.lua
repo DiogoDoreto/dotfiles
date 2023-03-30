@@ -1,3 +1,5 @@
+-- ignore formatting in this file, as one-liners are easier to read
+-- stylua: ignore start
 local utils = require("user.utils")
 
 local maps = { i = {}, n = {}, v = {}, t = {}, x = {} }
@@ -19,6 +21,11 @@ maps.i["<C-Tab>"] = { function() require("luasnip").expand() end }
 
 maps.n["<Leader>bx"] = { "<cmd>tabclose<cr>", desc = "Close tab" }
 maps.n["<leader>o"] = { "<cmd>Telescope file_browser<cr>", desc = "Telescope file browser" }
+
+maps.n["<leader>fw"] = {
+  function() require("telescope").extensions.live_grep_args.live_grep_args() end,
+  desc = "Find words",
+}
 
 -- switch tabs with H and L
 maps.n.L = { function() require("astronvim.utils.buffer").nav(utils.v_count(1)) end, desc = "Next buffer" }
@@ -94,3 +101,4 @@ maps.t["<esc><esc>"] = { "<c-\\><c-n>", desc = "Terminal normal mode" }
 maps.t["<c-q>"] = { "<c-\\><c-n>:q<cr>", desc = "Terminal quit" }
 
 return maps
+-- stylua: ignore end

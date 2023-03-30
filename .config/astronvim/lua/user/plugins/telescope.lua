@@ -1,11 +1,11 @@
-
 return {
   "nvim-telescope/telescope.nvim",
   dependencies = {
-    "nvim-telescope/telescope-file-browser.nvim"
+    "nvim-telescope/telescope-file-browser.nvim",
+    "nvim-telescope/telescope-live-grep-args.nvim",
   },
   opts = function(_, opts)
-    local layout = require "telescope.actions.layout"
+    local layout = require("telescope.actions.layout")
 
     opts.defaults.mappings.i["<C-h>"] = layout.toggle_preview
 
@@ -15,14 +15,15 @@ return {
         hijack_netrw = true,
         grouped = true,
         path = "%:p:h",
-      }
+      },
     }
 
     return opts
   end,
   config = function(...)
-    require "plugins.configs.telescope"(...)
-    local telescope = require "telescope"
-    telescope.load_extension "file_browser"
+    require("plugins.configs.telescope")(...)
+    local telescope = require("telescope")
+    telescope.load_extension("file_browser")
+    telescope.load_extension("live_grep_args")
   end,
 }
