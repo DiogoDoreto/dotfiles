@@ -1,6 +1,7 @@
 -- ignore formatting in this file, as one-liners are easier to read
 -- stylua: ignore start
 local utils = require("user.utils")
+local zkCmd = require("user.commands.zk")
 
 local maps = { i = {}, n = {}, v = {}, t = {}, x = {} }
 
@@ -87,12 +88,18 @@ maps.n["<leader>uz"] = { function() utils.vim_opt_toggle("foldenable", true, fal
 
 -- Zk Notes group
 maps.n["<leader>zn"] = { function() require("zk").new({ title = vim.fn.input("Title: ") }) end, desc = "New note" }
-maps.v["<leader>zn"] = { "<cmd>ZkNewFromTitleSelection<cr>", desc = "New from title selection" }
-maps.v["<leader>zc"] = { "<cmd>ZkNewFromContentSelection<cr>", desc = "New from content selection" }
+maps.v["<leader>zn"] = { "<cmd>'<,'>ZkNewFromTitleSelection<cr>", desc = "New from title selection" }
+maps.v["<leader>zc"] = { "<cmd>'<,'>ZkNewFromContentSelection<cr>", desc = "New from content selection" }
+maps.n["<leader>zj"] = { "<cmd>ZkNew { dir = 'journal' }<cr>", desc = "New journal entry" }
+maps.n["<leader>zJ"] = { zkCmd.newJiraNote, desc = "New JIRA note" }
+-- maps.n["<leader>zj"] = {
+--   function() require("zk").new({ dir = vim.fn.expand("$ZK_NOTEBOOK_DIR/journal") }) end,
+--   desc = "New journal note"
+-- }
 maps.n["<leader>zb"] = { "<cmd>ZkBacklinks<cr>", desc = "Backlinks of current note" }
 maps.n["<leader>zl"] = { "<cmd>ZkLinks<cr>", desc = "Links of current note" }
 maps.n["<leader>zi"] = { "<cmd>ZkInsertLink<cr>", desc = "Insert link" }
-maps.v["<leader>zi"] = { "<cmd>ZkInsertLinkAtSelection<cr>", desc = "Insert link" }
+maps.v["<leader>zi"] = { "<cmd>'<,'>ZkInsertLinkAtSelection<cr>", desc = "Insert link" }
 maps.n["<leader>zs"] = { "<cmd>ZkNotes<cr>", desc = "Search notes" }
 maps.n["<leader>zt"] = { "<cmd>ZkTags<cr>", desc = "Search tags" }
 

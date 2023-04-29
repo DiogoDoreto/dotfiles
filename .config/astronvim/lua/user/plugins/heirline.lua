@@ -19,7 +19,8 @@ return {
       status.component.fill(),
       {
         provider = function()
-          return vim.fn.expand("%")
+          local filepath = vim.fn.expand("%")
+          return string.gsub(filepath, "^" .. vim.loop.os_homedir(), "~")
         end,
         update = "BufEnter",
       },

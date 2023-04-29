@@ -1,0 +1,8 @@
+[group.jira]
+paths = ["jira"]
+
+[group.jira.note]
+filename = "{{#sh \"tr '[:lower:]' '[:upper:]'\"}}{{title}}{{/sh}}"
+# filename = "{{title}}"
+extension = "md"
+template = "jira.md"
