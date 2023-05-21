@@ -3,12 +3,14 @@ local act = wezterm.action
 
 require("events")
 
+local is_win = function() return package.config:sub(1, 1) == "\\" end
+
 return {
   font = wezterm.font("Victor Mono", { weight = "Medium" }),
   color_scheme = "duskfox",
   font_size = 14,
   line_height = 1.1,
-  default_prog = { "/usr/local/bin/fish", "-l" },
+  default_prog = is_win() and { "pwsh.exe" } or { "/usr/local/bin/fish", "-l" },
   window_decorations = "RESIZE",
   window_padding = {
     left = "1cell",
