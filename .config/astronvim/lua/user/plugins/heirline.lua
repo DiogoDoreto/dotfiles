@@ -4,14 +4,12 @@ return {
     local status = require("astronvim.utils.status")
     local statusLine = baseConfig.statusline
 
-    -- remove vim mode from beginning and end
-    table.remove(statusLine, 1)
-    table.remove(statusLine, #statusLine)
-    -- remove scrollbar
-    local ruler = { provider = " %3l/%L:%-3c %3p%%" }
-    statusLine[#statusLine] = ruler
+    -- remove right padding from first mode block
+    table.remove(statusLine[1], #statusLine[1])
     -- print cwd dir
-    table.insert(statusLine, 1, { provider = vim.fs.basename(vim.fn.getcwd()) .. "/ " })
+    table.insert(statusLine, 2, { provider = vim.fs.basename(vim.fn.getcwd()) .. "/ " })
+    -- replace astro's ruler
+    statusLine[#statusLine - 1] = { provider = " %3l/%L:%-2c %3p%%" }
 
     local winbar = baseConfig.winbar
     winbar[#winbar] = {
