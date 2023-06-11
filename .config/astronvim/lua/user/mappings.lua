@@ -22,6 +22,7 @@ maps.n["<C-q>"] = false
 maps.i["<C-Tab>"] = { function() require("luasnip").expand() end }
 
 maps.n["<Leader>bx"] = { "<cmd>tabclose<cr>", desc = "Close tab" }
+maps.n["<Leader>bt"] = { "<cmd>Telescope filetypes<cr>", desc = "Change File Type" }
 maps.n["<leader>o"] = { "<cmd>Telescope file_browser<cr>", desc = "Telescope file browser" }
 
 maps.n["<leader>fw"] = {
