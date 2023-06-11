@@ -7,6 +7,7 @@ local maps = { i = {}, n = {}, v = {}, t = {}, x = {} }
 
 maps.n["<leader>j"] = { name = "Hop / Jump" }
 maps.v["<leader>j"] = { name = "Hop / Jump" }
+maps.n["<leader>x"] = { name = "Trouble" }
 maps.n["<leader>z"] = { name = "Zk Notes" }
 maps.v["<leader>z"] = { name = "Zk Notes" }
 
@@ -85,6 +86,23 @@ maps.n["<leader>tJ"] = { function() require "jester".run_file() end, desc = "Run
 
 -- UI group
 maps.n["<leader>uz"] = { function() utils.vim_opt_toggle("foldenable", true, false, "Fold") end, desc = "Toggle fold" }
+
+-- Trouble group
+maps.n["<leader>xz"] = { "<cmd>TroubleToggle<cr>", desc = "Toggle" }
+maps.n["<leader>xx"] = { "<cmd>TroubleRefresh<cr>", desc = "Refresh" }
+maps.n["<leader>xw"] = { "<cmd>TroubleToggle workspace_diagnostics<cr>", desc = "Workspace Diagnostics" }
+maps.n["<leader>xd"] = { "<cmd>TroubleToggle document_diagnostics<cr>", desc = "Document Diagnostics" }
+maps.n["<leader>xq"] = { "<cmd>TroubleToggle quickfix<cr>", desc = "QuickFix" }
+maps.n["<leader>xl"] = { "<cmd>TroubleToggle loclist<cr>", desc = "LocList" }
+maps.n["<leader>xr"] = { "<cmd>TroubleToggle lsp_references<cr>", desc = "LSP References" }
+maps.n["<leader>xj"] = {
+  function() require("trouble").next({ skip_groups = true, jump = true }) end,
+  desc = "Next Item"
+}
+maps.n["<leader>xk"] = {
+  function() require("trouble").previous({ skip_groups = true, jump = true }) end,
+  desc = "Previous Item"
+}
 
 -- Zk Notes group
 maps.n["<leader>zn"] = { function() require("zk").new({ title = vim.fn.input("Title: ") }) end, desc = "New note" }
