@@ -1,6 +1,11 @@
 Set-Alias -Name g -Value lazygit
 Set-Alias -Name e -Value nvim
 
+function P {
+    $opt = ls D:\git | % { echo $_.FullName } | fzf
+    cd $opt
+}
+
 $prompt = ""
 function Invoke-Starship-PreCommand {
     $current_location = $executionContext.SessionState.Path.CurrentLocation
