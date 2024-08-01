@@ -1,4 +1,4 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, lib, ... }:
 {
   imports = [
     # todo: remove when https://github.com/nix-community/home-manager/pull/5355 gets merged:
@@ -22,12 +22,16 @@
   # release notes.
   home.stateVersion = "24.05"; # Please read the comment before changing.
 
+  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+    "reaper"
+  ];
+
   # The home.packages option allows you to install Nix packages into your
   # environment.
   home.packages = with pkgs; [
       (nerdfonts.override { fonts = [ "VictorMono" ]; })
       nodejs_20
-      tldr
+      cheat
 
       # build tools
       cmake
@@ -39,8 +43,15 @@
 
       nixgl.nixGLIntel
 
+      podman
+      pods # podman GUI
+      qemu # podman dependency
+
+      rofi
+      rofimoji
       onedrive
       keepassxc
+      reaper
     ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
@@ -56,6 +67,35 @@
     #   org.gradle.console=verbose
     #   org.gradle.daemon.idletimeout=3600000
     # '';
+
+    ".config/cheat/cheatsheets/community".source = pkgs.fetchFromGitHub {
+      owner = "cheat";
+      repo = "cheatsheets";
+      rev = "36bdb99dcfadde210503d8c2dcf94b34ee950e1d";
+      hash = "sha256-Afv0rPlYTCsyWvYx8UObKs6Me8IOH5Cv5u4fO38J8ns=";
+    };
+    ".config/cheat/cheatsheets/personal".source = ../cheat/cheatsheets/personal;
+    ".config/cheat/conf.yml".text = builtins.toJSON {
+      editor = lib.getExe pkgs.emacs;
+      colorize = true;
+      style = "onedark";
+      formatter = "terminal16m";
+      pager = "less";
+      cheatpaths = [
+        {
+          name = "community";
+          path = "~/.config/cheat/cheatsheets/community";
+          tags = [ "community" ];
+          readonly = true;
+        }
+        {
+          name = "personal";
+          path = "~/.config/cheat/cheatsheets/personal";
+          tags = [ "personal" ];
+          readonly = false;
+        }
+      ];
+    };
 
     ".config/emacs".source = pkgs.fetchFromGitHub {
       owner = "doomemacs";
@@ -112,6 +152,10 @@
   programs.home-manager.enable = true;
 
   # shell stuff
+  programs.atuin = {
+    enable = true;
+    enableFishIntegration = true;
+  };
   programs.bash.enable = true;
   programs.fish = {
     enable = true;
@@ -120,6 +164,10 @@
     };
   };
   programs.starship = {
+    enable = true;
+    enableFishIntegration = true;
+  };
+  programs.zoxide = {
     enable = true;
     enableFishIntegration = true;
   };
@@ -171,7 +219,7 @@
         color_scheme = "duskfox",
         font_size = 14,
         line_height = 1.1,
-        default_prog = { "${pkgs.fish}/bin/fish", "-l" },
+        default_prog = { "${lib.getExe pkgs.fish}", "-l" },
         window_decorations = "RESIZE",
         window_padding = {
           left = "1cell",
@@ -197,9 +245,18 @@
     windowManager.i3 = {
       enable = true;
       config = {
-        modifier = "Mod4";
+        menu = "${lib.getExe pkgs.rofi} -show drun";
+        modifier = "Mod4"; # Windows key
         terminal = "wezterm";
         gaps.inner = 10;
+        keybindings = let
+          modifier = config.xsession.windowManager.i3.config.modifier;
+        in lib.mkOptionDefault {
+          # Mod1 == Alt key
+          "Ctrl+Shift+Mod1+f" = "exec firefox";
+          "Ctrl+Shift+Mod1+k" = "exec keepassxc";
+          "${modifier}+period" = "exec rofimoji";
+        };
       };
     };
   };
