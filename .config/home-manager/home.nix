@@ -103,7 +103,7 @@
       rev = "dec2a387ad35ca1a13295b4d518c69c56a8a32a9";
       hash = "sha256-sQig7z/IPEoV91t3uHaxwqjzoTgThTmWEfsuhwYwACA=";
     };
-    ".doom.d".source = ../doom;
+    ".config/doom".source = ../doom;
 
     ".xinitrc".text = ''
       exec i3

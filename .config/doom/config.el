@@ -33,13 +33,22 @@
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-one)
 
+(setq doom-modeline-lsp-icon nil)
+(setq doom-modeline-modal nil)
+(setq doom-modeline-vcs-max-length 20)
+(setq doom-modeline-buffer-file-name-style 'relative-from-project)
+
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type t)
+(setq display-line-numbers-type nil)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/")
+(setq org-directory "~/org/"
+      org-agenda-files (mapcan (lambda (x) (directory-files-recursively
+                                            (expand-file-name x org-directory)
+                                            "\.org$"))
+                               my-agenda-dirs))
 
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
@@ -74,6 +83,8 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+(map! :n "g b" 'browse-url)
+
 (map! "M-<left>" #'evil-window-left)
 (map! "M-<down>" #'evil-window-down)
 (map! "M-<up>" #'evil-window-up)
@@ -81,3 +92,35 @@
 
 (map! "C-<down>" #'drag-stuff-down)
 (map! "C-<up>" #'drag-stuff-up)
+
+(map! :i "C-<tab>" 'yas-expand)
+
+(map! :n "] e" 'flycheck-next-error)
+(map! :n "[ e" 'flycheck-previous-error)
+
+(map! :leader :n "c j" 'consult-lsp-file-symbols)
+(map! :leader :n "c J" 'consult-lsp-symbols)
+
+(map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
+
+(map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
+
+;; ibuffer customizations
+
+(add-hook 'ibuffer-hook
+          (lambda ()
+            (ibuffer-vc-set-filter-groups-by-vc-root)
+            (unless (eq ibuffer-sorting-mode 'alphabetic)
+              (ibuffer-do-sort-by-alphabetic))))
+
+(setq ibuffer-formats
+      '((mark modified read-only vc-status-mini " "
+         (name 50 50 :left :elide)
+         " "
+         (size 9 -1 :right)
+         " "
+         (mode 16 16 :left :elide)
+         " "
+         (vc-status 16 16 :left)
+         " "
+         vc-relative-file)))
