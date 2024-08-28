@@ -9,6 +9,13 @@
 ;; (setq user-full-name "John Doe"
 ;;       user-mail-address "john@doe.com")
 
+(setq frame-title-format '((multiple-frames (:eval (+workspace-current-name)))
+                           (multiple-frames " | ")
+                           "%b"
+                           (:eval (if (buffer-modified-p) " ×"))
+                           " | Emacs "
+                           emacs-version))
+
 ;; Doom exposes five (optional) variables for controlling fonts in Doom:
 ;;
 ;; - `doom-font' -- the primary font to use
