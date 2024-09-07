@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, inputs, ... }:
 {
   imports = [
     # todo: remove when https://github.com/nix-community/home-manager/pull/5355 gets merged:
@@ -47,7 +47,6 @@
       pods # podman GUI
       qemu # podman dependency
 
-      rofi
       rofimoji
       rofi-power-menu
       onedrive
@@ -240,13 +239,24 @@
     defaultEditor = true;
   };
 
+  programs.rofi = {
+    enable = true;
+    font = "VictorMono Nerd Font 12";
+    theme = "${inputs.rofi-material-ocean}/material-ocean.rasi";
+    terminal = "wezterm";
+    extraConfig = {
+      show-icons = true;
+      combi-hide-mode-prefix = true;
+    };
+  };
+
   xsession = {
     enable = true;
 
     windowManager.i3 = {
       enable = true;
       config = {
-        menu = "${lib.getExe pkgs.rofi} -show combi -modes combi -combi-modes \"window#drun#Power:rofi-power-menu --choices=shutdown/reboot\"";
+        menu = "${lib.getExe pkgs.rofi} -show combi -modes combi -combi-modes \"window#drun#Power:rofi-power-menu --choices=shutdown/reboot --confirm=logout\"";
         modifier = "Mod4"; # Windows key
         terminal = "wezterm";
         gaps.inner = 10;

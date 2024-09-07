@@ -73,11 +73,28 @@
         "type": "indirect"
       }
     },
+    "rofi-material-ocean": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1665934409,
+        "narHash": "sha256-ucQ/a5ipQOv01X2ddfHoWagPOODMHz2hE7dUOPXMbzw=",
+        "owner": "material-ocean",
+        "repo": "rofi-Theme",
+        "rev": "251bd7b81f979b81c8a8382575a4279996e5e243",
+        "type": "github"
+      },
+      "original": {
+        "owner": "material-ocean",
+        "repo": "rofi-Theme",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "home-manager": "home-manager",
         "nixGL": "nixGL",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "rofi-material-ocean": "rofi-material-ocean"
       }
     }
   },
