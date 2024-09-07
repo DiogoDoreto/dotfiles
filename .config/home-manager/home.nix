@@ -49,6 +49,7 @@
 
       rofi
       rofimoji
+      rofi-power-menu
       onedrive
       keepassxc
       reaper
@@ -245,7 +246,7 @@
     windowManager.i3 = {
       enable = true;
       config = {
-        menu = "${lib.getExe pkgs.rofi} -show drun";
+        menu = "${lib.getExe pkgs.rofi} -show combi -modes combi -combi-modes \"window#drun#Power:rofi-power-menu --choices=shutdown/reboot\"";
         modifier = "Mod4"; # Windows key
         terminal = "wezterm";
         gaps.inner = 10;
