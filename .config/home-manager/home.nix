@@ -34,6 +34,8 @@
       (nerdfonts.override { fonts = [ "VictorMono" ]; })
       nodejs_20
       cheat
+      turbovnc
+      htop
       ffmpeg_7-full
 
       # build tools
@@ -115,6 +117,15 @@
     ".Xresources".text = ''
       Xft.dpi: 140
     '';
+
+    ".vnc/xstartup" = {
+      executable = true;
+      text = ''
+        #!/bin/sh
+        export I3SOCK="~/.i3/i3-ipc.sock"
+        i3
+      '';
+    };
 
     ".config/onedrive/sync_list".text = ''
       # https://github.com/abraunegg/onedrive/blob/master/docs/USAGE.md#performing-a-selective-sync-via-sync_list-file
@@ -221,7 +232,7 @@
       return {
         font = wezterm.font("VictorMono Nerd Font Propo", { weight = "Medium" }),
         color_scheme = "duskfox",
-        font_size = 14,
+        font_size = 10,
         line_height = 1.1,
         default_prog = { "${lib.getExe pkgs.fish}", "-l" },
         window_decorations = "RESIZE",
