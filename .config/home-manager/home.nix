@@ -106,8 +106,8 @@
     ".config/emacs".source = pkgs.fetchFromGitHub {
       owner = "doomemacs";
       repo = "doomemacs";
-      rev = "dec2a387ad35ca1a13295b4d518c69c56a8a32a9";
-      hash = "sha256-sQig7z/IPEoV91t3uHaxwqjzoTgThTmWEfsuhwYwACA=";
+      rev = "73460f42fd9a7bca76b7b5be47c4d3b6f8aa1040";
+      hash = "sha256-8gJo3Byl3oItXd0fsg5eFK4z36HQDztY38eQUan7NvA=";
     };
     ".config/doom".source = ../doom;
 
