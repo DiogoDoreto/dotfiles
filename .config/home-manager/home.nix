@@ -33,6 +33,7 @@
   home.packages = with pkgs; [
       (nerdfonts.override { fonts = [ "VictorMono" ]; })
       nodejs_20
+      tldr
       cheat
       turbovnc
       htop
