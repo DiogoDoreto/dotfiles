@@ -179,7 +179,7 @@
   programs.fish = {
     enable = true;
     shellAbbrs = {
-      e = "emacs";
+      e = "emacsclient -nc";
     };
   };
   programs.starship = {
@@ -330,7 +330,7 @@
           modifier = config.xsession.windowManager.i3.config.modifier;
         in lib.mkOptionDefault {
           # Mod1 == Alt key
-          "Ctrl+Shift+Mod1+e" = "exec emacs";
+          "Ctrl+Shift+Mod1+e" = "exec emacsclient -nc";
           "Ctrl+Shift+Mod1+f" = "exec firefox";
           "Ctrl+Shift+Mod1+k" = "exec keepassxc";
           "Ctrl+Shift+Mod1+m" = "exec spotify";
