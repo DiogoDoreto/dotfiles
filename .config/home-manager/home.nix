@@ -7,6 +7,8 @@
       url = "https://raw.githubusercontent.com/Smona/home-manager/nixgl-compat/modules/misc/nixgl.nix";
       sha256 = "0g5yk54766vrmxz26l3j9qnkjifjis3z2izgpsfnczhw243dmxz9";
     })
+
+    ./modules/home-server.nix
   ];
 
   # Home Manager needs a bit of information about you and the paths it should
@@ -169,6 +171,9 @@
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
+
+  # My Home Server setup
+  dog.home-server.enable = true;
 
   # shell stuff
   programs.atuin = {
@@ -343,6 +348,8 @@
 
   systemd.user = {
     enable = true;
+    startServices = "sd-switch";
+    systemctlPath = "/usr/bin/systemctl";
   };
 
   services.ssh-agent.enable = true;
