@@ -239,7 +239,11 @@
     package = (config.lib.nixGL.wrap pkgs.wezterm);
     extraConfig = ''
       return {
-        font = wezterm.font("VictorMono Nerd Font Propo", { weight = "Medium" }),
+        font = wezterm.font {
+          family = "VictorMono Nerd Font Propo",
+          weight = "Medium",
+          harfbuzz_features = { 'calt=0', 'clig=0', 'liga=0' },
+        },
         color_scheme = "duskfox",
         font_size = 10,
         line_height = 1.1,
