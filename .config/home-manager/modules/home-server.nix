@@ -22,6 +22,7 @@ in {
   config = mkIf cfg.enable {
     home.packages = with pkgs; [
       dnsmasq
+      jellyfin
       libcap
     ];
 
@@ -52,10 +53,17 @@ in {
       '';
     };
 
-    systemd.user.services.dnsmasq = {
-      Unit.Description = "Run dnsmasq";
-      Install.WantedBy = [ "default.target" ];
-      Service.ExecStart = "${getExe pkgs.dnsmasq} --keep-in-foreground --conf-file=${homedir}/.config/dnsmasq/dnsmasq.conf";
+    systemd.user.services = {
+      dnsmasq = {
+        Unit.Description = "Run dnsmasq";
+        Install.WantedBy = [ "default.target" ];
+        Service.ExecStart = "${getExe pkgs.dnsmasq} --keep-in-foreground --conf-file=${homedir}/.config/dnsmasq/dnsmasq.conf";
+      };
+      jellyfin = {
+        Unit.Description = "Run Jellyfin";
+        Install.WantedBy = [ "default.target" ];
+        Service.ExecStart = "${getExe pkgs.jellyfin}";
+      };
     };
   };
 }
