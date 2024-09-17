@@ -3,10 +3,10 @@
 /*
 # Manual setup (for now...)
 
-- Ensure home-server has this static IP: 192.168.1.200
+- Ensure home-server has the static IP defined in `hostip`
 - Setup router to use home-server IP as DNS primary server and `1.1.1.1` as secondary
-- Open DNS port 53 in firewall
-- On 1st run, you should run `./.config/dnsmasq/fix-bind-permission.sh` so that systemd service won't fail
+- Open ports 53, 80 in firewall (DNS, HTTP)
+- On 1st run, you should run `./.config/home-server/fix-bind-permission.sh` so that systemd service won't fail
 */
 
 with lib;
@@ -14,6 +14,8 @@ with lib;
 let
   cfg = config.dog.home-server;
   homedir = config.home.homeDirectory;
+  hostname = "dogdot.home";
+  hostip = "192.168.0.2";
 in {
   options.dog.home-server = {
     enable = mkEnableOption "Home Server setup";
@@ -21,25 +23,46 @@ in {
 
   config = mkIf cfg.enable {
     home.packages = with pkgs; [
+      caddy
       dnsmasq
       jellyfin
       libcap
     ];
 
     home.file = {
-      ".config/dnsmasq/fix-bind-permission.sh" = {
+      ".config/home-server/fix-bind-permission.sh" = {
         executable = true;
         text = ''
           #!/usr/bin/env bash
+          sudo ${pkgs.libcap}/bin/setcap CAP_NET_BIND_SERVICE=+eip ${getExe pkgs.caddy}
           sudo ${pkgs.libcap}/bin/setcap CAP_NET_BIND_SERVICE=+eip ${getExe pkgs.dnsmasq}
         '';
       };
 
-      ".config/dnsmasq/hosts".text = ''
-        192.168.1.200	dogdot.local
-      '';
+      ".config/caddy/caddy.json" = {
+        onChange = "${getExe pkgs.caddy} reload --config=${homedir}/.config/caddy/caddy.json || true";
+        text = strings.toJSON {
+          apps.http.servers.dogdot = {
+            listen = [ ":80" ];
+            routes = [
+              {
+                match = [{
+                  host = [ "jellyfin.${hostname}" ];
+                }];
+                handle = [{
+                  handler = "reverse_proxy";
+                  upstreams = [{
+                    dial = "localhost:8096";
+                  }];
+                }];
+              }
+            ];
+          };
+        };
+      };
+
       ".config/dnsmasq/dnsmasq.conf".text = ''
-        addn-hosts=${homedir}/.config/dnsmasq/hosts
+        address=/${hostname}/${hostip}
         # Do not read system files
         no-hosts
         no-resolv
@@ -54,6 +77,11 @@ in {
     };
 
     systemd.user.services = {
+      caddy = {
+        Unit.Description = "Run Caddy";
+        Install.WantedBy = [ "default.target" ];
+        Service.ExecStart = "${getExe pkgs.caddy} run --config=${homedir}/.config/caddy/caddy.json";
+      };
       dnsmasq = {
         Unit.Description = "Run dnsmasq";
         Install.WantedBy = [ "default.target" ];
