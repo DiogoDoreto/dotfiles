@@ -9,6 +9,7 @@
     })
 
     ./modules/home-server.nix
+    ./programs
   ];
 
   # Home Manager needs a bit of information about you and the paths it should
@@ -57,7 +58,6 @@
 
       rofimoji
       rofi-power-menu
-      onedrive
       keepassxc
       reaper
       spotify
@@ -131,12 +131,6 @@
         i3
       '';
     };
-
-    ".config/onedrive/sync_list".text = ''
-      # https://github.com/abraunegg/onedrive/blob/master/docs/USAGE.md#performing-a-selective-sync-via-sync_list-file
-      /Documentos/
-    '';
-    ".config/systemd/user/onedrive.service".source = "${pkgs.onedrive}/share/systemd/user/onedrive.service";
   };
 
   # Home Manager can also manage your environment variables through
@@ -171,8 +165,14 @@
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
-  # My Home Server setup
-  dog.home-server.enable = true;
+  dog = {
+    # My Home Server setup
+    home-server.enable = true;
+
+    programs = {
+      onedrive.enable = true;
+    };
+  };
 
   # shell stuff
   programs.atuin = {
