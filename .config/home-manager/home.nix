@@ -57,10 +57,6 @@
 
       nixgl.nixGLIntel
 
-      podman
-      pods # podman GUI
-      qemu # podman dependency
-
       rofimoji
       rofi-power-menu
       keepassxc
@@ -174,6 +170,7 @@
     programs = {
       firefox.enable = true;
       onedrive.enable = true;
+      podman.enable = true;
     };
   };
 
