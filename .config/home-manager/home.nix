@@ -26,6 +26,11 @@
   # release notes.
   home.stateVersion = "24.05"; # Please read the comment before changing.
 
+  home.keyboard = {
+    layout = "us";
+    options = [ "compose:ralt" ];
+  };
+
   nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
     "reaper"
     "spotify"
@@ -116,9 +121,6 @@
     };
     ".config/doom".source = ../doom;
 
-    ".xinitrc".text = ''
-      exec i3
-    '';
     ".Xresources".text = ''
       Xft.dpi: 140
     '';
