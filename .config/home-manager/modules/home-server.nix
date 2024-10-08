@@ -56,6 +56,17 @@ in {
                   }];
                 }];
               }
+              {
+                match = [{
+                  host = [ "3000.${hostname}" ];
+                }];
+                handle = [{
+                  handler = "reverse_proxy";
+                  upstreams = [{
+                    dial = "localhost:3000";
+                  }];
+                }];
+              }
             ];
           };
         };
