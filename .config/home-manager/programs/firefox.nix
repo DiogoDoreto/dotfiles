@@ -27,15 +27,25 @@ in {
         };
         containersForce = true;
         containers = {
-          Google = {
+          Default = {
             id = 0;
+            color = "toolbar";
+            icon = "circle";
+          };
+          Google = {
+            id = 1;
             color = "red";
             icon = "fence";
           };
           Shopping = {
-            id = 1;
+            id = 2;
             color = "green";
             icon = "dollar";
+          };
+          Facebook = {
+            id = 10;
+            color = "blue";
+            icon = "fence";
           };
         };
         # See https://nur.nix-community.org/repos/rycee/
