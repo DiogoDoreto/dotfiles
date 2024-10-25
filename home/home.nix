@@ -9,7 +9,7 @@
     })
 
     ./modules/home-server.nix
-    ./programs
+    ../programs
   ];
 
   # Home Manager needs a bit of information about you and the paths it should
@@ -86,7 +86,7 @@
       rev = "36bdb99dcfadde210503d8c2dcf94b34ee950e1d";
       hash = "sha256-Afv0rPlYTCsyWvYx8UObKs6Me8IOH5Cv5u4fO38J8ns=";
     };
-    ".config/cheat/cheatsheets/personal".source = ../cheat/cheatsheets/personal;
+    ".config/cheat/cheatsheets/personal".source = ../.config/cheat/cheatsheets/personal;
     ".config/cheat/conf.yml".text = builtins.toJSON {
       editor = lib.getExe pkgs.emacs;
       colorize = true;
@@ -115,7 +115,7 @@
       rev = "c8a5e6ec1ca85a35f94d6c820c2fd8888373c2ae";
       hash = "sha256-iwpBfHuJUd5jJjSGSXqlU9V0XKRNTeh6PvUq8riDnCE=";
     };
-    ".config/doom".source = ../doom;
+    ".config/doom".source = ../.config/doom;
 
     ".Xresources".text = ''
       Xft.dpi: 140
