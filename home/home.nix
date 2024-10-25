@@ -109,14 +109,6 @@
       ];
     };
 
-    ".config/emacs".source = pkgs.fetchFromGitHub {
-      owner = "doomemacs";
-      repo = "doomemacs";
-      rev = "c8a5e6ec1ca85a35f94d6c820c2fd8888373c2ae";
-      hash = "sha256-iwpBfHuJUd5jJjSGSXqlU9V0XKRNTeh6PvUq8riDnCE=";
-    };
-    ".config/doom".source = ../.config/doom;
-
     ".Xresources".text = ''
       Xft.dpi: 140
     '';
@@ -148,8 +140,6 @@
   #  /etc/profiles/per-user/dog/etc/profile.d/hm-session-vars.sh
   #
   home.sessionVariables = {
-    DOOMLOCALDIR = "$HOME/.local/share/doomemacs";
-    DOOMPROFILELOADFILE = "$HOME/.local/share/doomemacs/profiles/load.el";
   };
 
   fonts.fontconfig = {
@@ -168,6 +158,7 @@
     home-server.enable = true;
 
     programs = {
+      emacs.enable = true;
       firefox.enable = true;
       onedrive.enable = true;
       podman.enable = true;
@@ -258,12 +249,6 @@
         hide_tab_bar_if_only_one_tab = true,
       }
     '';
-  };
-
-  programs.emacs.enable = true;
-  services.emacs = {
-    enable = true;
-    defaultEditor = true;
   };
 
   programs.rofi = {

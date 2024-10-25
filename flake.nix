@@ -16,7 +16,7 @@
     };
 
     rofi-material-ocean = {
-      url = "github:material-ocean/rofi-Theme";
+      url = "github:material-ocean/rofi-Theme/251bd7b81f979b81c8a8382575a4279996e5e243";
       flake = false;
     };
   };
