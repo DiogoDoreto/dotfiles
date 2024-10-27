@@ -9,8 +9,12 @@
       url = "github:nix-community/home-manager/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    home-manager-unstable = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    nixGL = {
+    nixgl = {
       url = "github:nix-community/nixGL/310f8e49a149e4c9ea52f1adf70cdc768ec53f8a";
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -21,19 +25,26 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, nixGL, ... }@inputs:
+  outputs = { nixpkgs, home-manager, nixgl, ... }@inputs:
     let
       lib = nixpkgs.lib;
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ nixGL.overlay ];
+        overlays = [ nixgl.overlay ];
       };
     in {
       homeConfigurations = {
-        dog = home-manager.lib.homeManagerConfiguration {
+        home = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [ ./home/home.nix ];
+          extraSpecialArgs = {
+            inherit inputs;
+          };
+        };
+        work = home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          modules = [ ./home/work.nix ];
           extraSpecialArgs = {
             inherit inputs;
           };

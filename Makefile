@@ -1,10 +1,10 @@
-.PHONY: update
+.PHONY: update-home
 update:
-	home-manager switch --flake .#dog
+	home-manager switch --flake .#home
 
-.PHONY: update-backup
-update-backup:
-	home-manager switch -b backup --flake .#dog
+.PHONY: update-work
+update-work:
+	home-manager switch --flake .#work
 
 .PHONY: clean
 clean:

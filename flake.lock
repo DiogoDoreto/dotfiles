@@ -36,7 +36,27 @@
         "type": "github"
       }
     },
-    "nixGL": {
+    "home-manager-unstable": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1730016908,
+        "narHash": "sha256-bFCxJco7d8IgmjfNExNz9knP8wvwbXU4s/d53KOK6U0=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "e83414058edd339148dc142a8437edb9450574c8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "nixgl": {
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": [
@@ -108,7 +128,8 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
-        "nixGL": "nixGL",
+        "home-manager-unstable": "home-manager-unstable",
+        "nixgl": "nixgl",
         "nixpkgs": "nixpkgs",
         "nur": "nur",
         "rofi-material-ocean": "rofi-material-ocean"
