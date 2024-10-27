@@ -4,7 +4,6 @@ with lib;
 
 let
   cfg = config.dog.programs.firefox;
-  homedir = config.home.homeDirectory;
 in {
   options.dog.programs.firefox = {
     enable = mkEnableOption "Firefox";
@@ -55,13 +54,18 @@ in {
           pwas-for-firefox
           raindropio
           ublock-origin
+          vimium
         ];
+        # updates ~/.mozilla/firefox/dog/prefs.js
         settings = {
-          "app.shield.optoutstudies.enabled" = true;
+          "app.shield.optoutstudies.enabled" = false;
           "browser.aboutConfig.showWarning" = false;
+          "browser.aboutwelcome.didSeeFinalScreen" = true;
           "browser.ctrlTab.sortByRecentlyUsed" = true;
           "browser.newtabpage.activity-stream.section.highlights.includePocket" = false;
           "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
+          "browser.newtabpage.blocked" = "{\"mZmevP23jfB3rScn/QCWnw==\":1,\"26UbzFJ7qT9/4DhodHKA1Q==\":1,\"4gPpjkxgZzXPVtuEoAL9Ig==\":1,\"eV8/WsSLxHadrTL1gAxhug==\":1,\"gLv0ja2RYVgxKdp0I5qwvA==\":1,\"T9nJot5PurhJSy8n038xGA==\":1}";
+          "browser.newtabpage.pinned" = "[]";
           "browser.urlbar.showSearchSuggestionsFirst" = false;
           "datareporting.healthreport.uploadEnabled" = false;
           "extensions.formautofill.creditCards.enabled" = false;
