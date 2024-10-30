@@ -34,6 +34,10 @@
         overlays = [ nixgl.overlay ];
       };
     in {
+      modules = {
+        core = import ./home/_core.nix;
+        linux = import ./home/_linux.nix;
+      };
       homeConfigurations = {
         home = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
