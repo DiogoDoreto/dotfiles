@@ -1,5 +1,5 @@
 .PHONY: update-home
-update:
+update-home:
 	home-manager switch --flake .#home
 
 .PHONY: update-work
