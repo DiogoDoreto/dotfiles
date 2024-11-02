@@ -25,6 +25,7 @@ in
           font_size = 10,
           line_height = 1.1,
           default_prog = { "${lib.getExe pkgs.fish}", "-l" },
+          window_background_opacity = 0.97,
           window_decorations = "RESIZE",
           window_padding = {
             left = "1cell",

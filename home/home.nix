@@ -59,10 +59,6 @@
       ];
     };
 
-    ".Xresources".text = ''
-      Xft.dpi: 140
-    '';
-
     ".vnc/xstartup" = {
       executable = true;
       text = ''

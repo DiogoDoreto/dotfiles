@@ -16,6 +16,9 @@
                            " | Emacs "
                            emacs-version))
 
+(set-frame-parameter nil 'alpha 98)
+(add-to-list 'default-frame-alist '(alpha . 98))
+
 ;; Doom exposes five (optional) variables for controlling fonts in Doom:
 ;;
 ;; - `doom-font' -- the primary font to use

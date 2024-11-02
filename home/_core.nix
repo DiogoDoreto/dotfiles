@@ -9,11 +9,6 @@
   home = {
     stateVersion = "24.05";
 
-    keyboard = {
-      layout = "us";
-      options = [ "compose:ralt" ];
-    };
-
     packages = with pkgs; [
       (nerdfonts.override { fonts = [ "VictorMono" ]; })
     ];
@@ -25,12 +20,6 @@
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
-
-  systemd.user = {
-    enable = true;
-    startServices = "sd-switch";
-    systemctlPath = "/usr/bin/systemctl";
-  };
 
   services.ssh-agent.enable = true;
 }
