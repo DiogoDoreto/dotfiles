@@ -73,8 +73,17 @@ in {
           "privacy.donottrackheader.enabled" = true;
           "privacy.globalprivacycontrol.enabled" = true;
           "signon.rememberSignons" = false;
+          "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
           "widget.gtk.overlay-scrollbars.enabled" = true;
         };
+        userChrome = let
+          cssHacks = pkgs.fetchFromGitHub {
+            owner = "MrOtherGuy";
+            repo = "firefox-csshacks";
+            rev = "ec1aede46c2640d4daff491539c2637e27b07bdc";
+            sha256 = "n/hYUV8HIzf76S1v06OsVhft2J+jYUBbN53UwsQxzGw=";
+          };
+        in readFile "${cssHacks}/chrome/hide_tabs_with_one_tab.css";
       };
     };
   };
