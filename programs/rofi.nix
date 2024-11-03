@@ -33,10 +33,12 @@ in
   config = mkIf cfg.enable {
     home.packages = with pkgs; [
       rofimoji
+      rofi-calc
       rofi-power-menu
     ];
 
     xsession.windowManager.i3.config.keybindings = lib.mkOptionDefault {
+      "Mod4+comma" = "exec rofi -plugin-path ${pkgs.rofi-calc}/lib/rofi -show calc -modi calc -no-show-match -no-sort | xclip -sel clip";
       "Mod4+period" = "exec rofimoji";
       "Mod4+Mod1+period" = "exec rofimoji -f nerd_font";
     };
@@ -60,12 +62,13 @@ window {
   transparency: "real";
   background-image: linear-gradient(${cfg.colors.background}, ${cfg.colors.background}99);
   width: 900px;
+  height: 530px;
   border: 1px;
   border-color: ${cfg.colors.active};
 }
 
 mainbox {
-  children: [ inputbar, listview ];
+  children: [ inputbar, message, listview ];
   spacing: 0;
   padding: 0;
 }
@@ -99,6 +102,12 @@ case-indicator {
   spacing: 0;
 }
 
+message {
+  border: 1px 0;
+  border-color: ${cfg.colors.active};
+  padding: 15px 20px;
+}
+
 listview {
   columns: 1;
   spacing: 5px;
@@ -109,7 +118,9 @@ listview {
 
 element {
   orientation: horizontal;
-  padding: 10px 20px;
+  padding: 8px 20px 8px;
+  border: 0 0 2px;
+  border-color: transparent;
 }
 
 element-icon {
@@ -119,6 +130,7 @@ element-icon {
 
 element selected {
   background-color: ${cfg.colors.active};
+  border-color: ${cfg.colors.background}66;
 }
       '';
       in toString themeFile;
