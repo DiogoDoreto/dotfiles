@@ -9,6 +9,7 @@
     ./i3.nix
     ./onedrive.nix
     ./podman.nix
+    ./rofi.nix
     ./wezterm.nix
   ];
 }

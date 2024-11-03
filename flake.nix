@@ -18,11 +18,6 @@
       url = "github:nix-community/nixGL/310f8e49a149e4c9ea52f1adf70cdc768ec53f8a";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    rofi-material-ocean = {
-      url = "github:material-ocean/rofi-Theme/251bd7b81f979b81c8a8382575a4279996e5e243";
-      flake = false;
-    };
   };
 
   outputs = { nixpkgs, home-manager, nixgl, ... }@inputs:

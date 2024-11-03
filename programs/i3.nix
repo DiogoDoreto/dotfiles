@@ -31,8 +31,6 @@ in
   config = mkIf cfg.enable {
     home.packages = with pkgs; [
       feh
-      rofimoji
-      rofi-power-menu
     ];
 
     xsession = {
@@ -47,22 +45,14 @@ in
           gaps.bottom = 30;
           workspaceAutoBackAndForth = true;
           defaultWorkspace = "workspace number 1";
-          menu = strings.concatStringsSep " " [
-            (lib.getExe pkgs.rofi)
-            "-show combi"
-            "-modes combi"
-            "-combi-modes \"window#drun#Power:rofi-power-menu --choices=shutdown/reboot --confirm=logout\""
-          ];
-          keybindings = let
-            modifier = config.xsession.windowManager.i3.config.modifier;
-          in lib.mkOptionDefault {
+          menu = config.dog.programs.rofi.command;
+          keybindings = lib.mkOptionDefault {
             # Mod1 == Alt key
             "Ctrl+Shift+Mod1+e" = "exec emacsclient -nc";
             "Ctrl+Shift+Mod1+f" = "exec firefox";
             "Ctrl+Shift+Mod1+k" = "exec keepassxc";
             "Ctrl+Shift+Mod1+m" = "exec spotify";
             "Ctrl+Shift+Mod1+t" = "exec ${cfg.terminal}";
-            "${modifier}+period" = "exec rofimoji";
           };
           bars = [];
           startup = [
@@ -98,64 +88,12 @@ in
       };
     };
 
-    home.file = {
-      ".config/i3status/config".text = ''
-        general {
-          colors = true
-          interval = 5
-        }
-
-        order += "wireless _first_"
-        order += "ethernet _first_"
-        order += "disk /"
-        order += "load"
-        order += "memory"
-        order += "battery all"
-        order += "tztime local"
-
-        wireless _first_ {
-          format_up = " (%quality at %essid) %ip"
-          format_down = "󰖪"
-        }
-
-        ethernet _first_ {
-          format_up = " %ip (%speed)"
-          format_down = "󰲜"
-        }
-
-        battery all {
-          format = "%status %percentage %remaining"
-          format_down = "󱉞"
-        }
-
-        disk "/" {
-          format = " %avail"
-        }
-
-        load {
-          format = " %1min"
-        }
-
-        memory {
-          format = " %used | %available"
-          threshold_degraded = "1G"
-          format_degraded = "MEMORY < %available"
-        }
-
-        tztime local {
-          format = "󰸘 %Y-%m-%d %H:%M:%S"
-        }
-      '';
-    };
-
-    programs.rofi = {
+    dog.programs.rofi = {
       enable = true;
-      font = "VictorMono Nerd Font 12";
-      theme = "${inputs.rofi-material-ocean}/material-ocean.rasi";
-      terminal = cfg.terminal;
-      extraConfig = {
-        show-icons = true;
-        combi-hide-mode-prefix = true;
+      colors = {
+        background = colors.Charcoal;
+        text = "#FFF";
+        active = colors.Blue-Munsell;
       };
     };
 
@@ -163,13 +101,14 @@ in
       enable = true;
       shadow = true;
       shadowExclude = [
-        "class_i = 'polybar'"
+        "class_g = 'Polybar'"
         "class_g = 'firefox' && (window_type = 'utility' || window_type = 'tooltip' || window_type = 'popup_menu')"
       ];
     };
 
     systemd.user.services.polybar = {
       Service = {
+        # ensure i3 is already running before starting
         ExecStartPre = "${getExe pkgs.i3} --get-socketpath";
       };
     };
