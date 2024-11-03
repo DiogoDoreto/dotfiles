@@ -58,6 +58,17 @@ in {
               }
               {
                 match = [{
+                  host = [ "ha.${hostname}" ];
+                }];
+                handle = [{
+                  handler = "reverse_proxy";
+                  upstreams = [{
+                    dial = "localhost:8123";
+                  }];
+                }];
+              }
+              {
+                match = [{
                   host = [ "3000.${hostname}" ];
                 }];
                 handle = [{
