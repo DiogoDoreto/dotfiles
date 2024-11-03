@@ -35,4 +35,10 @@ rec {
     startServices = "sd-switch";
     systemctlPath = "/usr/bin/systemctl";
   };
+
+  # Automatically hide mouse cursor
+  services.unclutter = {
+    enable = true;
+    extraOptions = [ "ignore-scrolling" ];
+  };
 }
