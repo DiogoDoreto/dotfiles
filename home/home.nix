@@ -80,6 +80,7 @@
       emacs.enable = true;
       firefox.enable = true;
       git.enable = true;
+      gromit-mpx.enable = true;
       i3.enable = true;
       onedrive.enable = true;
       podman.enable = true;
