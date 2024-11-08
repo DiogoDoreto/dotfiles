@@ -10,13 +10,8 @@ in {
   };
 
   config = mkIf cfg.enable {
-    home.packages = with pkgs; [
-      firefoxpwa
-    ];
-
     programs.firefox = {
       enable = true;
-      nativeMessagingHosts = [ pkgs.firefoxpwa ];
       profiles.dog = {
         id = 0;
         search = {
@@ -51,7 +46,6 @@ in {
         extensions = with config.nur.repos.rycee.firefox-addons; [
           multi-account-containers
           privacy-badger
-          pwas-for-firefox
           raindropio
           ublock-origin
           vimium

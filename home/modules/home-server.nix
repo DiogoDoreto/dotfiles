@@ -26,7 +26,6 @@ in {
       caddy
       dnsmasq
       jellyfin
-      libcap
     ];
 
     home.file = {

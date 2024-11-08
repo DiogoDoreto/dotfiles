@@ -18,10 +18,6 @@ in
   };
 
   config = mkIf cfg.enable {
-    home.packages = with pkgs; [
-      feh
-    ];
-
     xsession = {
       enable = true;
 

@@ -31,16 +31,10 @@ in
   };
 
   config = mkIf cfg.enable {
-    home.packages = with pkgs; [
-      rofimoji
-      rofi-calc
-      rofi-power-menu
-    ];
-
     xsession.windowManager.i3.config.keybindings = lib.mkOptionDefault {
       "Mod4+comma" = "exec rofi -plugin-path ${pkgs.rofi-calc}/lib/rofi -show calc -modi calc -no-show-match -no-sort | xclip -sel clip";
-      "Mod4+period" = "exec rofimoji";
-      "Mod4+Mod1+period" = "exec rofimoji -f nerd_font";
+      "Mod4+period" = "exec ${getExe pkgs.rofimoji}";
+      "Mod4+Mod1+period" = "exec ${getExe pkgs.rofimoji} -f nerd_font";
     };
 
     programs.rofi = {
