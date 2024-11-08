@@ -79,6 +79,7 @@
       cli-tools.enable = true;
       emacs.enable = true;
       firefox.enable = true;
+      flameshot.enable = true;
       git.enable = true;
       gromit-mpx.enable = true;
       i3.enable = true;
