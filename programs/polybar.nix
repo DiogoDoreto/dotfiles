@@ -35,7 +35,7 @@ in
 
           modules.left = "i3";
           modules.center = "spotify";
-          modules.right = "audio cpu memory fs eth0 wifi wired date";
+          modules.right = "audio cpu memory fs eth0 wifi wired date tray";
           separator = " ";
           module.margin = 0;
           padding = 0;
@@ -158,6 +158,11 @@ in
           reverse.scroll = true;
           format.volume = "󰕾 <label-volume>";
           label.muted = "󰝟";
+        };
+        "module/tray" = {
+          type = "internal/tray";
+          tray.background = colors.Van-Dyke;
+          tray.spacing = 10;
         };
       };
     };
