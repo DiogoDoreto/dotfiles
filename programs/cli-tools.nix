@@ -13,6 +13,7 @@ in
   config = mkIf cfg.enable {
     home.packages = with pkgs; [
       delta # A syntax-highlighting pager for git
+      eza # ls replacement
       htop
       nil # nix lsp server
       tldr
@@ -38,6 +39,8 @@ in
         enable = true;
         shellAbbrs = {
           e = "emacsclient -nc";
+          la = "eza -l --icons --git -a";
+          ll = "eza -l --icons --git --git-ignore";
         };
       };
 
