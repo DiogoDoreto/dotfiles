@@ -18,6 +18,10 @@ in
       defaultEditor = true;
     };
 
+    home.sessionPath = [
+      "${config.xdg.configHome}/emacs/bin"
+    ];
+
     home.sessionVariables = {
       DOOMLOCALDIR = "$HOME/.local/share/doomemacs";
       DOOMPROFILELOADFILE = "$HOME/.local/share/doomemacs/profiles/load.el";
