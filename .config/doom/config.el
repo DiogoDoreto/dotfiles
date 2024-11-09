@@ -119,6 +119,9 @@
 
 (map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
 
+(use-package! magit-delta
+  :hook (magit-mode . magit-delta-mode))
+
 ;; ibuffer customizations
 
 (add-hook 'ibuffer-hook

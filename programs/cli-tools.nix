@@ -12,6 +12,7 @@ in
 
   config = mkIf cfg.enable {
     home.packages = with pkgs; [
+      delta # A syntax-highlighting pager for git
       htop
       nil # nix lsp server
       tldr
