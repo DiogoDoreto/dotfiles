@@ -35,7 +35,7 @@ in
 
           modules.left = "i3";
           modules.center = "spotify";
-          modules.right = "audio cpu memory fs wifi wired date";
+          modules.right = "audio cpu memory fs eth0 wifi wired date";
           separator = " ";
           module.margin = 0;
           padding = 0;
@@ -114,6 +114,14 @@ in
           type = "internal/memory";
           interval = 5;
           label = " %percentage_used%%";
+        };
+        "module/eth0" = {
+          type = "internal/network";
+          interface = "eth0";
+          interval = 5;
+          format.disconnected = "󰱟";
+          format.connected = "<label-connected>";
+          label.connected = "󰱔 %local_ip%  %downspeed%  %upspeed%";
         };
         "module/wifi" = {
           type = "internal/network";
