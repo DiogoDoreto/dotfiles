@@ -41,7 +41,7 @@ in
         repo = "doomemacs";
         rev = "6a8c09f01288f1ed00a7cc2b7f5887e8f2b4be77";
         hash = "sha256-VEwF0xjr+lBYuNpA3U3mFJPrQLk/7PF0/G/jgbIMIoE=";
-        leaveDotGit = true;
+#        leaveDotGit = true;
       };
     };
   };

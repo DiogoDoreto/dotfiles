@@ -25,7 +25,7 @@ in
         (getExe pkgs.rofi)
         "-show combi"
         "-modes combi"
-        "-combi-modes \"window#drun#Power:${getExe pkgs.rofi-power-menu} --choices=shutdown/reboot --confirm=logout\""
+        "-combi-modes \"window#drun#Power:${getExe pkgs.rofi-power-menu} --confirm=hibernate\""
       ];
     };
   };

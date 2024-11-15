@@ -9,6 +9,15 @@ in
 {
   options.dog.programs.polybar = {
     enable = mkEnableOption "Polybar";
+
+    wiredInterface = mkOption {
+      type = types.str;
+      default = "eth0";
+    };
+    wirelessInterface = mkOption {
+      type = types.str;
+      default = "wlo1";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -25,17 +34,27 @@ in
         i3Support = true;
         pulseSupport = true;
       };
-      script = "polybar status &";
+      script = let
+        grep = "${pkgs.gnugrep}/bin/grep";
+        cut = "${pkgs.coreutils}/bin/cut";
+        head = "${pkgs.coreutils}/bin/head";
+      in ''
+        MONITOR="$(polybar -m | ${grep} primary | ${cut} -d: -f1)" polybar primary &
+        SECONDARY="$(polybar -m | ${grep} --invert-match primary | ${cut} -d: -f1 | ${head} -n1)"
+        if [ -n "$SECONDARY" ]; then
+          MONITOR="$SECONDARY" polybar secondary &
+        fi
+      '';
       settings = let
         transparent = "#00000000";
-      in {
-        "bar/status" = {
+        defaultBar = {
           bottom = true;
           dock = true;
+          monitor = "\${env:MONITOR:}";
 
           modules.left = "i3";
-          modules.center = "spotify";
-          modules.right = "audio cpu memory fs eth0 wifi wired date tray";
+          modules.center = "";
+          modules.right = "date";
           separator = " ";
           module.margin = 0;
           padding = 0;
@@ -56,6 +75,14 @@ in
           override.redirect = true;
           wm.restack = "i3";
         };
+      in {
+        "bar/primary" = defaultBar // {
+          modules = defaultBar.modules // {
+            center = "spotify";
+            right = "audio battery cpu memory fs eth0 wifi wired date tray";
+          };
+        };
+        "bar/secondary" = defaultBar;
         "settings" = {
           pseudo.transparency = false;
           compositing = {
@@ -93,6 +120,15 @@ in
           time = "%H.%M";
           label = "󰸘 %date% %time%";
         };
+        "module/battery" = {
+          type = "internal/battery";
+          format.charging = "<ramp-capacity> <label-charging>";
+          label.charging = "󰚥 %percentage%% %consumption%w";
+          format.discharging = "<ramp-capacity> <label-discharging>";
+          label.discharging = "%percentage%% %consumption%w";
+          label.full = "󱟢";
+          ramp.capacity = [ "󰂎" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" ];
+        };
         "module/cpu" = {
           type = "internal/cpu";
           interval = 5;
@@ -117,17 +153,17 @@ in
         };
         "module/eth0" = {
           type = "internal/network";
-          interface = "eth0";
+          interface = cfg.wiredInterface;
           interval = 5;
-          format.disconnected = "󰱟";
+          format.disconnected = "";
           format.connected = "<label-connected>";
           label.connected = "󰱔 %local_ip%  %downspeed%  %upspeed%";
         };
         "module/wifi" = {
           type = "internal/network";
-          interface = "wlo1";
+          interface = cfg.wirelessInterface;
           interval = 5;
-          format.disconnected = "󰖪";
+          format.disconnected = "";
           format.connected = "<ramp-signal> <label-connected>";
           label.connected = "%local_ip%  %downspeed%  %upspeed%";
           ramp.signal = [ "󰤯" "󰤟" "󰤢" "󰤥" "󰤨" ];

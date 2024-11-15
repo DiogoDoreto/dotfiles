@@ -12,6 +12,10 @@
     packages = with pkgs; [
       (nerdfonts.override { fonts = [ "VictorMono" ]; })
     ];
+
+    sessionPath = [
+      "${config.home.homeDirectory}/bin"
+    ];
   };
 
   fonts.fontconfig = {

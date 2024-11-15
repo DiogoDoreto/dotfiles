@@ -5,6 +5,7 @@ with lib;
 let
   cfg = config.dog.programs.i3;
   colors = import ../utils/colors-beach.nix;
+  wallpaper = ../wallpapers/wallhaven-x1xlmv.jpg;
 in
 {
   options.dog.programs.i3 = {
@@ -34,24 +35,37 @@ in
           keybindings = let
             playerctl = getExe pkgs.playerctl;
             pactl = "${pkgs.pulseaudio}/bin/pactl";
+            sink = "\$(${pactl} get-default-sink)";
+            xrandr = getExe pkgs.xorg.xrandr;
+            lockscreen = pkgs.writeShellScript "lockscreen.sh" ''
+              DIMENSION="$(${xrandr} --query | grep primary | sed -r 's/^.* ([0-9]+x[0-9]+).*$/\1/')"
+              ${pkgs.imagemagick}/bin/magick ${wallpaper} -resize "$DIMENSION^" -gravity center -extent "$DIMENSION" RGB:- | \
+                i3lock --raw "$DIMENSION:rgb" --image /dev/stdin --color=000000
+            '';
           in mkOptionDefault {
             # Mod1 == Alt key
             "Ctrl+Shift+Mod1+e" = "exec emacsclient -nc";
             "Ctrl+Shift+Mod1+f" = "exec firefox";
             "Ctrl+Shift+Mod1+k" = "exec keepassxc";
             "Ctrl+Shift+Mod1+m" = "exec spotify";
+            "Ctrl+Shift+Mod1+q" = "exec --no-startup-id ${lockscreen}";
             "XF86AudioPlay" = "exec ${playerctl} play-pause";
             "XF86AudioNext" = "exec ${playerctl} next";
             "XF86AudioPrev" = "exec ${playerctl} previous";
-            "XF86AudioRaiseVolume" = "exec --no-startup-id ${pactl} set-sink-volume 0 +5%";
-            "XF86AudioLowerVolume" = "exec --no-startup-id ${pactl} set-sink-volume 0 -5%";
-            "XF86AudioMute" = "exec --no-startup-id ${pactl} set-sink-mute 0 toggle";
+            "XF86AudioRaiseVolume" = "exec --no-startup-id ${pactl} set-sink-volume ${sink} +5%";
+            "XF86AudioLowerVolume" = "exec --no-startup-id ${pactl} set-sink-volume ${sink} -5%";
+            "XF86AudioMute" = "exec --no-startup-id ${pactl} set-sink-mute ${sink} toggle";
           };
           bars = [];
           startup = [
             {
-              command = "${getExe pkgs.feh} --bg-fill ${../wallpapers/wallhaven-x1xlmv.jpg} --geometry=+0-300";
+              command = "${getExe pkgs.feh} --bg-fill ${wallpaper} --geometry=+0-300";
               always = true;
+            }
+            {
+              command = "systemctl --user restart polybar";
+              always = true;
+              notification = false;
             }
           ];
           colors = {
@@ -84,6 +98,7 @@ in
     services.picom = {
       enable = true;
       shadow = true;
+      # `xprop` command to find class
       shadowExclude = [
         "class_g = 'Polybar'"
         "class_g = 'firefox' && (window_type = 'utility' || window_type = 'tooltip' || window_type = 'popup_menu')"
