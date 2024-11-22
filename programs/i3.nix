@@ -38,9 +38,9 @@ in
             sink = "\$(${pactl} get-default-sink)";
             xrandr = getExe pkgs.xorg.xrandr;
             lockscreen = pkgs.writeShellScript "lockscreen.sh" ''
-              DIMENSION="$(${xrandr} --query | grep primary | sed -r 's/^.* ([0-9]+x[0-9]+).*$/\1/')"
-              ${pkgs.imagemagick}/bin/magick ${wallpaper} -resize "$DIMENSION^" -gravity center -extent "$DIMENSION" RGB:- | \
-                i3lock --raw "$DIMENSION:rgb" --image /dev/stdin --color=000000
+              DIMENSION="$(${xrandr} --query | grep Screen | sed -r 's/^.*current ([0-9]+) x ([0-9]+).*$/\1x\2/')"
+              ${pkgs.imagemagick}/bin/magick ${wallpaper} -resize "$DIMENSION^" -gravity SouthWest -extent "$DIMENSION" RGB:- | \
+                i3lock -e --raw "$DIMENSION:rgb" --image /dev/stdin --color=000000
             '';
           in mkOptionDefault {
             # Mod1 == Alt key
@@ -91,6 +91,9 @@ in
               childBorder = colors.Charcoal;
             };
           };
+          window.commands = [
+            { command = "border normal 1"; criteria = { class = "firefox"; }; }
+          ];
         };
       };
     };
@@ -103,6 +106,10 @@ in
         "class_g = 'Polybar'"
         "class_g = 'firefox' && (window_type = 'utility' || window_type = 'tooltip' || window_type = 'popup_menu')"
       ];
+      settings = {
+        # multi-monitor fix
+        xinerama-shadow-crop = true;
+      };
     };
 
     dog.programs.rofi = {
