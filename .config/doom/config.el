@@ -53,6 +53,12 @@
 (setq doom-modeline-vcs-max-length 20)
 (setq doom-modeline-buffer-file-name-style 'relative-from-project)
 
+(setq lsp-enable-file-watchers nil)
+(setq lsp-eslint-run "onSave")
+(add-hook! (+format-with-lsp-mode)
+  (when (and (eq major-mode 'typescript-mode) (bound-and-true-p +format-with-lsp-mode))
+    (+format-with-lsp-mode -1)))
+
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type nil)
@@ -99,10 +105,10 @@
 
 (map! :n "g b" 'browse-url)
 
-(map! "M-<left>" #'evil-window-left)
-(map! "M-<down>" #'evil-window-down)
-(map! "M-<up>" #'evil-window-up)
-(map! "M-<right>" #'evil-window-right)
+(map! :n "M-<left>" #'evil-window-left)
+(map! :n "M-<down>" #'evil-window-down)
+(map! :n "M-<up>" #'evil-window-up)
+(map! :n "M-<right>" #'evil-window-right)
 
 (map! "C-<down>" #'drag-stuff-down)
 (map! "C-<up>" #'drag-stuff-up)
@@ -112,12 +118,17 @@
 (map! :n "] e" 'flycheck-next-error)
 (map! :n "[ e" 'flycheck-previous-error)
 
+(map! :leader :n "c I" 'dd/js-install)
 (map! :leader :n "c j" 'consult-lsp-file-symbols)
 (map! :leader :n "c J" 'consult-lsp-symbols)
+(map! :leader :n "c X" 'lsp-eslint-apply-all-fixes)
+
+(map! :leader :n "w n" 'other-window-prefix)
+(map! :leader :n "w w" 'other-window)
 
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 
 (map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
 
 (use-package! magit-delta
-  :hook (magit-mode . magit-delta-mode))
+  :hook magit-mode)

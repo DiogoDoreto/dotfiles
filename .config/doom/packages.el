@@ -1,6 +1,8 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; $DOOMDIR/packages.el
 
+(package! dd :recipe (:local-repo "dd"))
+
 (package! ibuffer-vc)
 
 (package! dts-mode)

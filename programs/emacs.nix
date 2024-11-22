@@ -8,6 +8,11 @@ in
 {
   options.dog.programs.emacs = {
     enable = mkEnableOption "emacs + doom";
+
+    extraPackages = mkOption {
+      type = types.lines;
+      default = "";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -34,14 +39,15 @@ in
     xdg.configFile = {
       "doom/init.el".source = ../.config/doom/init.el;
       "doom/config.el".source = ../.config/doom/config.el;
-      "doom/packages.el".source = ../.config/doom/packages.el;
+      "doom/packages.el".text = (readFile ../.config/doom/packages.el)
+        + "\n\n" + cfg.extraPackages;
+      "doom/dd".source = ../.config/doom/dd;
 
       emacs.source = pkgs.fetchFromGitHub {
         owner = "doomemacs";
         repo = "doomemacs";
-        rev = "6a8c09f01288f1ed00a7cc2b7f5887e8f2b4be77";
-        hash = "sha256-VEwF0xjr+lBYuNpA3U3mFJPrQLk/7PF0/G/jgbIMIoE=";
-#        leaveDotGit = true;
+        rev = "be4fb85dd93810e495d5f4a793d620f82508cb7e";
+        hash = "sha256-13DX27VcSe9lLz7go2tFdNLoroNzlcboD5I2mHfL0Ms=";
       };
     };
   };
