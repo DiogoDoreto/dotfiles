@@ -15,6 +15,7 @@ in
       enable = true;
       package = (config.lib.nixGL.wrap pkgs.wezterm);
       extraConfig = ''
+        local act = wezterm.action
         return {
           font = wezterm.font {
             family = "VictorMono Nerd Font Propo",
@@ -35,6 +36,10 @@ in
           },
           use_fancy_tab_bar = false,
           hide_tab_bar_if_only_one_tab = true,
+          keys = {
+            { key = 'PageUp', action = act.ScrollByPage(-0.5) },
+            { key = 'PageDown', action = act.ScrollByPage(0.5) },
+          },
         }
       '';
     };
