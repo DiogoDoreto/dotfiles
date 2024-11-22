@@ -102,11 +102,14 @@ in
           label = { text = "%name%"; background = colors.Charcoal; padding = 2; };
         in {
           type = "internal/i3";
+          pin.workspaces = true;
+          index.sort = true;
           format.text = "<label-state> <label-mode>";
           format.padding = 0;
           label.focused = label // { font = 2; background = colors.Cerulean; };
           label.unfocused = label;
-          label.visible = label;
+          label.visible = label // { font = 2; };
+          label.urgent = label // { background = colors.Crimson; };
           label.separator = {
             text = " ";
             padding = 0;

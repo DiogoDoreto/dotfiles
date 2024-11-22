@@ -47,7 +47,7 @@ in
             "Ctrl+Shift+Mod1+e" = "exec emacsclient -nc";
             "Ctrl+Shift+Mod1+f" = "exec firefox";
             "Ctrl+Shift+Mod1+k" = "exec keepassxc";
-            "Ctrl+Shift+Mod1+m" = "exec spotify";
+            "Ctrl+Shift+Mod1+m" = "exec pgrep spotify && [class=Spotify] focus || exec spotify";
             "Ctrl+Shift+Mod1+q" = "exec --no-startup-id ${lockscreen}";
             "XF86AudioPlay" = "exec ${playerctl} play-pause";
             "XF86AudioNext" = "exec ${playerctl} next";
@@ -106,10 +106,7 @@ in
         "class_g = 'Polybar'"
         "class_g = 'firefox' && (window_type = 'utility' || window_type = 'tooltip' || window_type = 'popup_menu')"
       ];
-      settings = {
-        # multi-monitor fix
-        xinerama-shadow-crop = true;
-      };
+      extraArgs = [ "--crop-shadow-to-monitor" ];
     };
 
     dog.programs.rofi = {

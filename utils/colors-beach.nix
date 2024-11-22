@@ -10,4 +10,5 @@
   Carolina-blue = "#85aecb";
   Alice-Blue = "#dee6ed";
   Umber = "#7b675a";
+  Crimson = "#DC143C";
 }
