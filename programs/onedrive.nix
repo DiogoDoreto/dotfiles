@@ -20,6 +20,7 @@ in {
       ".config/onedrive/sync_list".text = ''
         # https://github.com/abraunegg/onedrive/blob/master/docs/USAGE.md#performing-a-selective-sync-via-sync_list-file
         /Documentos/
+        /Share/
       '';
     };
 

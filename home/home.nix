@@ -1,4 +1,4 @@
-{ config, pkgs, lib, inputs, ... }:
+{ config, pkgs, pkgs-next, lib, inputs, ... }:
 {
   imports = [
     ./_core.nix
@@ -16,7 +16,7 @@
     "spotify"
   ];
 
-  home.packages = with pkgs; [
+  home.packages = (with pkgs; [
       nodejs_20
       cheat
       turbovnc
@@ -24,10 +24,11 @@
 
       keepassxc
       openvpn
-      qbittorrent
       reaper
       spotify
-    ];
+  ]) ++ (with pkgs-next; [
+      qbittorrent
+  ]);
 
   home.file = {
     ".config/cheat/cheatsheets/community".source = pkgs.fetchFromGitHub {
