@@ -38,11 +38,15 @@ in
         grep = "${pkgs.gnugrep}/bin/grep";
         cut = "${pkgs.coreutils}/bin/cut";
         head = "${pkgs.coreutils}/bin/head";
+        wc = "${pkgs.coreutils}/bin/wc";
       in ''
-        MONITOR="$(polybar -m | ${grep} primary | ${cut} -d: -f1)" polybar primary &
-        SECONDARY="$(polybar -m | ${grep} --invert-match primary | ${cut} -d: -f1 | ${head} -n1)"
-        if [ -n "$SECONDARY" ]; then
-          MONITOR="$SECONDARY" polybar secondary &
+        MONITORS="$(polybar -m)"
+        if [ "$(echo "$MONITORS" | ${wc} -l)" -eq "1" ]; then
+            polybar primary &
+        else
+            function monitor_name { ${cut} -d: -f1; }
+            MONITOR="$(echo "$MONITORS" | ${grep} primary | monitor_name)" polybar primary &
+            MONITOR="$(echo "$MONITORS" | ${grep} --invert-match primary | ${head} -n1 | monitor_name)" polybar secondary &
         fi
       '';
       settings = let
