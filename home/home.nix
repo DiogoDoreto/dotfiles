@@ -28,6 +28,7 @@
       spotify
   ]) ++ (with pkgs-next; [
       qbittorrent
+      onedrivegui
   ]);
 
   home.file = {
@@ -84,9 +85,14 @@
       git.enable = true;
       gromit-mpx.enable = true;
       i3.enable = true;
-      onedrive.enable = true;
       podman.enable = true;
       wezterm.enable = true;
     };
+  };
+
+  xsession.windowManager.i3.config = {
+    startup = [
+      { command = "exec onedrivegui"; always = false; notification = false; }
+    ];
   };
 }

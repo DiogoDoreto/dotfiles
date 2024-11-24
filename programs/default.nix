@@ -9,7 +9,6 @@
     ./git.nix
     ./gromit-mpx.nix
     ./i3.nix
-    ./onedrive.nix
     ./podman.nix
     ./polybar.nix
     ./rofi.nix
