@@ -29,6 +29,9 @@ in
         ra = "rebase --abort";
       };
       ignores = [
+        # direnv
+        ".direnv"
+        ".envrc"
         # npm/yarn
         "npm-debug.log*"
         "yarn-debug.log*"

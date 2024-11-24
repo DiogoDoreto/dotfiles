@@ -33,6 +33,11 @@ in
 
       bash.enable = true;
 
+      direnv = {
+        enable = true;
+        nix-direnv.enable = true;
+      };
+
       fd.enable = true;
 
       fish = {
