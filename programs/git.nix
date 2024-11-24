@@ -29,6 +29,8 @@ in
         ra = "rebase --abort";
       };
       ignores = [
+        # emacs
+        ".dir-locals.el"
         # direnv
         ".direnv"
         ".envrc"

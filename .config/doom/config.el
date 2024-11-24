@@ -116,6 +116,9 @@
 
 (map! :i "C-<tab>" 'yas-expand)
 
+;; something was overwriting this to cause indentation
+(map! :n "C-i" 'better-jumper-jump-forward)
+
 (map! :n "] e" 'flycheck-next-error)
 (map! :n "[ e" 'flycheck-previous-error)
 
@@ -133,3 +136,8 @@
 
 (use-package! magit-delta
   :hook magit-mode)
+
+(use-package! fancy-compilation
+  :commands (fancy-compilation-mode))
+(with-eval-after-load 'compile
+  (fancy-compilation-mode))
