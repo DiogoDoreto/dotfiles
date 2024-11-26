@@ -31,7 +31,7 @@
 ;; See 'C-h v doom-font' for documentation and more examples of what they
 ;; accept. For example:
 ;;
-(setq doom-font (font-spec :family "VictorMono Nerd Font Propo" :size 20 :weight 'semi-light))
+(setq doom-font (font-spec :family "VictorMono Nerd Font Propo" :size 17 :weight 'semi-light))
 
 (after! tree-sitter
   (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
@@ -51,7 +51,7 @@
 (setq doom-modeline-lsp-icon nil)
 (setq doom-modeline-modal nil)
 (setq doom-modeline-vcs-max-length 20)
-(setq doom-modeline-buffer-file-name-style 'relative-from-project)
+(setq doom-modeline-buffer-file-name-style 'truncate-with-project)
 
 (setq lsp-enable-file-watchers nil)
 (setq lsp-eslint-run "onSave")
@@ -104,6 +104,8 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+(map! "C-s" 'save-buffer)
+
 (map! :n "g b" 'browse-url)
 
 (map! :n "M-<left>" #'evil-window-left)
@@ -138,6 +140,17 @@
   :hook magit-mode)
 
 (use-package! fancy-compilation
-  :commands (fancy-compilation-mode))
+  :commands fancy-compilation-mode)
 (with-eval-after-load 'compile
   (fancy-compilation-mode))
+
+(use-package! jest-test-mode
+  :commands jest-test-mode
+  :hook (typescript-mode typescript-tsx-mode))
+(map! :localleader
+      :mode (typescript-mode typescript-tsx-mode)
+      (:prefix ("j" . "Jest")
+       :desc "Rerun last test"       "j" #'jest-test-rerun-test
+       :desc "Run current buffer"    "f" #'jest-test-run
+       :desc "Run current project"   "p" #'jest-test-run-all-tests
+       :desc "Run test under cursor" "t" #'jest-test-run-at-point))
