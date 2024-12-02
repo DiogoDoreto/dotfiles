@@ -129,8 +129,7 @@
 (map! :leader :n "c J" 'consult-lsp-symbols)
 (map! :leader :n "c X" 'lsp-eslint-apply-all-fixes)
 
-(map! :leader :n "w n" 'other-window-prefix)
-(map! :leader :n "w w" 'other-window)
+(map! :leader :n "w w" #'dd/window-prefix)
 
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 
