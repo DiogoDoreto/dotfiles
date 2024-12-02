@@ -65,10 +65,13 @@
 
 (add-to-list 'auto-mode-alist '("\\.keymap\\'" . dts-mode))
 
-;; If you use `org' and don't want your org files in the default location below,
-;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/"
-      org-agenda-files (directory-files-recursively org-directory "\.org$"))
+(setq org-directory "~/org/")
+
+(defun dd/scan-org-agenda-files ()
+  (interactive)
+  (setq org-agenda-files (directory-files-recursively org-directory "\.org$")))
+(dd/scan-org-agenda-files)
+(map! :leader :desc "Scan org agenda files" "nU" #'dd/scan-org-agenda-files)
 
 (setq vterm-shell "fish")
 
