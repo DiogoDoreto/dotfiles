@@ -54,10 +54,6 @@
 (setq doom-modeline-buffer-file-name-style 'truncate-with-project)
 
 (setq lsp-enable-file-watchers nil)
-(setq lsp-eslint-run "onSave")
-(add-hook! (+format-with-lsp-mode)
-  (when (and (eq major-mode 'typescript-mode) (bound-and-true-p +format-with-lsp-mode))
-    (+format-with-lsp-mode -1)))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -132,6 +128,8 @@
 (map! :leader :n "c J" 'consult-lsp-symbols)
 (map! :leader :n "c X" 'lsp-eslint-apply-all-fixes)
 
+(map! :leader :desc "Find related file" :n "f o" 'projectile-find-other-file)
+
 (map! :leader :n "w w" #'dd/window-prefix)
 
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
@@ -146,15 +144,4 @@
 (with-eval-after-load 'compile
   (fancy-compilation-mode))
 
-(use-package! jest-test-mode
-  :commands jest-test-mode
-  :hook (typescript-mode typescript-tsx-mode))
-(setq jest-test-compilation-error-regexp-alist-alist
-      '((jest "\\([[:alnum:]/._-]+?\\):\\([[:digit:]]+\\):\\([[:digit:]]+\\)" 1 2 3)))
-(map! :localleader
-      :mode (typescript-mode typescript-tsx-mode)
-      (:prefix ("j" . "Jest")
-       :desc "Rerun last test"       "j" #'jest-test-rerun-test
-       :desc "Run current buffer"    "f" #'jest-test-run
-       :desc "Run current project"   "p" #'jest-test-run-all-tests
-       :desc "Run test under cursor" "t" #'jest-test-run-at-point))
+(load! "config-javascript")

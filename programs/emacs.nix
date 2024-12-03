@@ -38,7 +38,12 @@ in
 
     xdg.configFile = {
       "doom/init.el".source = ../.config/doom/init.el;
-      "doom/config.el".source = ../.config/doom/config.el;
+      "doom/config-javascript.el".source = ../.config/doom/config-javascript.el;
+      "doom/config.el" = {
+        source = ../.config/doom/config.el;
+        # try make it work later
+        # onChange = "~/.config/emacs/bin/doom sync";
+      };
       "doom/packages.el".text = (readFile ../.config/doom/packages.el)
         + "\n\n" + cfg.extraPackages;
       "doom/dd".source = ../.config/doom/dd;
