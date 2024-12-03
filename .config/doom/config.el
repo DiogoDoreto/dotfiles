@@ -149,6 +149,8 @@
 (use-package! jest-test-mode
   :commands jest-test-mode
   :hook (typescript-mode typescript-tsx-mode))
+(setq jest-test-compilation-error-regexp-alist-alist
+      '((jest "\\([[:alnum:]/._-]+?\\):\\([[:digit:]]+\\):\\([[:digit:]]+\\)" 1 2 3)))
 (map! :localleader
       :mode (typescript-mode typescript-tsx-mode)
       (:prefix ("j" . "Jest")
