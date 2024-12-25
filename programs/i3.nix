@@ -121,5 +121,26 @@ in
     dog.programs.polybar = {
       enable = true;
     };
+
+    services.dunst = {
+      enable = true;
+
+      settings = {
+        global = {
+          origin = "bottom-right";
+          font = "VictorMono Nerd Font 9";
+          fullscreen = "pushback";
+          background = "${colors.Alice-Blue}DD";
+          foreground = colors.Van-Dyke;
+          frame_color = colors.Van-Dyke;
+          frame_width = 1;
+          highlight = colors.Cerulean;
+        };
+        urgency_critical = {
+          background = "#FFDAE4";
+          frame_color = "#82202A";
+        };
+      };
+    };
   };
 }
