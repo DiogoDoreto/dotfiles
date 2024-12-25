@@ -16,7 +16,10 @@ in
   };
 
   config = mkIf cfg.enable {
-    programs.emacs.enable = true;
+    programs.emacs = {
+      enable = true;
+      package = pkgs.emacs30;
+    };
 
     services.emacs = {
       enable = true;
@@ -51,8 +54,8 @@ in
       emacs.source = pkgs.fetchFromGitHub {
         owner = "doomemacs";
         repo = "doomemacs";
-        rev = "be4fb85dd93810e495d5f4a793d620f82508cb7e";
-        hash = "sha256-13DX27VcSe9lLz7go2tFdNLoroNzlcboD5I2mHfL0Ms=";
+        rev = "ba1dca322f9a07bc2b7bec6a98f2c3c55c0bbd77";
+        hash = "sha256-sebujw5VvBWMS+wXyjiGF81iyjPM/QQDnw5l7tDJCvk=";
       };
     };
   };

@@ -43,7 +43,7 @@ in {
           };
         };
         # See https://nur.nix-community.org/repos/rycee/
-        extensions = with config.nur.repos.rycee.firefox-addons; [
+        extensions = with pkgs.nur.repos.rycee.firefox-addons; [
           multi-account-containers
           privacy-badger
           raindropio

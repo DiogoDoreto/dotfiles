@@ -61,6 +61,8 @@
 
 (add-to-list 'auto-mode-alist '("\\.keymap\\'" . dts-mode))
 
+(setq projectile-project-search-path (list "~/projects"))
+
 (setq org-directory "~/org/")
 
 (defun dd/scan-org-agenda-files ()
@@ -107,10 +109,10 @@
 
 (map! :n "g b" 'browse-url)
 
-(map! :n "M-<left>" #'evil-window-left)
-(map! :n "M-<down>" #'evil-window-down)
-(map! :n "M-<up>" #'evil-window-up)
-(map! :n "M-<right>" #'evil-window-right)
+(map! :ni "M-<left>" #'evil-window-left)
+(map! :ni "M-<down>" #'evil-window-down)
+(map! :ni "M-<up>" #'evil-window-up)
+(map! :ni "M-<right>" #'evil-window-right)
 
 (map! "C-<down>" #'drag-stuff-down)
 (map! "C-<up>" #'drag-stuff-up)
@@ -143,5 +145,9 @@
   :commands fancy-compilation-mode)
 (with-eval-after-load 'compile
   (fancy-compilation-mode))
+
+(use-package! info-rename-buffer :hook 'Info-selection-hook)
+
+(use-package ct :defer t)
 
 (load! "config-javascript")

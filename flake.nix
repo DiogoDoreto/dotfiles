@@ -2,12 +2,15 @@
   description = "My Home Manager configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-    nixpkgs-next.url = "github:NixOS/nixpkgs/nixos-24.11";
-    nur.url = "github:nix-community/NUR";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+
+    nur = {
+      url = "github:nix-community/NUR";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.05";
+      url = "github:nix-community/home-manager/release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -17,29 +20,20 @@
     };
   };
 
-  outputs = { nixpkgs, nixpkgs-next, home-manager, nixgl, ... }@inputs:
+  outputs = { nixpkgs, home-manager, nixgl, ... }@inputs:
     let
-      lib = nixpkgs.lib;
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
         overlays = [ nixgl.overlay ];
       };
-      pkgs-next = import nixpkgs-next {
-        inherit system;
-        overlays = [ nixgl.overlay ];
-      };
     in {
-      modules = {
-        core = import ./home/_core.nix;
-        linux = import ./home/_linux.nix;
-      };
       homeConfigurations = {
         home = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [ ./home/home.nix ];
           extraSpecialArgs = {
-            inherit inputs pkgs-next;
+            inherit inputs;
           };
         };
         work = home-manager.lib.homeManagerConfiguration {

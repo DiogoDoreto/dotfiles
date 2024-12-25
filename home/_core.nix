@@ -2,12 +2,11 @@
 
 {
   imports = [
-    inputs.nur.hmModules.nur
     ../programs
   ];
 
   home = {
-    stateVersion = "24.05";
+    stateVersion = "24.11";
 
     packages = with pkgs; [
       (nerdfonts.override { fonts = [ "VictorMono" ]; })
