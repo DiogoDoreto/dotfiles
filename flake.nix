@@ -18,6 +18,11 @@
       url = "github:nix-community/nixGL/310f8e49a149e4c9ea52f1adf70cdc768ec53f8a";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    ghostty = {
+      url = "github:ghostty-org/ghostty";
+      inputs.nixpkgs-stable.follows = "nixpkgs";
+    };
   };
 
   outputs = { nixpkgs, home-manager, nixgl, ... }@inputs:

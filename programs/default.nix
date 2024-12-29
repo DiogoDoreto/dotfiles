@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ ... }:
 
 {
   imports = [
@@ -7,6 +7,7 @@
     ./firefox.nix
     ./flameshot.nix
     ./git.nix
+    ./ghostty.nix
     ./gromit-mpx.nix
     ./i3.nix
     ./podman.nix
