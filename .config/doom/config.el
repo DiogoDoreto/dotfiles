@@ -109,10 +109,10 @@
 
 (map! :n "g b" 'browse-url)
 
-(map! :ni "M-<left>" #'evil-window-left)
-(map! :ni "M-<down>" #'evil-window-down)
-(map! :ni "M-<up>" #'evil-window-up)
-(map! :ni "M-<right>" #'evil-window-right)
+(map! :n "M-<left>" #'evil-window-left)
+(map! :n "M-<down>" #'evil-window-down)
+(map! :n "M-<up>" #'evil-window-up)
+(map! :n "M-<right>" #'evil-window-right)
 
 (map! "C-<down>" #'drag-stuff-down)
 (map! "C-<up>" #'drag-stuff-up)
