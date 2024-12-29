@@ -13,7 +13,9 @@ in {
     home.packages = with pkgs; [
       podman
       pods # podman GUI
-      qemu # podman dependency
+      # podman dependencies:
+      qemu
+      virtiofsd
     ];
 
     home.file = {
