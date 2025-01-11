@@ -6,7 +6,7 @@
 - Ensure home-server has the static IP defined in `hostip`
 - Setup router to use home-server IP as DNS primary server and `1.1.1.1` as secondary
 - Open ports 53, 80 in firewall (DNS, HTTP)
-- On 1st run, you should run `./.config/home-server/fix-bind-permission.sh` so that systemd service won't fail
+- On 1st run, you should run `fix-bind-permission.sh` so that systemd service won't fail
 */
 
 with lib;
@@ -29,12 +29,14 @@ in {
     ];
 
     home.file = {
-      ".config/home-server/fix-bind-permission.sh" = {
+      "bin/fix-bind-permission.sh" = {
         executable = true;
         text = ''
           #!/usr/bin/env bash
           sudo ${pkgs.libcap}/bin/setcap CAP_NET_BIND_SERVICE=+eip ${getExe pkgs.caddy}
           sudo ${pkgs.libcap}/bin/setcap CAP_NET_BIND_SERVICE=+eip ${getExe pkgs.dnsmasq}
+          systemctl --user restart caddy
+          systemctl --user restart dnsmasq
         '';
       };
 
