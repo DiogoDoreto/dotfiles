@@ -25,12 +25,12 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, nixgl, ... }@inputs:
+  outputs = { nixpkgs, home-manager, nixgl, nur, ... }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ nixgl.overlay ];
+        overlays = [ nixgl.overlay nur.overlays.default ];
       };
     in {
       homeConfigurations = {

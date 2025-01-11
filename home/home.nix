@@ -1,4 +1,4 @@
-{ config, pkgs, pkgs-next, lib, inputs, ... }:
+{ pkgs, lib, ... }:
 {
   imports = [
     ./_core.nix
@@ -16,20 +16,19 @@
     "spotify"
   ];
 
-  home.packages = (with pkgs; [
+  home.packages = with pkgs; [
       nodejs_20
       cheat
       turbovnc
       ffmpeg_7-full
 
       keepassxc
+      onedrivegui
       openvpn
+      qbittorrent
       reaper
       spotify
-  ]) ++ (with pkgs-next; [
-      qbittorrent
-      onedrivegui
-  ]);
+  ];
 
   home.file = {
     ".config/cheat/cheatsheets/community".source = pkgs.fetchFromGitHub {
@@ -82,11 +81,11 @@
       emacs.enable = true;
       firefox.enable = true;
       flameshot.enable = true;
+      ghostty.enable = true;
       git.enable = true;
       gromit-mpx.enable = true;
       i3.enable = true;
       podman.enable = true;
-      wezterm.enable = true;
     };
   };
 
