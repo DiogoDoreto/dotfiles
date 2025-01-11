@@ -19,6 +19,7 @@ in
       "ghostty/config".text = ''
         command = ${lib.getExe pkgs.fish} -l
         theme = nightfox
+        window-theme = ghostty
         font-family = "VictorMono Nerd Font Propo"
         font-size = 11
         background-opacity = 0.95
