@@ -25,6 +25,14 @@
       arandr # GUI for display management
       xclip
     ];
+
+    sessionVariables = {
+      SUDO_ASKPASS = let
+        zenity = config.lib.nixGL.wrap pkgs.zenity;
+      in pkgs.writeShellScript "zenity_askpass.sh" ''
+        ${lib.getExe zenity} --password --title="Sudo password"
+      '';
+    };
   };
 
   targets.genericLinux.enable = true;
