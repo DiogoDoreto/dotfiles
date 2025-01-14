@@ -40,6 +40,9 @@ in
         "yarn-error.log*"
       ];
       extraConfig = {
+        core = {
+          autocrlf = true;
+        };
         pull = {
           ff = "only";
         };
