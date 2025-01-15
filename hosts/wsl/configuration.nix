@@ -64,6 +64,19 @@
   #   ];
   # };
 
+  users.users.nixos.isNormalUser = true;
+  home-manager.users.nixos = { pkgs, ... }: {
+    imports = [
+      ../../programs
+    ];
+    home.packages = with pkgs; [ neovim ];
+    home.stateVersion = "24.11";
+    dog.programs = {
+      cli-tools.enable = true;
+      git.enable = true;
+    };
+  }
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   # environment.systemPackages = with pkgs; [

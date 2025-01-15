@@ -58,17 +58,16 @@
           inherit system;
           modules = [
             nixos-wsl.nixosModules.default
-            #./hosts/wsl/hardware.nix
             ./hosts/wsl/configuration.nix
-            # ./nix-config.nix
-            # home-manager.nixosModules.home-manager
+            ./nix-config.nix
+            home-manager.nixosModules.home-manager
             # {
             #   nixpkgs.overlays = [
             #     nur.overlays.default
             #   ];
             # }
           ];
-          # specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs; };
         };
         inspiron7520 = nixpkgs.lib.nixosSystem {
           inherit system;
