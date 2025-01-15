@@ -58,7 +58,7 @@
           inherit system;
           modules = [
             nixos-wsl.nixosModules.default
-            ./hosts/wsl/hardware.nix
+            #./hosts/wsl/hardware.nix
             ./hosts/wsl/configuration.nix
             # ./nix-config.nix
             # home-manager.nixosModules.home-manager
