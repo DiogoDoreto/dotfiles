@@ -3,7 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    nixos-wsl.url = "github:nix-community/NixOS-WSL/main";
 
     nur = {
       url = "github:nix-community/NUR";
@@ -26,7 +28,7 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, nixgl, nur, nixos-hardware, ... }@inputs:
+  outputs = { nixpkgs, home-manager, nixgl, nur, nixos-hardware, nixos-wsl, ... }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -52,6 +54,22 @@
       };
 
       nixosConfigurations = {
+        wsl = nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            nixos-wsl.nixosModules.default
+            ./hosts/wsl/hardware.nix
+            ./hosts/wsl/configuration.nix
+            # ./nix-config.nix
+            # home-manager.nixosModules.home-manager
+            # {
+            #   nixpkgs.overlays = [
+            #     nur.overlays.default
+            #   ];
+            # }
+          ];
+          # specialArgs = { inherit inputs; };
+        };
         inspiron7520 = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
