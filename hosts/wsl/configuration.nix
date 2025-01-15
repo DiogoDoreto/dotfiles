@@ -2,6 +2,14 @@
 
 {
   wsl.enable = true;
+  hardware.nvidia-container-toolkit = {
+    enable = true;
+    mount-nvidia-executables = false;
+  };
+  virtualisation.docker = {
+    enable = true;
+    daemon.settings.features.cdi = true;
+  };
   # Use the GRUB 2 boot loader.
   # boot.loader.grub.enable = true;
   # boot.loader.grub.efiSupport = true;
@@ -32,6 +40,11 @@
 
   # Enable the X11 windowing system.
   # services.xserver.enable = true;
+  services.xserver = {
+    enable = true;
+    videoDrivers = [ "nvidia" ];
+  };
+  hardware.nvidia.open = true;
 
 
 
@@ -66,19 +79,41 @@
 
   users.users.nixos.isNormalUser = true;
 
+  nixpkgs.config.allowUnfree = true;
+
   home-manager = {
     useUserPackages = true;
     useGlobalPkgs = true;
-    users.nixos = { pkgs, ... }: {
-      imports = [
-        ../../programs
-      ];
-      home.packages = with pkgs; [ neovim ];
-      home.stateVersion = "24.11";
-      dog.programs = {
-        cli-tools.enable = true;
-        git.enable = true;
-      };
+    users.nixos = import ./home.nix;
+  };
+
+  programs = {
+    nix-ld = {
+      enable = true;
+      libraries = let
+        wsl-lib = pkgs.runCommand "wsl-lib" { } ''
+          mkdir -p "$out/lib"
+          # We can't just symlink the lib directory, because it will break merging with other drivers that provide the same directory
+          ln -s /usr/lib/wsl/lib/libcudadebugger.so.1 "$out/lib"
+          ln -s /usr/lib/wsl/lib/libcuda.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/libcuda.so.1 "$out/lib"
+          ln -s /usr/lib/wsl/lib/libcuda.so.1.1 "$out/lib"
+          ln -s /usr/lib/wsl/lib/libd3d12core.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/libd3d12.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/libdxcore.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvcuvid.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvcuvid.so.1 "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvdxdlkernels.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvidia-encode.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvidia-encode.so.1 "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvidia-ml.so.1 "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvidia-opticalflow.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvidia-opticalflow.so.1 "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvoptix.so.1 "$out/lib"
+          ln -s /usr/lib/wsl/lib/libnvwgf2umx.so "$out/lib"
+          ln -s /usr/lib/wsl/lib/nvidia-smi "$out/lib"
+        '';
+      in [ wsl-lib ];
     };
   };
 
