@@ -77,6 +77,7 @@
     home-server.enable = true;
 
     programs = {
+      blueman.enable = true;
       cli-tools.enable = true;
       emacs.enable = true;
       firefox.enable = true;

@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./blueman.nix
     ./cli-tools.nix
     ./emacs.nix
     ./firefox.nix
