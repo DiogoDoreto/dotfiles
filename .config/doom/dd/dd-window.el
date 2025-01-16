@@ -6,6 +6,8 @@
 ;;
 ;;; Code:
 
+(require 'ace-window)
+
 ;;;###autoload
 (defun dd/window-prefix ()
   "Use `ace-window' to display the buffer of the next command.
