@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 {
   imports = [
     ./_core.nix
@@ -29,6 +29,7 @@
       qbittorrent
       reaper
       spotify
+      (config.lib.nixGL.wrap remmina)
   ];
 
   home.file = {
