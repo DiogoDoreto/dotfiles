@@ -77,7 +77,12 @@
   #   ];
   # };
 
-  users.users.nixos.isNormalUser = true;
+  users.users.nixos = {
+    isNormalUser = true;
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDDhA9Eum8X+nly3QFAhrazy+5JLdVx+r8natZ6tCex0 diogo@doreto.com.br"
+    ];
+  };
 
   nixpkgs.config.allowUnfree = true;
 
@@ -135,7 +140,14 @@
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    # require public key authentication for better security
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+    };
+  };
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
