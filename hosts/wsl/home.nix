@@ -15,8 +15,19 @@
   };
 
   programs = {
-    starship.settings = {
-      username.show_always = true;
+    bash = {
+      initExtra = ''
+        if [[ $TERM == "dumb" ]]; then
+          export PS1="$ "
+        fi
+      '';
+    };
+
+    starship = {
+      enableBashIntegration = false;
+      settings = {
+        username.show_always = true;
+      };
     };
   };
 
