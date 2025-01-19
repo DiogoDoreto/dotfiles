@@ -54,8 +54,8 @@ in
       emacs.source = pkgs.fetchFromGitHub {
         owner = "doomemacs";
         repo = "doomemacs";
-        rev = "1a8636056051ad52c8df33adc898699451c425a7";
-        hash = "sha256-hyc8OiRiJMfDUxvx19mnoA+ZwSrva4wwSP6a1W4JP/I=";
+        rev = "2bc052425ca45a41532be0648ebd976d1bd2e6c1";
+        hash = "sha256-i0GVHWoIqDcFB9JmEdd9T+qxrEx3ckBlPfTD/yLoNyg=";
       };
     };
   };
