@@ -116,5 +116,23 @@ in {
         Service.ExecStart = "${getExe pkgs.jellyfin}";
       };
     };
+
+    services.podman = {
+      enable = true;
+      containers = {
+        home-assistant = {
+          image = "ghcr.io/home-assistant/home-assistant:stable";
+          autoStart = true;
+          environment = { TZ = "Europe/Madrid"; };
+          network = "host";
+          addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
+          volumes = [
+            "/home/dog/projects/my-home-assistant/config:/config"
+            "/run/dbus:/run/dbus:ro"
+          ];
+          extraPodmanArgs = [ "--privileged" ];
+        };
+      };
+    };
   };
 }
