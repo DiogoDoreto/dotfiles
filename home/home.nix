@@ -21,6 +21,7 @@
       cheat
       turbovnc
       ffmpeg_7-full
+      mpv
 
       keepassxc
       onedrivegui
