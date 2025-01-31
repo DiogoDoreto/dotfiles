@@ -41,7 +41,7 @@ in
       ];
       extraConfig = {
         core = {
-          autocrlf = true;
+          autocrlf = false;
         };
         pull = {
           ff = "only";

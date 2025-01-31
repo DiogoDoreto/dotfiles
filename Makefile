@@ -1,14 +1,14 @@
-.PHONY: update-home
-update-home:
+.PHONY: dogdot-switch
+dogdot-switch:
 	home-manager switch --flake .#home
 
-.PHONY: wsl-switch
-update-work:
-	sudo nixos-rebuild --flake .#wsl switch
+.PHONY: chungus-boot
+chungus-boot:
+	sudo -A nixos-rebuild --flake .#chungus boot
 
-.PHONY: update-work
-update-work:
-	home-manager switch --flake .#work
+.PHONY: chungus-switch
+chungus-switch:
+	sudo -A nixos-rebuild --flake .#chungus switch
 
 .PHONY: clean
 clean:

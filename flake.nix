@@ -54,6 +54,21 @@
       };
 
       nixosConfigurations = {
+        chungus = nixpkgs.lib.nixosSystem rec {
+          inherit system;
+          specialArgs = { inherit inputs; };
+          modules = [
+            ./hosts/chungus/configuration.nix
+            ./nix-config.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.extraSpecialArgs = specialArgs;
+              nixpkgs.overlays = [
+                nur.overlays.default
+              ];
+            }
+          ];
+        };
         wsl = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
