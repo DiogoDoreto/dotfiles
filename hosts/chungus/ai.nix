@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ config, pkgs, pkgs-unstable, ... }:
 
 {
   home = {
@@ -8,7 +8,6 @@
       # (openai-whisper.override {
       #   torch = python312Packages.torchWithCuda;
       # })
-      aider-chat
 
       (comfyuiPackages.comfyui.override {
         extensions = [
@@ -20,7 +19,9 @@
         commandLineArgs = [ "--preview-method" "auto" ];
       })
       comfyuiPackages.krita-with-extensions
-    ];
+    ] ++ (with pkgs-unstable; [
+      aider-chat
+    ]);
   };
 
   # Ollama

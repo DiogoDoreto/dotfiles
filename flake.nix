@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixos-wsl.url = "github:nix-community/NixOS-WSL/main";
@@ -25,6 +26,7 @@
     ghostty = {
       url = "github:ghostty-org/ghostty";
       inputs.nixpkgs-stable.follows = "nixpkgs";
+      inputs.nixpkgs-unstable.follows = "nixpkgs-unstable";
     };
 
     nix-comfyui = {
@@ -33,12 +35,15 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, nixgl, nur, nixos-hardware, nixos-wsl, ... }@inputs:
+  outputs = { nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, ... }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ nixgl.overlay nur.overlays.default ];
+        overlays = [ inputs.nixgl.overlay inputs.nur.overlays.default ];
+      };
+      pkgs-unstable = import nixpkgs-unstable {
+        inherit system;
       };
     in {
       homeConfigurations = {
@@ -61,7 +66,7 @@
       nixosConfigurations = {
         chungus = nixpkgs.lib.nixosSystem rec {
           inherit system;
-          specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs pkgs-unstable; };
           modules = [
             ./hosts/chungus/configuration.nix
             ./nix-config.nix
@@ -69,7 +74,7 @@
             {
               home-manager.extraSpecialArgs = specialArgs;
               nixpkgs.overlays = [
-                nur.overlays.default
+                inputs.nur.overlays.default
                 inputs.nix-comfyui.overlays.default
               ];
             }
@@ -78,7 +83,7 @@
         wsl = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
-            nixos-wsl.nixosModules.default
+            inputs.nixos-wsl.nixosModules.default
             ./hosts/wsl/configuration.nix
             ./nix-config.nix
             home-manager.nixosModules.home-manager
@@ -103,7 +108,7 @@
             nixos-hardware.nixosModules.common-pc-laptop-ssd
             {
               nixpkgs.overlays = [
-                nur.overlays.default
+                inputs.nur.overlays.default
               ];
             }
           ];
