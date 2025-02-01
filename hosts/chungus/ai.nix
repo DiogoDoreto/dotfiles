@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 {
   home = {
@@ -44,5 +44,16 @@
       dark-mode = true;
       analytics-disable = true;
     };
+  };
+
+  # ComfyUI
+  xdg.desktopEntries.comfyui = {
+    name = "ComfyUI";
+    categories = [ "Application" "Graphics" ];
+    terminal = true;
+    exec = toString (pkgs.writeShellScript "start-comfyui.sh" ''
+      cd ${config.xdg.dataHome}/comfyui
+      comfyui
+    '');
   };
 }
