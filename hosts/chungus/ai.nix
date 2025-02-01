@@ -9,6 +9,17 @@
       #   torch = python312Packages.torchWithCuda;
       # })
       aider-chat
+
+      (comfyuiPackages.comfyui.override {
+        extensions = [
+          comfyuiPackages.extensions.acly-inpaint
+          comfyuiPackages.extensions.acly-tooling
+          comfyuiPackages.extensions.cubiq-ipadapter-plus
+          comfyuiPackages.extensions.fannovel16-controlnet-aux
+        ];
+        commandLineArgs = [ "--preview-method" "auto" ];
+      })
+      comfyuiPackages.krita-with-extensions
     ];
   };
 

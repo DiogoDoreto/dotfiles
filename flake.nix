@@ -26,6 +26,11 @@
       url = "github:ghostty-org/ghostty";
       inputs.nixpkgs-stable.follows = "nixpkgs";
     };
+
+    nix-comfyui = {
+      url = "github:dyscorv/nix-comfyui";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { nixpkgs, home-manager, nixgl, nur, nixos-hardware, nixos-wsl, ... }@inputs:
@@ -65,6 +70,7 @@
               home-manager.extraSpecialArgs = specialArgs;
               nixpkgs.overlays = [
                 nur.overlays.default
+                inputs.nix-comfyui.overlays.default
               ];
             }
           ];
