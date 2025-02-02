@@ -13,6 +13,7 @@
       nix-tree
       bottom
       nodePackages.prettier
+      ungoogled-chromium
     ];
   };
 
