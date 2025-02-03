@@ -94,15 +94,10 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDDhA9Eum8X+nly3QFAhrazy+5JLdVx+r8natZ6tCex0 diogo@doreto.com.br"
     ];
-    packages = with pkgs; [
-      kdePackages.kate
-      neovim
-      git
-    #  thunderbird
-    ];
   };
 
   home-manager = {
+    # TODO check if this is the optimal way to have nixos and hm sharing the same nixpkgs reference
     useUserPackages = true;
     useGlobalPkgs = true;
     users.dog = import ./home.nix;

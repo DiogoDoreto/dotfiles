@@ -38,62 +38,53 @@
   outputs = { nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, ... }@inputs:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ inputs.nixgl.overlay inputs.nur.overlays.default ];
+      overlays = [
+        inputs.nixgl.overlay
+        inputs.nur.overlays.default
+        inputs.nix-comfyui.overlays.default
+      ];
+      pkgs-config = {
+        inherit system overlays;
+        config = {
+          allowUnfree = true;
+          allowUnfreePredicate = _: true;
+        };
       };
-      pkgs-unstable = import nixpkgs-unstable {
-        inherit system;
-      };
+      pkgs = import nixpkgs pkgs-config;
+      pkgs-unstable = import nixpkgs-unstable pkgs-config;
+      specialArgs = { inherit inputs pkgs-unstable; };
+      extraSpecialArgs = specialArgs;
     in {
       homeConfigurations = {
-        home = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
+        "dog@dogdot" = home-manager.lib.homeManagerConfiguration {
+          inherit pkgs extraSpecialArgs;
           modules = [ ./home/home.nix ];
-          extraSpecialArgs = {
-            inherit inputs;
-          };
+        };
+        "dog@chungus" = home-manager.lib.homeManagerConfiguration {
+          inherit pkgs extraSpecialArgs;
+          modules = [
+            { home = { username = "dog"; homeDirectory = "/home/dog"; }; }
+            ./hosts/chungus/home.nix
+          ];
         };
         work = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
+          inherit pkgs extraSpecialArgs;
           modules = [ ./home/work.nix ];
-          extraSpecialArgs = {
-            inherit inputs;
-          };
         };
       };
 
       nixosConfigurations = {
         chungus = nixpkgs.lib.nixosSystem rec {
-          inherit system;
-          specialArgs = { inherit inputs pkgs-unstable; };
+          inherit system specialArgs;
           modules = [
             ./hosts/chungus/configuration.nix
             ./nix-config.nix
             home-manager.nixosModules.home-manager
             {
               home-manager.extraSpecialArgs = specialArgs;
-              nixpkgs.overlays = [
-                inputs.nur.overlays.default
-                inputs.nix-comfyui.overlays.default
-              ];
+              nixpkgs = { inherit overlays; };
             }
           ];
-        };
-        wsl = nixpkgs.lib.nixosSystem {
-          inherit system;
-          modules = [
-            inputs.nixos-wsl.nixosModules.default
-            ./hosts/wsl/configuration.nix
-            ./nix-config.nix
-            home-manager.nixosModules.home-manager
-            # {
-            #   nixpkgs.overlays = [
-            #     nur.overlays.default
-            #   ];
-            # }
-          ];
-          specialArgs = { inherit inputs; };
         };
         inspiron7520 = nixpkgs.lib.nixosSystem {
           inherit system;

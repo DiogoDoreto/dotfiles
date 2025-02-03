@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 
 {
   imports = [
@@ -14,6 +14,7 @@
       bottom
       nodePackages.prettier
       ungoogled-chromium
+      inputs.home-manager.defaultPackage.x86_64-linux
     ];
   };
 
