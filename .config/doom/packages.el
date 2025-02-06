@@ -3,8 +3,6 @@
 
 (package! dd :recipe (:local-repo "dd"))
 
-(package! ibuffer-vc)
-
 (package! dts-mode)
 
 (package! magit-delta)

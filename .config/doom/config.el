@@ -136,6 +136,20 @@
 (after! vertico-posframe
   (setq vertico-posframe-poshandler #'posframe-poshandler-frame-bottom-center))
 
+(after! ibuffer
+  (setq ibuffer-formats
+        `((mark modified read-only locked
+           ,@(if (modulep! :emacs ibuffer +icons)
+                 `(" " (icon 2 2 :left :elide)
+                   ,(propertize " " 'display `(space :align-to 8)))
+               '(" "))
+           (name 40 40 :left)
+           " " (size 9 -1 :right)
+           " " (mode 16 16 :left :elide)
+           ,@(when (require 'ibuffer-vc nil t)
+               '(" " (vc-status 12 :left)))
+           " " filename-and-process))))
+
 (use-package! magit-delta
   :hook magit-mode)
 
