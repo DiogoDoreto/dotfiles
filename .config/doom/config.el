@@ -162,4 +162,20 @@
 
 (use-package ct :defer t)
 
+(use-package! cov
+  :defer t
+  :config
+  (custom-set-faces
+   '(cov-none-face  ((((class color)) :foreground "red")))
+   '(cov-light-face ((((class color)) :foreground "orange")))
+   '(cov-med-face   ((((class color)) :foreground "yellow")))
+   '(cov-heavy-face ((((class color)) :foreground "green"))))
+  (defun cov--locate-jest-lcov (file-dir file-name)
+    (and-let* ((jest-root (projectile-locate-dominating-file file-dir "jest.config.js"))
+               (lcov-file (f-join jest-root "test-results/lcov.info"))
+               ((file-exists-p lcov-file)))
+      (setq cov-lcov-project-root jest-root)
+      (cons lcov-file 'lcov)))
+  (add-to-list 'cov-coverage-file-paths #'cov--locate-jest-lcov))
+
 (load! "config-javascript")
