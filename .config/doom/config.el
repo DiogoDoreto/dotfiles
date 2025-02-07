@@ -151,19 +151,3 @@
 (use-package ct :defer t)
 
 (load! "config-javascript")
-
-(use-package! gptel
-  :defer t
-  :config
-  (setq gptel-model 'qwen2.5-coder:32b
-        gptel-backend (gptel-make-ollama "Ollama"
-                        :host "localhost:11434"
-                        :stream t
-                        :models '(qwen2.5-coder:32b deepseek-r1:32b))))
-
-(map! :leader
-      (:prefix-map ("l" . "LLM")
-       :desc "Open chat buffer" "o" #'gptel
-       :desc "Send" "RET" #'gptel-send
-       :desc "Menu" "l" #'gptel-menu
-       :desc "Abort" "a" #'gptel-abort))

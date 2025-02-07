@@ -1,13 +1,12 @@
 { config, pkgs, pkgs-unstable, ... }:
 
-{
+let
+  whisper-pkg = pkgs.openai-whisper-cpp.override { config.cudaSupport = true; };
+in {
   home = {
     packages = with pkgs; [
       ollama-cuda
-      openai-whisper
-      # (openai-whisper.override {
-      #   torch = python312Packages.torchWithCuda;
-      # })
+      whisper-pkg
 
       (pkgs-unstable.callPackage ./aider-chat.nix {})
 
@@ -22,6 +21,13 @@
       })
       comfyuiPackages.krita-with-extensions
     ];
+  };
+
+  dog.programs.emacs = {
+    whisperPackage = whisper-pkg;
+    extraConfig = ''
+      (setq whisper-model "large-v3-turbo")
+    '';
   };
 
   # Ollama
