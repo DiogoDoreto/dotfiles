@@ -11,7 +11,6 @@
     packages = with pkgs; [
       nodejs_23
       nix-tree
-      bottom
       nodePackages.prettier
       ungoogled-chromium
       inputs.home-manager.defaultPackage.x86_64-linux

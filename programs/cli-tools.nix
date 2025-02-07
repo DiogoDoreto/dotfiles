@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, pkgs-unstable, ... }:
 
 with lib;
 
@@ -32,6 +32,16 @@ in
       };
 
       bash.enable = true;
+
+      bottom = {
+        enable = true;
+        package = pkgs-unstable.bottom;
+        settings = {
+          flags = {
+            enable_gpu = true;
+          };
+        };
+      };
 
       direnv = {
         enable = true;
