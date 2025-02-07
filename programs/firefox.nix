@@ -10,6 +10,10 @@ in {
   };
 
   config = mkIf cfg.enable {
+    home.file = {
+      # TODO create a fix script based on https://github.com/nix-community/home-manager/issues/6083#issuecomment-2642454543
+    };
+
     programs.firefox = {
       enable = true;
       profiles.dog = {
