@@ -28,9 +28,6 @@
 
     starship = {
       enableBashIntegration = false;
-      settings = {
-        username.show_always = true;
-      };
     };
 
     neovim.enable = true;

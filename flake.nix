@@ -31,7 +31,7 @@
 
     nix-comfyui = {
       url = "github:dyscorv/nix-comfyui";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
   };
 

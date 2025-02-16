@@ -1,14 +1,19 @@
-{ config, pkgs, pkgs-unstable, ... }:
+{ config, pkgs-unstable, ... }:
 
 let
-  whisper-pkg = pkgs.openai-whisper-cpp.override { config.cudaSupport = true; };
+  whisper-pkg = pkgs-unstable.openai-whisper-cpp.override {
+    config = {
+      cudaSupport = true;
+      rocmSupport = false;
+    };
+  };
 in {
   home = {
-    packages = with pkgs; [
+    packages = with pkgs-unstable; [
       ollama-cuda
       whisper-pkg
 
-      (pkgs-unstable.callPackage ./aider-chat.nix {})
+      aider-chat
 
       (comfyuiPackages.comfyui.override {
         extensions = [
@@ -19,7 +24,18 @@ in {
         ];
         commandLineArgs = [ "--preview-method" "auto" ];
       })
-      comfyuiPackages.krita-with-extensions
+      (comfyuiPackages.krita-with-extensions.override {
+        krita-ai-diffusion = (comfyuiPackages.krita-ai-diffusion.overrideAttrs {
+          src = fetchFromGitHub {
+            owner = "Acly";
+            repo = "krita-ai-diffusion";
+            fetchSubmodules = true;
+            rev = "9536fd028ed8b88525268b2c44585cbee50be3e8";
+            hash = "sha256-EjMpM2+Cz7nDXF16s//D5XrC0sGOsnLVEmHcsDlvIdo=";
+          };
+          patches = [];
+        });
+      })
     ];
   };
 
@@ -35,7 +51,7 @@ in {
     ollama = {
       Unit.Description = "Run Ollama";
       Install.WantedBy = [ "default.target" ];
-      Service.ExecStart = "${pkgs.ollama-cuda}/bin/ollama serve";
+      Service.ExecStart = "${pkgs-unstable.ollama-cuda}/bin/ollama serve";
     };
   };
 
@@ -100,7 +116,7 @@ in {
     name = "ComfyUI";
     categories = [ "Application" "Graphics" ];
     terminal = true;
-    exec = toString (pkgs.writeShellScript "start-comfyui.sh" ''
+    exec = toString (pkgs-unstable.writeShellScript "start-comfyui.sh" ''
       cd ${config.xdg.dataHome}/comfyui
       comfyui
     '');
