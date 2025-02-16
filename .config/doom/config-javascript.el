@@ -1,3 +1,5 @@
+;;; $DOOMDIR/config-javascript.el -*- lexical-binding: t; -*-
+
 (setq lsp-eslint-run "onSave")
 
 (add-hook! (+format-with-lsp-mode)
@@ -5,9 +7,6 @@
     (+format-with-lsp-mode -1)))
 
 (after! projectile
-  (message "after! projectile: add-to-list")
-  ;; (customize-set-variable) or require it https://emacs.stackexchange.com/questions/32104/add-to-a-list-that-defcustom-has-not-yet-defined
-  ;; maybe set :after in package recipe
   (add-to-list 'projectile-other-file-alist '("ts" . ("spec.ts")))
   (add-to-list 'projectile-other-file-alist '("spec.ts" . ("ts"))))
 

@@ -53,8 +53,6 @@
 (setq doom-modeline-vcs-max-length 20)
 (setq doom-modeline-buffer-file-name-style 'truncate-with-project)
 
-(setq lsp-enable-file-watchers nil)
-
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type nil)
@@ -114,21 +112,15 @@
 (map! :n "M-<up>" #'evil-window-up)
 (map! :n "M-<right>" #'evil-window-right)
 
-(map! "C-<down>" #'drag-stuff-down)
-(map! "C-<up>" #'drag-stuff-up)
-
 (map! :i "C-<tab>" 'yas-expand)
 
 ;; something was overwriting this to cause indentation
-(map! :n "C-i" 'better-jumper-jump-forward)
+(map! :m "C-i" 'better-jumper-jump-forward)
 
-(map! :n "] e" 'flycheck-next-error)
-(map! :n "[ e" 'flycheck-previous-error)
+(map! :m "]e" #'flycheck-next-error)
+(map! :m "[e" #'flycheck-previous-error)
 
 (map! :leader :n "c I" 'dd/js-install)
-(map! :leader :n "c j" 'consult-lsp-file-symbols)
-(map! :leader :n "c J" 'consult-lsp-symbols)
-(map! :leader :n "c X" 'lsp-eslint-apply-all-fixes)
 
 (map! :leader :desc "Find related file" :n "f o" 'projectile-find-other-file)
 
@@ -137,6 +129,9 @@
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 
 (map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
+
+(after! vertico-posframe
+  (setq vertico-posframe-poshandler #'posframe-poshandler-frame-bottom-center))
 
 (use-package! magit-delta
   :hook magit-mode)

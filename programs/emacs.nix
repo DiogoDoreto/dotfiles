@@ -34,6 +34,7 @@ in
     services.emacs = {
       enable = true;
       defaultEditor = true;
+      startWithUserSession  = true;
     };
 
     home.packages = with pkgs; [
@@ -68,6 +69,8 @@ in
         rev = "2bc052425ca45a41532be0648ebd976d1bd2e6c1";
         hash = "sha256-i0GVHWoIqDcFB9JmEdd9T+qxrEx3ckBlPfTD/yLoNyg=";
       };
+
+      "doom/modules/tools/lsp-extra/config.el".source = ../.config/doom/modules/tools/lsp-extra/config.el;
 
       "doom/modules/tools/ai/packages.el".source = ../.config/doom/modules/tools/ai/packages.el;
       "doom/modules/tools/ai/config.el".text = (readFile ../.config/doom/modules/tools/ai/config.el) + ''
