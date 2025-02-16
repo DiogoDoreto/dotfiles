@@ -31,6 +31,18 @@
     };
 
     neovim.enable = true;
+
+    mpv = {
+      enable = true;
+      scripts = with pkgs.mpvScripts; [
+        uosc # Feature-rich minimalist proximity-based UI for MPV player
+        mpris # allows control of the player using standard media keys
+        # YouTube improvements
+        sponsorblock
+        quality-menu
+        youtube-upnext
+      ];
+    };
   };
 
   dog.programs = {
