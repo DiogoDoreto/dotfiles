@@ -117,9 +117,6 @@
 ;; something was overwriting this to cause indentation
 (map! :m "C-i" 'better-jumper-jump-forward)
 
-(map! :m "]e" #'flycheck-next-error)
-(map! :m "[e" #'flycheck-previous-error)
-
 (map! :leader :n "c I" 'dd/js-install)
 
 (map! :leader :desc "Find related file" :n "f o" 'projectile-find-other-file)
@@ -129,6 +126,12 @@
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 
 (map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
+
+(after! flycheck
+  (advice-add #'flycheck-next-error :around #'doom-set-jump-maybe-a)
+
+  (map! :desc "Next error"     :m "]e" (cmd! (evil-without-repeat (flycheck-next-error)))
+        :desc "Previous error" :m "[e" (cmd! (evil-without-repeat (flycheck-previous-error)))))
 
 (after! vertico-posframe
   (setq vertico-posframe-poshandler #'posframe-poshandler-frame-bottom-center))
