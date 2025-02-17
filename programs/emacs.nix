@@ -40,6 +40,8 @@ in
     home.packages = with pkgs; [
       sqlite # for org-roam
       ffmpeg # for whisper package
+      ripgrep
+      wordnet
     ];
 
     home.sessionPath = [

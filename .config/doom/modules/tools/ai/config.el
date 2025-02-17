@@ -17,14 +17,25 @@
         gptel-backend (gptel-make-ollama "Ollama"
                         :host "localhost:11434"
                         :stream t
-                        :models '(qwen2.5-coder:32b deepseek-r1:32b))))
+                        :models '(qwen2.5-coder:32b deepseek-r1:32b)))
+  (and-let* ((auth-item (auth-source-search :host "github.com"))
+             (token (funcall (plist-get (car auth-item) :secret))))
+    (setq gptel-model 'gpt-4o
+          gptel-backend (gptel-make-openai "Copilot"
+                          :host "models.inference.ai.azure.com"
+                          :endpoint "/chat/completions?api-version=2024-12-01-preview"
+                          :stream t
+                          :key token
+                          :models '(gpt-4o o1 DeepSeek-R1)))))
 
 (map! :leader
       (:prefix-map ("l" . "LLM")
        :desc "Open chat buffer" "o" #'gptel
        :desc "Send" "RET" #'gptel-send
        :desc "Menu" "l" #'gptel-menu
-       :desc "Abort" "a" #'gptel-abort
+       :desc "Add buffer/region" "a" #'gptel-add
+       :desc "Abort" "x" #'gptel-abort
+
        :desc "Whisper Run" "w" #'whisper-run
        :desc "Whisper File" "W" #'whisper-file))
 
