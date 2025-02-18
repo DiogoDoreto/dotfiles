@@ -83,6 +83,9 @@
     #media-session.enable = true;
   };
 
+  # OpenTabletDriver is an open source, cross-platform, low latency, user-mode tablet driver.
+  hardware.opentabletdriver.enable = true;
+
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 

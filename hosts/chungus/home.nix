@@ -9,11 +9,12 @@
 
   home = {
     packages = with pkgs; [
-      nodejs_23
+      inkscape
+      inputs.home-manager.defaultPackage.x86_64-linux
       nix-tree
       nodePackages.prettier
+      nodejs_23
       ungoogled-chromium
-      inputs.home-manager.defaultPackage.x86_64-linux
     ];
   };
 
