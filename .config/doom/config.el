@@ -133,6 +133,18 @@
   (map! :desc "Next error"     :m "]e" (cmd! (evil-without-repeat (flycheck-next-error)))
         :desc "Previous error" :m "[e" (cmd! (evil-without-repeat (flycheck-previous-error)))))
 
+(after! corfu
+  (setq +corfu-want-tab-prefer-expand-snippets nil
+        +corfu-want-tab-prefer-navigating-snippets t
+        +corfu-want-tab-prefer-navigating-org-tables t))
+
+(after! yasnippet-capf
+  (remove-hook 'yas-minor-mode-hook #'+corfu-add-yasnippet-capf-h)
+  (remove-hook 'completion-at-point-functions #'yasnippet-capf)
+  (add-hook! 'yas-minor-mode-hook
+    (defun dd/add-yasnippet-capf-h ()
+      (add-hook 'completion-at-point-functions #'yasnippet-capf -10 t))))
+
 (after! vertico-posframe
   (setq vertico-posframe-poshandler #'posframe-poshandler-frame-bottom-center))
 

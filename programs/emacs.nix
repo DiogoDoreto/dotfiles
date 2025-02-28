@@ -68,8 +68,8 @@ in
       emacs.source = pkgs.fetchFromGitHub {
         owner = "doomemacs";
         repo = "doomemacs";
-        rev = "2bc052425ca45a41532be0648ebd976d1bd2e6c1";
-        hash = "sha256-i0GVHWoIqDcFB9JmEdd9T+qxrEx3ckBlPfTD/yLoNyg=";
+        rev = "56ce6cc284e8f4dd0cb0704dde6694a1b8e500ed";
+        hash = "sha256-dq3ZxCT4GIt14+DjCK1qmpxht0CHJ7cB6ha8bcPzfqQ=";
       };
 
       "doom/modules/tools/lsp-extra/config.el".source = ../.config/doom/modules/tools/lsp-extra/config.el;
