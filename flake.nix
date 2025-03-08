@@ -67,6 +67,13 @@
             ./hosts/chungus/home.nix
           ];
         };
+        "dog@mini" = home-manager.lib.homeManagerConfiguration {
+          inherit pkgs extraSpecialArgs;
+          modules = [
+            { home = { username = "dog"; homeDirectory = "/home/dog"; }; }
+            ./hosts/mini/home.nix
+          ];
+        };
         work = home-manager.lib.homeManagerConfiguration {
           inherit pkgs extraSpecialArgs;
           modules = [ ./home/work.nix ];
@@ -78,6 +85,19 @@
           inherit system specialArgs;
           modules = [
             ./hosts/chungus/configuration.nix
+            ./nix-config.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.extraSpecialArgs = specialArgs;
+              nixpkgs = { inherit overlays; };
+            }
+          ];
+        };
+        mini = nixpkgs.lib.nixosSystem rec {
+          inherit system specialArgs;
+          modules = [
+            nixos-hardware.nixosModules.common-cpu-intel
+            ./hosts/mini/configuration.nix
             ./nix-config.nix
             home-manager.nixosModules.home-manager
             {
