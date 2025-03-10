@@ -10,21 +10,25 @@
       ./hardware.nix
     ];
 
-  hardware.intelgpu.driver = "xe";
+  # TODO update kernel to use this:
+  # hardware.intelgpu.driver = "xe";
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "dogdot";
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  # Needed for podman. See https://github.com/containers/podman/discussions/23193#discussioncomment-9958326
+  boot.tmp.useTmpfs = true;
 
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-  # Enable networking
-  networking.networkmanager.enable = true;
+  networking = {
+    hostName = "dogdot";
+    networkmanager.enable = true;
+    firewall = {
+      enable = true;
+      allowedTCPPorts = [ 53 80 21064 21065 ];
+      allowedUDPPorts = [ 5353 ];
+    };
+  };
 
   # Set your time zone.
   time.timeZone = "Europe/Madrid";
@@ -98,6 +102,7 @@
   };
 
   # Enable automatic login for the user.
+  # FIXME evaluation warning: The option `services.xserver.displayManager.autoLogin' defined in `/nix/store/7bayasg3ildz0fs8z0k62dychxda4gcv-source/hosts/mini/configuration.nix' has been renamed to `services.displayManager.autoLogin'.
   services.xserver.displayManager.autoLogin.enable = true;
   services.xserver.displayManager.autoLogin.user = "dog";
 
@@ -134,11 +139,75 @@
     };
   };
 
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
+  services.jellyfin.enable = true;
+
+  services.dnsmasq = {
+    enable = true;
+    alwaysKeepRunning = true;
+    settings = let
+      static-ip = "192.168.0.2"; # needs to be set manually in networkmanager
+    in {
+      # interface = "wlo1";
+      # bind-interfaces = true;
+      address = "/${config.networking.hostName}.home/${static-ip}";
+
+      # Accept DNS queries only from hosts whose address is on a local subnet
+      # local-service = true;
+      # Do not read system files
+      no-hosts = true;
+      no-resolv = true;
+      # Do not send private addresses to upstream servers
+      bogus-priv = true;
+      # Do not send addresses without dot to upstream servers
+      domain-needed = true;
+      # Upstream DNS servers
+      server = [ "1.1.1.1" "1.0.0.1" ];
+      # Log DNS queries
+      log-queries = true;
+
+      # Enable DNSSEC
+      # dnssec = true;
+      # DNSSEC trust anchor. Source: https://data.iana.org/root-anchors/root-anchors.xml
+      # trust-anchor = ".,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D";
+    };
+  };
+
+  services.caddy = {
+    enable = true;
+    settings = let
+      hostname = "${config.networking.hostName}.home";
+    in {
+      apps.http.servers.dogdot = {
+        listen = [ ":80" ];
+        routes = [
+          {
+            match = [{
+              host = [ "jellyfin.${hostname}" ];
+            }];
+            handle = [{
+              handler = "reverse_proxy";
+              upstreams = [{
+                dial = "localhost:8096";
+              }];
+            }];
+          }
+          {
+            match = [{
+              host = [ "ha.${hostname}" ];
+            }];
+            handle = [{
+              handler = "reverse_proxy";
+              upstreams = [{
+                dial = "192.168.0.2:8123";
+              }];
+            }];
+          }
+        ];
+      };
+    };
+  };
+
+  virtualisation.podman.enable = true;
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
