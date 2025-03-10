@@ -17,7 +17,8 @@
         gptel-backend (gptel-make-ollama "Ollama"
                         :host "localhost:11434"
                         :stream t
-                        :models '(qwen2.5-coder:32b deepseek-r1:32b)))
+                        :models '(qwen2.5-coder:32b deepseek-r1:32b))
+        gptel--known-backends (assoc-delete-all "ChatGPT" gptel--known-backends))
   (and-let* ((auth-item (auth-source-search :host "github.com"))
              (token (funcall (plist-get (car auth-item) :secret))))
     (setq gptel-model 'gpt-4o
