@@ -11,7 +11,10 @@ in {
 
   config = mkIf cfg.enable {
     home.file = {
-      # TODO create a fix script based on https://github.com/nix-community/home-manager/issues/6083#issuecomment-2642454543
+      "bin/d-firefox-devtools-fix".source = pkgs.writeShellScript "d-firefox-devtools-fix" ''
+        # based on https://github.com/nix-community/home-manager/issues/6083#issuecomment-2642454543
+        sqlite3 ~/.mozilla/firefox/dog/places.sqlite "update moz_places set frecency = -1;"
+      '';
     };
 
     programs.firefox = {
