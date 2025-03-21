@@ -22,6 +22,9 @@
   boot.loader.efi.canTouchEfiVariables = true;
   boot.supportedFilesystems = [ "ntfs" ];
 
+  # Needed for podman. See https://github.com/containers/podman/discussions/23193#discussioncomment-9958326
+  boot.tmp.useTmpfs = true;
+
   networking.hostName = "chungus";
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
@@ -142,6 +145,8 @@
       KbdInteractiveAuthentication = false;
     };
   };
+
+  virtualisation.podman.enable = true;
 
   services.open-webui = {
     enable = true;

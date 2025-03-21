@@ -53,4 +53,16 @@
     firefox.enable = true;
     ghostty.enable = true;
   };
+
+  services.podman = {
+    enable = true;
+    containers = {
+      kokoro-tts = {
+        image = "ghcr.io/remsky/kokoro-fastapi-gpu";
+        autoStart = true;
+        ports = [ "8880:8880" ];
+        extraPodmanArgs = [ "--gpus=all" ];
+      };
+    };
+  };
 }
