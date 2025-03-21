@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, pkgs-unstable, ... }:
 
 {
   imports =
@@ -141,6 +141,11 @@
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
     };
+  };
+
+  services.open-webui = {
+    enable = true;
+    package = pkgs-unstable.open-webui;
   };
 
   # Open ports in the firewall.
