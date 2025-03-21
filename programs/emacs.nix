@@ -68,8 +68,9 @@ in
       emacs.source = pkgs.fetchFromGitHub {
         owner = "doomemacs";
         repo = "doomemacs";
-        rev = "8846d151814ebbf7fb90d9d5dd16cd737257408e";
-        hash = "sha256-3a1cfxzaM/jvrrODgYdxyji9KN0rQZjPJzgPFNRiBIw=";
+        rev = "466490c252d06f42a9c165f361de74a6e6abad8d";
+        # nix flake prefetch --json github:doomemacs/doomemacs/466490c252d06f42a9c165f361de74a6e6abad8d | jq .hash
+        hash = "sha256-wgzv3IFBxJkAYfLG0vCp1jbajHKrrpFzKZ2BssWVSlo=";
       };
 
       "doom/modules/tools/lsp-extra/config.el".source = ../.config/doom/modules/tools/lsp-extra/config.el;

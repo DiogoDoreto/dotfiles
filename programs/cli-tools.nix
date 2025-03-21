@@ -90,6 +90,8 @@ in
 
       gh.enable = true;
 
+      jq.enable = true;
+
       ripgrep.enable = true;
 
       starship = {
