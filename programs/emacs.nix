@@ -240,9 +240,9 @@ in
       emacs.source = pkgs.fetchFromGitHub {
         owner = "doomemacs";
         repo = "doomemacs";
-        rev = "466490c252d06f42a9c165f361de74a6e6abad8d";
-        # nix flake prefetch --json github:doomemacs/doomemacs/466490c252d06f42a9c165f361de74a6e6abad8d | jq .hash
-        hash = "sha256-wgzv3IFBxJkAYfLG0vCp1jbajHKrrpFzKZ2BssWVSlo=";
+        rev = "056d117b07ecc84361a54fe89d67acacdf061bef";
+        # nix flake prefetch --json github:doomemacs/doomemacs/056d117b07ecc84361a54fe89d67acacdf061bef | jq .hash
+        hash = "sha256-yyK4+HDso12XtVbmZnTOIaLwP5HJL1jK7M2HajcW4e0=";
       };
 
       "doom/modules/tools/lsp-extra/config.el".source = ../.config/doom/modules/tools/lsp-extra/config.el;
