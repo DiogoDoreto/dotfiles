@@ -26,6 +26,12 @@ nixos-mini-boot:
 nixos-mini-switch:
 	sudo -A nixos-rebuild --flake .#mini switch
 
-.PHONY: clean
-clean:
+.PHONY: gc
+gc:
 	nix-collect-garbage -d
+
+.PHONY: nixos-delete-generations
+nixos-delete-generations:
+	sudo -A nix-env --delete-generations 40d --profile /nix/var/nix/profiles/system
+	sudo -A nix-collect-garbage --delete-older-than 40d
+	sudo -A /nix/var/nix/profiles/system/bin/switch-to-configuration switch
