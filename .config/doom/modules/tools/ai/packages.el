@@ -1,3 +1,3 @@
 ;; -*- lexical-binding: t; no-byte-compile: t; -*-
 
-(package! gptel :pin "2a6f714d307c403684e81a1c4c0e521d7c4d12d8")
+(package! gptel :pin "913e9dba2a977647b1cc2cc8ec368ac896cc47c2")
