@@ -7,12 +7,142 @@ let
       rocmSupport = false;
     };
   };
+
+  python = pkgs-unstable.python312.override {
+    self = python;
+    packageOverrides = pyfinal: pyprev: {
+      grep-ast = pyprev.grep-ast.overridePythonAttrs rec {
+        version = "0.8.1";
+        src = pkgs-unstable.fetchPypi {
+          inherit version;
+          pname = "grep_ast";
+          hash = "sha256-j68oX0QEKvR9xqRfHh+AKYZgSFY9dYpxmwU5ytJkGH8=";
+        };
+        dependencies = with pyfinal; [
+          pathspec
+          tree-sitter-language-pack
+        ];
+        doCheck = false; # tests are still depending on old tree-sitter-languages
+      };
+      tree-sitter-c-sharp = pyfinal.callPackage ./tree-sitter-c-sharp.nix { };
+      tree-sitter-embedded-template = pyfinal.callPackage ./tree-sitter-embedded-template.nix { };
+      tree-sitter-yaml = pyfinal.callPackage ./tree-sitter-yaml.nix { };
+      tree-sitter-language-pack = pyfinal.callPackage ./tree-sitter-language-pack.nix { };
+    };
+  };
+
 in {
   home = {
     packages = with pkgs-unstable; [
       whisper-pkg
 
-      aider-chat
+      (aider-chat.overridePythonAttrs rec {
+        version = "0.78.0";
+        src = fetchFromGitHub {
+          owner = "Aider-AI";
+          repo = "aider";
+          tag = "v${version}";
+          hash = "sha256-6WrlhgHkoGRJnkY4XQOVBKLRVZ8u8ttulR9lm+WRKeg=";
+        };
+        dependencies = with python.pkgs; [
+          # add new dep:
+          tree-sitter-language-pack
+
+          # old deps:
+          aiohappyeyeballs
+          aiohttp
+          aiosignal
+          annotated-types
+          anyio
+          attrs
+          backoff
+          beautifulsoup4
+          certifi
+          cffi
+          charset-normalizer
+          click
+          configargparse
+          diff-match-patch
+          diskcache
+          distro
+          filelock
+          flake8
+          frozenlist
+          fsspec
+          gitdb
+          gitpython
+          grep-ast # UPDATED
+          h11
+          httpcore
+          httpx
+          huggingface-hub
+          idna
+          importlib-resources
+          jinja2
+          jiter
+          json5
+          jsonschema
+          jsonschema-specifications
+          litellm
+          markdown-it-py
+          markupsafe
+          mccabe
+          mdurl
+          multidict
+          networkx
+          numpy
+          openai
+          packaging
+          pathspec
+          pexpect
+          pillow
+          prompt-toolkit
+          psutil
+          ptyprocess
+          pycodestyle
+          pycparser
+          pydantic
+          pydantic-core
+          pydub
+          pyflakes
+          pygments
+          pypandoc
+          pyperclip
+          python-dotenv
+          pyyaml
+          referencing
+          regex
+          requests
+          rich
+          rpds-py
+          scipy
+          smmap
+          sniffio
+          sounddevice
+          socksio
+          soundfile
+          soupsieve
+          tiktoken
+          tokenizers
+          tqdm
+          tree-sitter # UPDDATED
+          # REMOVE: tree-sitter-languages
+          typing-extensions
+          urllib3
+          watchfiles
+          wcwidth
+          yarl
+          zipp
+          pip
+
+          # Not listed in requirements
+          mixpanel
+          monotonic
+          posthog
+          propcache
+          python-dateutil
+        ];
+      })
 
       (comfyuiPackages.comfyui.override {
         extensions = [
