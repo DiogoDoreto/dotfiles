@@ -16,6 +16,7 @@
   };
   hardware.nvidia.open = true;
   services.xserver.videoDrivers = [ "nvidia" ];
+  nixpkgs.config.cudaSupport = true;
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -58,8 +59,15 @@
   services.xserver.enable = true;
 
   # Enable the KDE Plasma Desktop Environment.
-  services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
+  services.displayManager = {
+    sddm.enable = true;
+    autoLogin = {
+      enable = true;
+      user = "dog";
+    };
+  };
+
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -109,10 +117,6 @@
     users.dog = import ./home.nix;
   };
 
-  # Enable automatic login for the user.
-  services.xserver.displayManager.autoLogin.enable = true;
-  services.xserver.displayManager.autoLogin.user = "dog";
-
   # Install firefox.
   programs.firefox.enable = true;
 
@@ -148,9 +152,31 @@
 
   virtualisation.podman.enable = true;
 
+  services.ollama = {
+    enable = true;
+    package = pkgs-unstable.ollama-cuda;
+    openFirewall = true;
+    host = "0.0.0.0";
+    acceleration = "cuda";
+    loadModels = [
+      "qwq"
+      "qwen2.5-coder:14b"
+      "qwen2.5-coder:32b"
+    ];
+  };
+
   services.open-webui = {
     enable = true;
     package = pkgs-unstable.open-webui;
+    openFirewall = true;
+    host = "0.0.0.0";
+  };
+
+  services.sunshine = {
+    enable = true;
+    package = pkgs-unstable.sunshine;
+    openFirewall = true;
+    capSysAdmin = true;
   };
 
   # Open ports in the firewall.

@@ -10,7 +10,6 @@ let
 in {
   home = {
     packages = with pkgs-unstable; [
-      ollama-cuda
       whisper-pkg
 
       aider-chat
