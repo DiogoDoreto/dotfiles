@@ -15,6 +15,7 @@
       onedrivegui
       qbittorrent
       pods # podman GUI
+      moonlight-qt
     ];
   };
 
