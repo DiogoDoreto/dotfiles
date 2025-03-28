@@ -26,7 +26,7 @@
     firewall = {
       enable = true;
       allowedTCPPorts = [ 53 80 21064 21065 ];
-      allowedUDPPorts = [ 5353 ];
+      allowedUDPPorts = [ 53 5353 ];
     };
   };
 
@@ -149,7 +149,11 @@
     in {
       # interface = "wlo1";
       # bind-interfaces = true;
-      address = "/${config.networking.hostName}.home/${static-ip}";
+      listen-address="::1,127.0.0.1,${static-ip}";
+      address = [
+        "/${config.networking.hostName}.home/${static-ip}"
+        "/chungus.home/192.168.0.3"
+      ];
 
       # Accept DNS queries only from hosts whose address is on a local subnet
       # local-service = true;
