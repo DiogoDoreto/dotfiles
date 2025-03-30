@@ -37,6 +37,11 @@
     emacs.enable = true;
     firefox.enable = true;
     ghostty.enable = true;
+
+    aider = {
+      enable = true;
+      ollamaApiBase = "http://chungus.home:11434";
+    };
   };
 
   services.podman = {
