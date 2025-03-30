@@ -206,6 +206,17 @@
               }];
             }];
           }
+          {
+            match = [{
+              host = [ "vite.${hostname}" ];
+            }];
+            handle = [{
+              handler = "reverse_proxy";
+              upstreams = [{
+                dial = "192.168.0.2:5173";
+              }];
+            }];
+          }
         ];
       };
     };
