@@ -34,9 +34,13 @@
   dog.programs = {
     cli-tools.enable = true;
     git.enable = true;
-    emacs.enable = true;
     firefox.enable = true;
     ghostty.enable = true;
+
+    emacs = {
+      enable = true;
+      extraConfig = builtins.readFile ./emacs-extra.el;
+    };
 
     aider = {
       enable = true;

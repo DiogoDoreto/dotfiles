@@ -13,16 +13,11 @@
 (use-package! gptel
   :defer t
   :config
-  (setq gptel-model 'qwen2.5-coder:32b
-        gptel-backend (gptel-make-ollama "Ollama"
-                        :host "localhost:11434"
-                        :stream t
-                        :models '(qwen2.5-coder:32b deepseek-r1:32b qwq))
-        gptel--known-backends (assoc-delete-all "ChatGPT" gptel--known-backends))
+  (setq gptel--known-backends (assoc-delete-all "ChatGPT" gptel--known-backends))
   (and-let* ((auth-item (auth-source-search :host "github.com"))
              (token (funcall (plist-get (car auth-item) :secret))))
     (setq gptel-model 'gpt-4o
-          gptel-backend (gptel-make-openai "Copilot"
+          gptel-backend (gptel-make-openai "Free Copilot"
                           :host "models.inference.ai.azure.com"
                           :endpoint "/chat/completions?api-version=2024-12-01-preview"
                           :stream t

@@ -58,6 +58,8 @@
 (setq display-line-numbers-type nil)
 
 (add-to-list 'auto-mode-alist '("\\.keymap\\'" . dts-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.mts\\'" . typescript-mode))
 
 (setq projectile-project-search-path (list "~/projects"))
 
