@@ -128,7 +128,7 @@ in
           };
           lookup = {
             enable = true;
-            flags = [ "+dictionary" "+docsets" ];
+            flags = [ "+dictionary" ];
           };
           lsp.enable = true;
           magit.enable = true;

@@ -192,4 +192,8 @@
       (cons lcov-file 'lcov)))
   (add-to-list 'cov-coverage-file-paths #'cov--locate-jest-lcov))
 
+(use-package! devdocs-browser
+  :config
+  (map! :leader "s k" #'devdocs-browser-open-in))
+
 (load! "config-javascript")

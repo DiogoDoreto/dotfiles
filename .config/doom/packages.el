@@ -19,6 +19,8 @@
 
 (package! cov)
 
+(package! devdocs-browser)
+
 ;; fix from: https://github.com/doomemacs/doomemacs/issues/8287#issuecomment-2683336880
 (package! track-changes :built-in t)
 
