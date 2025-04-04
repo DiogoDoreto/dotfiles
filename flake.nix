@@ -27,6 +27,11 @@
       url = "github:dyscorv/nix-comfyui";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+
+    doomemacs = {
+      url = "github:doomemacs/doomemacs";
+      flake = false;
+    };
   };
 
   outputs = { nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, ... }@inputs:

@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 with lib;
 
@@ -226,6 +226,8 @@ in
     };
 
     xdg.configFile = {
+      emacs.source = inputs.doomemacs;
+
       "doom/init.el".text = doomInitMacroFile;
       "doom/config-javascript.el".source = ../.config/doom/config-javascript.el;
       "doom/config.el" = {
@@ -236,14 +238,6 @@ in
       "doom/packages.el".text = (readFile ../.config/doom/packages.el)
         + "\n\n" + cfg.extraPackages;
       "doom/dd".source = ../.config/doom/dd;
-
-      emacs.source = pkgs.fetchFromGitHub {
-        owner = "doomemacs";
-        repo = "doomemacs";
-        rev = "9e624b5dfe54b7d8523d55313c22a5ef54659540";
-        # nix flake prefetch --json github:doomemacs/doomemacs/9e624b5dfe54b7d8523d55313c22a5ef54659540 | jq .hash
-        hash = "sha256-KoZKa2eP438dU27YsG40Xjg8EeRPfcJ0NmF7stz2BgI=";
-      };
 
       "doom/modules/tools/lsp-extra/config.el".source = ../.config/doom/modules/tools/lsp-extra/config.el;
 
