@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
@@ -11,20 +11,18 @@ in
   };
 
   config = mkIf cfg.enable {
-    home.packages = [
-      (config.lib.nixGL.wrap inputs.ghostty.packages.x86_64-linux.ghostty)
-    ];
-
-    xdg.configFile = {
-      "ghostty/config".text = ''
-        command = ${lib.getExe pkgs.fish} -l
-        theme = nightfox
-        window-theme = ghostty
-        font-family = "VictorMono Nerd Font Propo"
-        font-size = 11
-        background-opacity = 0.95
-        quit-after-last-window-closed = true
-      '';
+    programs.ghostty = {
+      enable = true;
+      enableFishIntegration = true;
+      settings = {
+        command = "${lib.getExe pkgs.fish} -l";
+        theme = "nightfox";
+        window-theme = "ghostty";
+        font-family = "VictorMono Nerd Font Propo";
+        font-size = 11;
+        background-opacity = 0.95;
+        quit-after-last-window-closed = true;
+      };
     };
 
     services.picom = {

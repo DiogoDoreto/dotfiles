@@ -23,12 +23,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    ghostty = {
-      url = "github:ghostty-org/ghostty";
-      inputs.nixpkgs-stable.follows = "nixpkgs";
-      inputs.nixpkgs-unstable.follows = "nixpkgs-unstable";
-    };
-
     nix-comfyui = {
       url = "github:dyscorv/nix-comfyui";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
