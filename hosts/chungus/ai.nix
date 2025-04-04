@@ -10,7 +10,7 @@ let
 in {
   home = {
     packages = with pkgs-unstable; [
-      whisper-pkg
+      # whisper-pkg
 
       (comfyuiPackages.comfyui.override {
         extensions = [
@@ -37,10 +37,10 @@ in {
   };
 
   dog.programs.emacs = {
-    whisperPackage = whisper-pkg;
-    extraConfig = ''
-      (setq whisper-model "large-v3-turbo")
-    '';
+    # whisperPackage = whisper-pkg;
+    # extraConfig = ''
+    #   (setq whisper-model "large-v3-turbo")
+    # '';
   };
 
   # ComfyUI
