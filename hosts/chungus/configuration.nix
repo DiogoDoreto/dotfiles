@@ -110,6 +110,34 @@
     ];
   };
 
+  security.sudo = {
+    enable = true;
+    extraRules = [{
+      commands = [
+        {
+          command = "${pkgs.systemd}/bin/systemctl reboot";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "${pkgs.systemd}/bin/reboot";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "${pkgs.systemd}/bin/systemctl poweroff";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "${pkgs.systemd}/bin/poweroff";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+      users = [ "dog" ];
+    }];
+    extraConfig = with pkgs; ''
+      Defaults:picloud secure_path="${lib.makeBinPath [systemd]}:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin"
+    '';
+  };
+
   home-manager = {
     # TODO check if this is the optimal way to have nixos and hm sharing the same nixpkgs reference
     useUserPackages = true;
