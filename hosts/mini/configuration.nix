@@ -80,6 +80,13 @@
   # OpenTabletDriver is an open source, cross-platform, low latency, user-mode tablet driver.
   hardware.opentabletdriver.enable = true;
 
+  # Bluetooth
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+  services.blueman.enable = true;
+
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 
