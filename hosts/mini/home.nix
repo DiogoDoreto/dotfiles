@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, pkgs-unstable, inputs, ... }:
 
 {
   imports = [
@@ -7,7 +7,7 @@
   ];
 
   home = {
-    packages = with pkgs; [
+    packages = (with pkgs; [
       inputs.home-manager.defaultPackage.x86_64-linux
       nodejs_23
       ungoogled-chromium
@@ -16,7 +16,9 @@
       qbittorrent
       pods # podman GUI
       moonlight-qt
-    ];
+    ]) ++ (with pkgs-unstable; [
+      ardour
+    ]);
   };
 
   programs = {
