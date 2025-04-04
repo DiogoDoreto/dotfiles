@@ -5,3 +5,5 @@
                         :host "chungus.home:11434"
                         :stream t
                         :models '(qwen2.5-coder:32b deepseek-r1:32b qwq))))
+
+(add-to-list 'tramp-remote-path 'tramp-own-remote-path)
