@@ -197,3 +197,6 @@
   (map! :leader "s k" #'devdocs-browser-open-in))
 
 (load! "config-javascript")
+
+(after! good-scroll
+  (setq good-scroll-step 20))

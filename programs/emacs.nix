@@ -79,6 +79,10 @@ in
             enable = true;
             flags = [ "+defaults" ];
           };
+          smooth-scroll = {
+            enable = true;
+            flags = [ "+interpolate" ];
+          };
           vc-gutter = {
             enable = true;
             flags = [ "+pretty" ];
