@@ -108,9 +108,8 @@
   };
 
   # Enable automatic login for the user.
-  # FIXME evaluation warning: The option `services.xserver.displayManager.autoLogin' defined in `/nix/store/7bayasg3ildz0fs8z0k62dychxda4gcv-source/hosts/mini/configuration.nix' has been renamed to `services.displayManager.autoLogin'.
-  services.xserver.displayManager.autoLogin.enable = true;
-  services.xserver.displayManager.autoLogin.user = "dog";
+  services.displayManager.autoLogin.enable = true;
+  services.displayManager.autoLogin.user = "dog";
 
   # Install firefox.
   programs.firefox.enable = true;
