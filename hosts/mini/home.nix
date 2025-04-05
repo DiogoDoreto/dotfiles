@@ -8,14 +8,15 @@
 
   home = {
     packages = (with pkgs; [
+      calibre
       inputs.home-manager.defaultPackage.x86_64-linux
-      nodejs_23
-      ungoogled-chromium
       keepassxc
-      onedrivegui
-      qbittorrent
-      pods # podman GUI
       moonlight-qt
+      nodejs_23
+      onedrivegui
+      pods # podman GUI
+      qbittorrent
+      ungoogled-chromium
     ]) ++ (with pkgs-unstable; [
       ardour
     ]);
