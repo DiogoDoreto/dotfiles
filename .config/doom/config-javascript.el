@@ -24,3 +24,5 @@
        :desc "Run current buffer"    "f" #'jest-test-run
        :desc "Run current project"   "p" #'jest-test-run-all-tests
        :desc "Run test under cursor" "t" #'jest-test-run-at-point))
+
+(add-to-list '+lookup-provider-url-alist '("NPM" "https://www.npmjs.com/search?q=%s"))

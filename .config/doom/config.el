@@ -73,6 +73,16 @@
 
 (setq vterm-shell "fish")
 
+;; when 2 buffers have the same name, add the parent folder name to
+;; differentiate them, separating by forward slashes
+(setq uniquify-buffer-name-style 'forward)
+
+(setq flymake-show-diagnostics-at-end-of-line t)
+
+(setq tramp-use-connection-share t
+      tramp-ssh-controlmaster-options (concat "-o ControlPath=/tmp/ssh-ControlPath-%%r@%%h:%%p "
+                                              "-o ControlMaster=auto -o ControlPersist=yes"))
+
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
 ;;
