@@ -16,13 +16,14 @@
   (setq gptel--known-backends (assoc-delete-all "ChatGPT" gptel--known-backends))
   (and-let* ((auth-item (auth-source-search :host "github.com"))
              (token (funcall (plist-get (car auth-item) :secret))))
-    (setq gptel-model 'gpt-4o
-          gptel-backend (gptel-make-openai "Free Copilot"
-                          :host "models.inference.ai.azure.com"
-                          :endpoint "/chat/completions?api-version=2024-12-01-preview"
-                          :stream t
-                          :key token
-                          :models '(gpt-4o o1 DeepSeek-R1)))))
+    (gptel-make-openai "Free Copilot"
+      :host "models.inference.ai.azure.com"
+      :endpoint "/chat/completions?api-version=2024-12-01-preview"
+      :stream t
+      :key token
+      :models '(gpt-4o o1 DeepSeek-R1)))
+  (setq gptel-model 'claude-3.7-sonnet
+        gptel-backend (gptel-make-gh-copilot "Copilot")))
 
 (map! :leader
       (:prefix-map ("l" . "LLM")
