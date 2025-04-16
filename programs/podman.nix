@@ -23,5 +23,9 @@ in {
         default = [{ type = "insecureAcceptAnything"; }];
       };
     };
+
+    services.podman = {
+      enable = true;
+    };
   };
 }
