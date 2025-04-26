@@ -14,12 +14,12 @@
       keepassxc
       moonlight-qt
       nodejs_23
-      onedrivegui
       pods # podman GUI
       qbittorrent
       ungoogled-chromium
     ]) ++ (with pkgs-unstable; [
       ardour
+      onedrivegui
     ]);
   };
 
