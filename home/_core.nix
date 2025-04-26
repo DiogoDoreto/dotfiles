@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, pkgs-unstable, ... }:
 
 {
   imports = [
@@ -8,8 +8,8 @@
   home = {
     stateVersion = "24.11";
 
-    packages = with pkgs; [
-      (nerdfonts.override { fonts = [ "VictorMono" ]; })
+    packages = with pkgs-unstable; [
+      nerd-fonts.victor-mono
     ];
 
     sessionPath = [
@@ -17,9 +17,7 @@
     ];
   };
 
-  fonts.fontconfig = {
-    enable = true;
-  };
+  fonts.fontconfig.enable = true;
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
