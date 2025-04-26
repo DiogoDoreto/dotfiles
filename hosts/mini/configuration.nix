@@ -146,6 +146,15 @@
   };
 
   services.jellyfin.enable = true;
+  fileSystems."${config.services.jellyfin.dataDir}/torrent" = {
+    device = "/home/dog/Downloads/torrent";
+    fsType = "ext4";
+    options = [
+      "bind"
+      "uid=${toString config.users.users.jellyfin.uid}"
+      "gid=${toString config.users.groups.jellyfin.gid}"
+    ];
+  };
 
   services.dnsmasq = {
     enable = true;
