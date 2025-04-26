@@ -25,6 +25,11 @@
   (setq gptel-model 'claude-3.7-sonnet
         gptel-backend (gptel-make-gh-copilot "Copilot")))
 
+(use-package! aidermacs
+  :defer t
+  :config
+  (setq aidermacs-backend 'vterm))
+
 (map! :leader
       (:prefix-map ("l" . "LLM")
        :desc "Open chat buffer" "o" #'gptel
@@ -32,6 +37,8 @@
        :desc "Menu" "l" #'gptel-menu
        :desc "Add buffer/region" "a" #'gptel-add
        :desc "Abort" "x" #'gptel-abort
+
+       :desc "Aider" "d" #'aidermacs-transient-menu
 
        :desc "Whisper Run" "w" #'whisper-run
        :desc "Whisper File" "W" #'whisper-file))
