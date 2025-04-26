@@ -75,7 +75,6 @@
         "dog@mini" = home-manager.lib.homeManagerConfiguration {
           inherit pkgs extraSpecialArgs;
           modules = [
-            inputs.plasma-manager.homeManagerModules.plasma-manager
             { home = { username = "dog"; homeDirectory = "/home/dog"; }; }
             ./hosts/mini/home.nix
           ];
