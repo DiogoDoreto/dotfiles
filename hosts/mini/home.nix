@@ -4,6 +4,7 @@
   imports = [
     ../../home/_core.nix
     ../../home/_linux.nix
+    ./plasma.nix
   ];
 
   home = {

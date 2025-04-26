@@ -32,6 +32,12 @@
       url = "github:doomemacs/doomemacs";
       flake = false;
     };
+
+    plasma-manager = {
+      url = "github:nix-community/plasma-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
   };
 
   outputs = { nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, ... }@inputs:
@@ -69,6 +75,7 @@
         "dog@mini" = home-manager.lib.homeManagerConfiguration {
           inherit pkgs extraSpecialArgs;
           modules = [
+            inputs.plasma-manager.homeManagerModules.plasma-manager
             { home = { username = "dog"; homeDirectory = "/home/dog"; }; }
             ./hosts/mini/home.nix
           ];
