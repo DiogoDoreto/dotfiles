@@ -83,6 +83,10 @@
       tramp-ssh-controlmaster-options (concat "-o ControlPath=/tmp/ssh-ControlPath-%%r@%%h:%%p "
                                               "-o ControlMaster=auto -o ControlPersist=yes"))
 
+(add-to-list '+lookup-provider-url-alist '("Nix Packages" "https://search.nixos.org/packages?query=%s"))
+(add-to-list '+lookup-provider-url-alist '("Nix Options" "https://search.nixos.org/options?query=%s"))
+(add-to-list '+lookup-provider-url-alist '("Nix Wiki" "https://nixos.wiki/index.php?search=%s&go=Go&fulltext=1"))
+
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
 ;;
