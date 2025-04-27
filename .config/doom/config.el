@@ -55,7 +55,7 @@
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type nil)
+(setq display-line-numbers-type 'relative)
 
 (add-to-list 'auto-mode-alist '("\\.keymap\\'" . dts-mode))
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
