@@ -138,13 +138,22 @@ a old-string and a new-string, new-string will replace the old-string at the spe
   :config
   (setq aidermacs-backend 'vterm))
 
+(use-package! copilot
+  ;; :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("C-i" . 'copilot-accept-completion)
+              ("M-i" . 'copilot-accept-completion-by-word)))
+
 (map! :leader
       (:prefix-map ("l" . "LLM")
-       :desc "Open chat buffer" "o" #'gptel
-       :desc "Send" "RET" #'gptel-send
-       :desc "Menu" "l" #'gptel-menu
+       :desc "Open chat buffer"  "o" #'gptel
+       :desc "Send"              "RET" #'gptel-send
+       :desc "Menu"              "l" #'gptel-menu
        :desc "Add buffer/region" "a" #'gptel-add
-       :desc "Abort" "x" #'gptel-abort
+       :desc "Abort"             "x" #'gptel-abort
+
+       :desc "Buffer Copilot"    "i" #'copilot-mode
+       :desc "Global Copilot"    "I" #'global-copilot-mode
 
        :desc "model=gpt-4o" "1" (cmd! (setq gptel-model 'gpt-4o))
        :desc "model=o1"     "2" (cmd! (setq gptel-model 'o1))
@@ -153,8 +162,8 @@ a old-string and a new-string, new-string will replace the old-string at the spe
 
        :desc "Aider" "d" #'aidermacs-transient-menu
 
-       :desc "Whisper Run" "w" #'whisper-run
-       :desc "Whisper File" "W" #'whisper-file))
+       :desc "Whisper Run"       "w" #'whisper-run
+       :desc "Whisper File"      "W" #'whisper-file))
 
 (setq whisper-return-cursor-to-start nil)
 
