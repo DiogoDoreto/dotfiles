@@ -156,6 +156,7 @@ in
             enable = true;
             flags = [ "+lsp" "+tree-sitter" ];
           };
+          nix-extras.enable = true;
           org = {
             enable = true;
             flags = [ "+roam2" ];
@@ -242,6 +243,8 @@ in
       "doom/packages.el".text = (readFile ../.config/doom/packages.el)
         + "\n\n" + cfg.extraPackages;
       "doom/dd".source = ../.config/doom/dd;
+
+      "doom/modules/lang/nix-extras".source = ../.config/doom/modules/lang/nix-extras;
 
       "doom/modules/tools/lsp-extra/config.el".source = ../.config/doom/modules/tools/lsp-extra/config.el;
 
