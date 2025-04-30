@@ -52,7 +52,7 @@
               (format "Failed to edited %s" file-name))))
       (format "Failed to edited %s" file-path)))
 
-  (setq gptel-model 'claude-3.7-sonnet
+  (setq gptel-model 'gpt-4o
         gptel-backend (gptel-make-gh-copilot "Copilot")
         gptel-confirm-tool-calls t
         gptel-tools (list (gptel-make-tool
@@ -145,6 +145,11 @@ a old-string and a new-string, new-string will replace the old-string at the spe
        :desc "Menu" "l" #'gptel-menu
        :desc "Add buffer/region" "a" #'gptel-add
        :desc "Abort" "x" #'gptel-abort
+
+       :desc "model=gpt-4o" "1" (cmd! (setq gptel-model 'gpt-4o))
+       :desc "model=o1"     "2" (cmd! (setq gptel-model 'o1))
+       :desc "model=claude-3.7-sonnet"         "4" (cmd! (setq gptel-model 'claude-3.7-sonnet))
+       :desc "model=claude-3.7-sonnet-thought" "5" (cmd! (setq gptel-model 'claude-3.7-sonnet-thought))
 
        :desc "Aider" "d" #'aidermacs-transient-menu
 
