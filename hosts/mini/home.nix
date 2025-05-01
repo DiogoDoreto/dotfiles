@@ -16,7 +16,6 @@
       moonlight-qt
       nodejs_23
       pods # podman GUI
-      qbittorrent
       ungoogled-chromium
     ]) ++ (with pkgs-unstable; [
       ardour

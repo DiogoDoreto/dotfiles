@@ -6,8 +6,9 @@
 
 {
   imports =
-    [ # Include the results of the hardware scan.
-      ./hardware.nix
+    [
+      ./hardware.nix # Include the results of the hardware scan.
+      ./media.nix
     ];
 
   # TODO update kernel to use this:
@@ -145,15 +146,15 @@
     };
   };
 
-  services.jellyfin.enable = true;
-  fileSystems."${config.services.jellyfin.dataDir}/torrent" = {
-    device = "/home/dog/Downloads/torrent";
-    fsType = "ext4";
-    options = [
-      "bind"
-      "uid=${toString config.users.users.jellyfin.uid}"
-      "gid=${toString config.users.groups.jellyfin.gid}"
-    ];
+  services.openvpn.servers = {
+    vpn-es = {
+      config = "config /home/dog/.vpn/es-mad.prod.surfshark.comsurfshark_openvpn_udp.ovpn";
+      autoStart = true;
+    };
+    vpn-br = {
+      config = "config /home/dog/.vpn/br-sao.prod.surfshark.comsurfshark_openvpn_udp.ovpn";
+      autoStart = false;
+    };
   };
 
   services.dnsmasq = {
@@ -195,46 +196,39 @@
     enable = true;
     settings = let
       hostname = "${config.networking.hostName}.home";
+      rproxies = [
+        { name = "lidarr";   port = "8686"; }
+        { name = "radarr";   port = "7878"; }
+        { name = "sonarr";   port = "8989"; }
+        { name = "prowlarr"; port = "9696"; }
+        { name = "qbit";     port = "8079"; }
+        { name = "jellyfin"; port = "8096"; }
+        { name = "ha";       port = "8123"; }
+        { name = "home";     port = "8082"; }
+        { name = "vite";     port = "5173"; }
+      ];
+      make-rproxy = {name, port}: {
+        match = [{
+          host = [ "${name}.${hostname}" ];
+        }];
+        handle = [{
+          handler = "reverse_proxy";
+          upstreams = [{
+            dial = "localhost:${port}";
+          }];
+        }];
+      };
     in {
       apps.http.servers.dogdot = {
         listen = [ ":80" ];
-        routes = [
-          {
-            match = [{
-              host = [ "jellyfin.${hostname}" ];
-            }];
-            handle = [{
-              handler = "reverse_proxy";
-              upstreams = [{
-                dial = "localhost:8096";
-              }];
-            }];
-          }
-          {
-            match = [{
-              host = [ "ha.${hostname}" ];
-            }];
-            handle = [{
-              handler = "reverse_proxy";
-              upstreams = [{
-                dial = "192.168.0.2:8123";
-              }];
-            }];
-          }
-          {
-            match = [{
-              host = [ "vite.${hostname}" ];
-            }];
-            handle = [{
-              handler = "reverse_proxy";
-              upstreams = [{
-                dial = "192.168.0.2:5173";
-              }];
-            }];
-          }
-        ];
+        routes = (map make-rproxy rproxies);
       };
     };
+  };
+
+  services.homepage-dashboard = {
+    enable = true;
+    listenPort = 8082;
   };
 
   virtualisation.podman.enable = true;
