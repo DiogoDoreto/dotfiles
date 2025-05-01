@@ -117,6 +117,17 @@
 
 (map! "C-s" 'save-buffer)
 
+(defun dd/insert-semicolon-and-return ()
+  "Save the current position in the line, move to the end, insert a semicolon,
+and return to the original position."
+  (interactive)
+  (let ((current-pos (point)))
+    (end-of-line)
+    (insert ";")
+    (goto-char current-pos)))
+
+(map! :ni "C-b" #'dd/insert-semicolon-and-return)
+
 (map! :n "g b" 'browse-url)
 
 (map! :n "M-<left>" #'evil-window-left)
