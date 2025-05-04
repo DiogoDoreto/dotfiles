@@ -9,6 +9,7 @@
         "lidarr"
         "sonarr"
         "radarr"
+        "nextcloud"
       ];
     };
 

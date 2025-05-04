@@ -136,6 +136,22 @@
 
   # List services that you want to enable:
 
+  services.nextcloud = {
+    enable = true;
+    package = pkgs.nextcloud30;
+    hostName = "localhost";
+    settings = {
+      trusted_domains = [ "nextcloud.dogdot.home" ];
+    };
+    config = {
+      adminpassFile = "/var/lib/nextcloud-pass.txt";
+      dbtype = "sqlite";
+    };
+  };
+  services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
+    { addr = "127.0.0.1"; port = 5387; }
+  ];
+
   # Enable the OpenSSH daemon.
   services.openssh = {
     enable = true;
@@ -197,24 +213,25 @@
     settings = let
       hostname = "${config.networking.hostName}.home";
       rproxies = [
-        { name = "lidarr";   port = "8686"; }
-        { name = "radarr";   port = "7878"; }
-        { name = "sonarr";   port = "8989"; }
-        { name = "prowlarr"; port = "9696"; }
-        { name = "qbit";     port = "8079"; }
-        { name = "jellyfin"; port = "8096"; }
-        { name = "ha";       port = "8123"; }
-        { name = "home";     port = "8082"; }
-        { name = "vite";     port = "5173"; }
+        { name = "nextcloud"; port = "5387"; }
+        { name = "lidarr";    port = "8686"; }
+        { name = "radarr";    port = "7878"; }
+        { name = "sonarr";    port = "8989"; }
+        { name = "prowlarr";  port = "9696"; }
+        { name = "qbit";      port = "8079"; }
+        { name = "jellyfin";  port = "8096"; }
+        { name = "ha";        host = "192.168.0.2"; port = "8123"; }
+        { name = "home";      port = "8082"; }
+        { name = "vite";      port = "5173"; }
       ];
-      make-rproxy = {name, port}: {
+      make-rproxy = {name, host ? "localhost", port}: {
         match = [{
           host = [ "${name}.${hostname}" ];
         }];
         handle = [{
           handler = "reverse_proxy";
           upstreams = [{
-            dial = "localhost:${port}";
+            dial = "${host}:${port}";
           }];
         }];
       };
@@ -229,7 +246,109 @@
   services.homepage-dashboard = {
     enable = true;
     listenPort = 8082;
+    package = pkgs.homepage-dashboard.override { enableLocalIcons = true; };
+    widgets = [
+      {
+        resources = {
+          cpu = true;
+          memory = true;
+          disk = "/";
+        };
+      }
+      {
+        search = {
+          provider = "duckduckgo";
+          target = "_blank";
+        };
+      }
+    ];
+    services = [
+      {
+        Media = [
+          {
+            "NextCloud" = rec {
+              icon = "nextcloud.png";
+              href = "http://nextcloud.dogdot.home";
+              ping = href;
+            };
+          }
+          {
+            "HomeAssistant" = rec {
+              icon = "home-assistant.png";
+              href = "http://ha.dogdot.home";
+              ping = href;
+            };
+          }
+          {
+            "jellyfin" = rec {
+              icon = "jellyfin.png";
+              href = "http://jellyfin.dogdot.home";
+              ping = href;
+            };
+          }
+          {
+            "qBittorrent" = rec {
+              icon = "qbittorrent.png";
+              href = "http://qbit.dogdot.home";
+              ping = href;
+              widget = {
+                type = "qbittorrent";
+                url = href;
+              };
+            };
+          }
+          {
+            "Radarr" = rec {
+              icon = "radarr.png";
+              description = "Movies downloader";
+              href = "http://radarr.dogdot.home";
+              ping = href;
+              widget = {
+                type = "radarr";
+                url = href;
+                key = "29b5783c14964b3abae3886e4fe3b93b";
+              };
+            };
+          }
+          {
+            "Sonarr" = rec {
+              icon = "sonarr.png";
+              description = "TV Shows downloader";
+              href = "http://sonarr.dogdot.home";
+              ping = href;
+              widget = {
+                type = "sonarr";
+                url = href;
+                key = "023e2f0779304b6e9bbb6cd077cf8dc8";
+              };
+            };
+          }
+          {
+            "Lidarr" = rec {
+              icon = "lidarr.png";
+              description = "Music downloader";
+              href = "http://lidarr.dogdot.home";
+              ping = href;
+              widget = {
+                type = "lidarr";
+                url = href;
+                key = "d7bc3d65c5334400b6f3338de945915a";
+              };
+            };
+          }
+          {
+            "Prowlarr " = rec {
+              icon = "prowlarr.png";
+              description = "Search torrents";
+              href = "http://prowlarr.dogdot.home";
+              ping = href;
+            };
+          }
+        ];
+      }
+    ];
   };
+  systemd.services.homepage-dashboard.path = [ pkgs.unixtools.ping ];
 
   virtualisation.podman.enable = true;
 
