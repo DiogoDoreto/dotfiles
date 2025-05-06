@@ -31,7 +31,7 @@
 ;; See 'C-h v doom-font' for documentation and more examples of what they
 ;; accept. For example:
 ;;
-(setq doom-font (font-spec :family "VictorMono Nerd Font Propo" :size 17 :weight 'semi-light))
+(setq doom-font (font-spec :family "VictorMono Nerd Font Mono" :size 17 :weight 'semi-light))
 
 (after! tree-sitter
   (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
