@@ -26,7 +26,7 @@
     networkmanager.enable = true;
     firewall = {
       enable = true;
-      allowedTCPPorts = [ 53 80 21064 21065 ];
+      allowedTCPPorts = [ 53 80 443 21064 21065 ];
       allowedUDPPorts = [ 53 5353 ];
     };
   };
@@ -141,7 +141,7 @@
     package = pkgs.nextcloud30;
     hostName = "localhost";
     settings = {
-      trusted_domains = [ "nextcloud.dogdot.home" ];
+      trusted_domains = [ "nextcloud.dogdot.home" "nextcloud.local.doreto.com.br" ];
     };
     config = {
       adminpassFile = "/var/lib/nextcloud-pass.txt";
@@ -184,6 +184,7 @@
       listen-address="::1,127.0.0.1,${static-ip}";
       address = [
         "/${config.networking.hostName}.home/${static-ip}"
+        "/.local.doreto.com.br/${static-ip}"
         "/chungus.home/192.168.0.3"
       ];
 
@@ -226,7 +227,7 @@
       ];
       make-rproxy = {name, host ? "localhost", port}: {
         match = [{
-          host = [ "${name}.${hostname}" ];
+          host = [ "${name}.${hostname}" "${name}.local.doreto.com.br" ];
         }];
         handle = [{
           handler = "reverse_proxy";
@@ -237,9 +238,13 @@
       };
     in {
       apps.http.servers.dogdot = {
-        listen = [ ":80" ];
+        listen = [ ":80" ":443" ];
         routes = (map make-rproxy rproxies);
       };
+      apps.tls.certificates.load_files = [{
+        certificate = "/var/lib/caddy/certs/fullchain1.pem";
+        key = "/var/lib/caddy/certs/privkey1.pem";
+      }];
     };
   };
 
