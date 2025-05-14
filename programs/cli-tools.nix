@@ -56,6 +56,7 @@ in
           e = "emacsclient -nc";
           la = "eza -l --icons --git -a";
           ll = "eza -l --icons --git --git-ignore";
+          tree = "eza --tree";
         };
         shellInitLast = ''
           ### Emacs' vterm integration ###
