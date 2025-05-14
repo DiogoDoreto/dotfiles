@@ -10,6 +10,7 @@
 
     packages = with pkgs-unstable; [
       nerd-fonts.victor-mono
+      nerd-fonts.symbols-only
     ];
 
     sessionPath = [
