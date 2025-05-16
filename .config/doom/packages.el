@@ -3,6 +3,8 @@
 
 (package! dd :recipe (:local-repo "dd"))
 
+(package! ef-themes)
+
 (package! dts-mode)
 
 (package! magit-delta)
