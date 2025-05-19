@@ -150,11 +150,16 @@ and return to the original position."
 
 (map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
 
+(advice-add #'+default/search-buffer :around #'doom-set-jump-maybe-a)
+
 (after! flycheck
   (advice-add #'flycheck-next-error :around #'doom-set-jump-maybe-a)
 
   (map! :desc "Next error"     :m "]e" (cmd! (evil-without-repeat (flycheck-next-error)))
-        :desc "Previous error" :m "[e" (cmd! (evil-without-repeat (flycheck-previous-error)))))
+        :desc "Previous error" :m "[e" (cmd! (evil-without-repeat (flycheck-previous-error)))
+        :leader
+        :desc "Explain error"  :n "c ," #'flycheck-explain-error-at-point
+        :desc "List errors"    :n "c x" #'flycheck-list-errors))
 
 (after! corfu
   (setq +corfu-want-tab-prefer-expand-snippets nil
@@ -189,7 +194,9 @@ and return to the original position."
   :hook magit-mode)
 
 (use-package! fancy-compilation
-  :commands fancy-compilation-mode)
+  :commands fancy-compilation-mode
+  :config
+  (setq fancy-compilation-override-colors nil))
 (with-eval-after-load 'compile
   (fancy-compilation-mode))
 

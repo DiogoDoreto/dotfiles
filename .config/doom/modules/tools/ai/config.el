@@ -155,8 +155,9 @@ a old-string and a new-string, new-string will replace the old-string at the spe
        :desc "Buffer Copilot"    "i" #'copilot-mode
        :desc "Global Copilot"    "I" #'global-copilot-mode
 
-       :desc "model=gpt-4o" "1" (cmd! (setq gptel-model 'gpt-4o))
-       :desc "model=o1"     "2" (cmd! (setq gptel-model 'o1))
+       :desc "model=gpt-4o"  "1" (cmd! (setq gptel-model 'gpt-4o))
+       :desc "model=o1"      "2" (cmd! (setq gptel-model 'o1))
+       :desc "model=gpt-4.1" "3" (cmd! (setq gptel-model 'gpt-4.1))
        :desc "model=claude-3.7-sonnet"         "4" (cmd! (setq gptel-model 'claude-3.7-sonnet))
        :desc "model=claude-3.7-sonnet-thought" "5" (cmd! (setq gptel-model 'claude-3.7-sonnet-thought))
 

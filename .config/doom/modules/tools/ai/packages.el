@@ -1,5 +1,7 @@
 ;; -*- lexical-binding: t; no-byte-compile: t; -*-
 
-(package! gptel :pin "1aa5f1c10df34aeb08f677cd4aa4ef1fc12e87df")
+(package! gptel :pin "fcdbe074140bf7b9c027a3478902edafe8ec76f8")
 
-(package! copilot :pin "782970051c4ad569140fcc24ff6eacb0f0b40cef")
+(package! copilot :pin "fe3f51b636dea1c9ac55a0d5dc5d7df02dcbaa48")
+
+(package! aidermacs :pin "e80c8564ef4d3ee72866f485ce3fe6b33a13eccd")
