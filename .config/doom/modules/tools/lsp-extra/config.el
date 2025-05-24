@@ -19,7 +19,8 @@
   (defun lsp-extra--should-auto-run-action (action-title)
     (and action-title
          (or (string= action-title "Add async modifier to containing function")
-             (s-starts-with? "Remove unused declaration for:" action-title))))
+             (s-starts-with? "Remove unused declaration for:" action-title)
+             (s-starts-with? "Remove import from " action-title))))
 
   (defun lsp-extra-show-actions-at-point ()
     (interactive)
@@ -27,11 +28,12 @@
            (action-title-list (mapcar #'lsp-extra--code-action-to-popup-item action-list)))
       (if (lsp-extra--should-auto-run-action (car action-title-list))
           (lsp-execute-code-action (car action-list))
-        (let* ((selected-action-title (popup-menu* action-title-list :isearch t))
-               (selected-action (seq-find (lambda (hs) (string= (lsp:code-action-title hs) selected-action-title))
-                                          (lsp-code-actions-at-point))))
-          (if selected-action (lsp-execute-code-action selected-action)
-            (message "Could not find action: %s" selected-action-title))))))
+        (if (not action-title-list) (message "No actions at point")
+          (let* ((selected-action-title (popup-menu* action-title-list :isearch t))
+                 (selected-action (seq-find (lambda (hs) (string= (lsp:code-action-title hs) selected-action-title))
+                                            (lsp-code-actions-at-point))))
+            (if selected-action (lsp-execute-code-action selected-action)
+              (message "Could not find action: %s" selected-action-title)))))))
 
 
   (map! :leader
