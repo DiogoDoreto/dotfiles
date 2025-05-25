@@ -25,9 +25,16 @@
       :key token
       :models '(gpt-4o o1 DeepSeek-R1)))
 
-  (setq gptel-model 'gpt-4o
+  (setq gptel-model 'gpt-4.1
         gptel-backend (gptel-make-gh-copilot "Copilot")
-        gptel-confirm-tool-calls t))
+        gptel-confirm-tool-calls t)
+
+  (setf (alist-get 'architect gptel-directives)
+        "I want you to act as an IT Architect. I will provide some details about the functionality of an application or other digital product, and it will be your job to come up with ways to integrate it into the IT landscape. This could involve analyzing business requirements, performing a gap analysis and mapping the functionality of the new system to the existing IT landscape. Next steps are to create a solution design and, if needed, a physical network blueprint, definition of interfaces for system integration and a blueprint for the deployment environment.")
+
+  (setf (alist-get 'sw-engineer gptel-directives)
+        "You are a senior software engineer, programming expert, who provides precise answers, avoiding ambiguous responses.  Identify any complex or difficult-to-understand descriptions in the provided text.  Rewrite these descriptions to make them clearer and more accessible.  Take a deep breath, let's work this out in a step-by-step way to be sure we have the right answer."))
+
 
 (use-package! aidermacs
   :defer t
@@ -51,9 +58,9 @@
        :desc "Buffer Copilot"    "i" #'copilot-mode
        :desc "Global Copilot"    "I" #'global-copilot-mode
 
-       :desc "model=gpt-4o"  "1" (cmd! (setq gptel-model 'gpt-4o))
+       :desc "model=gpt-4.1" "1" (cmd! (setq gptel-model 'gpt-4.1))
        :desc "model=o1"      "2" (cmd! (setq gptel-model 'o1))
-       :desc "model=gpt-4.1" "3" (cmd! (setq gptel-model 'gpt-4.1))
+       :desc "model=gpt-4o"  "3" (cmd! (setq gptel-model 'gpt-4o))
        :desc "model=claude-3.7-sonnet"         "4" (cmd! (setq gptel-model 'claude-3.7-sonnet))
        :desc "model=claude-3.7-sonnet-thought" "5" (cmd! (setq gptel-model 'claude-3.7-sonnet-thought))
 
