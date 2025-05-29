@@ -140,13 +140,14 @@ and return to the original position."
 ;; something was overwriting this to cause indentation
 (map! :m "C-i" 'better-jumper-jump-forward)
 
+(map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 (map! :leader :n "c I" 'dd/js-install)
 
 (map! :leader :desc "Find related file" :n "f o" 'projectile-find-other-file)
 
-(map! :leader :n "w w" #'dd/window-prefix)
+(map! :leader :desc "Auto fill" :n "t C" #'auto-fill-mode)
 
-(map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
+(map! :leader :n "w w" #'dd/window-prefix)
 
 (map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
 
