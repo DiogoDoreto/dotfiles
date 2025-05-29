@@ -73,10 +73,6 @@
 
 (setq vterm-shell "fish")
 
-;; when 2 buffers have the same name, add the parent folder name to
-;; differentiate them, separating by forward slashes
-(setq uniquify-buffer-name-style 'forward)
-
 (setq flymake-show-diagnostics-at-end-of-line t)
 
 (setq tramp-use-connection-share t
@@ -161,6 +157,9 @@ and return to the original position."
         :leader
         :desc "Explain error"  :n "c ," #'flycheck-explain-error-at-point
         :desc "List errors"    :n "c x" #'flycheck-list-errors))
+
+(map! :leader :prefix ("DEL" . "Mine!"))
+(map! :leader :prefix ("DEL n" . " Nix"))
 
 (after! corfu
   (setq +corfu-want-tab-prefer-expand-snippets nil
