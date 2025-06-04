@@ -23,8 +23,8 @@ in {
         id = 0;
         search = {
           force = true;
-          default = "DuckDuckGo";
-          privateDefault = "DuckDuckGo";
+          default = "ddg";
+          privateDefault = "ddg";
         };
         containersForce = true;
         containers = {
@@ -50,7 +50,7 @@ in {
           };
         };
         # See https://nur.nix-community.org/repos/rycee/
-        extensions = with pkgs.nur.repos.rycee.firefox-addons; [
+        extensions.packages = with pkgs.nur.repos.rycee.firefox-addons; [
           multi-account-containers
           privacy-badger
           raindropio

@@ -64,7 +64,7 @@
   };
 
   # Enable sound with pipewire.
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -140,7 +140,7 @@
 
   services.nextcloud = {
     enable = true;
-    package = pkgs.nextcloud30;
+    package = pkgs.nextcloud31;
     hostName = "localhost";
     settings = {
       trusted_domains = [ "nextcloud.dogdot.home" "nextcloud.local.doreto.com.br" ];
@@ -253,7 +253,7 @@
   services.homepage-dashboard = {
     enable = true;
     listenPort = 8082;
-    package = pkgs.homepage-dashboard.override { enableLocalIcons = true; };
+    allowedHosts = "home.dogdot.home";
     widgets = [
       {
         resources = {

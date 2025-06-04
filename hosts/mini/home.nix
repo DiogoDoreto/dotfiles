@@ -11,10 +11,10 @@
   home = {
     packages = (with pkgs; [
       calibre
-      inputs.home-manager.defaultPackage.x86_64-linux
+      inputs.home-manager.packages.x86_64-linux.home-manager
       keepassxc
       moonlight-qt
-      nodejs_23
+      nodejs_24
       pods # podman GUI
       ungoogled-chromium
     ]) ++ (with pkgs-unstable; [

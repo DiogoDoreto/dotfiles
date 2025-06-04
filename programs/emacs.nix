@@ -43,7 +43,7 @@ in
 
     whisperPackage = mkOption {
       type = types.package;
-      default = pkgs.openai-whisper-cpp;
+      default = pkgs.whisper-cpp;
     };
 
     doom.init = let
