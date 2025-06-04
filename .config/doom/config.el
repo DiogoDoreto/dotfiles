@@ -272,3 +272,6 @@ and return to the original position."
 
 (after! good-scroll
   (setq good-scroll-step 20))
+
+(after! qml-mode
+  (add-hook 'qml-mode-hook #'lsp))

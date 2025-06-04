@@ -158,6 +158,7 @@ in
             enable = true;
             flags = [ "+roam2" ];
           };
+          qt.enable = true;
           scheme = {
             enable = true;
             flags = [ "+guile" ];
