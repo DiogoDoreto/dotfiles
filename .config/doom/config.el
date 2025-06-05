@@ -159,13 +159,14 @@ and return to the original position."
         :desc "List errors"    :n "c x" #'flycheck-list-errors))
 
 (map! :leader :prefix ("DEL" . "Mine!"))
+(map! :leader :prefix ("DEL n" . " Nix"))
 
 (when (s-equals? "dogdot" (system-name))
   (defun dd--make-nix (command)
     (let ((default-directory "~/projects/dotfiles/"))
       (compile command)))
 
-  (map! :leader (:prefix ("DEL n" . " Nix")
+  (map! :leader (:prefix "DEL n"
                  :desc "rebuild boot"        :n "b" (cmd! (dd--make-nix "make nixos-mini-boot"))
                  :desc "rebuild switch"      :n "s" (cmd! (dd--make-nix "make nixos-mini-switch"))
                  :desc "home-manager switch" :n "h" (cmd! (dd--make-nix "make hm-dog-mini-switch")))))
