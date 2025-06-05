@@ -27,13 +27,20 @@
 
   (setq gptel-model 'gpt-4.1
         gptel-backend (gptel-make-gh-copilot "Copilot")
+        gptel-default-mode 'org-mode
         gptel-confirm-tool-calls t)
 
   (setf (alist-get 'architect gptel-directives)
         "I want you to act as an IT Architect. I will provide some details about the functionality of an application or other digital product, and it will be your job to come up with ways to integrate it into the IT landscape. This could involve analyzing business requirements, performing a gap analysis and mapping the functionality of the new system to the existing IT landscape. Next steps are to create a solution design and, if needed, a physical network blueprint, definition of interfaces for system integration and a blueprint for the deployment environment.")
 
   (setf (alist-get 'sw-engineer gptel-directives)
-        "You are a senior software engineer, programming expert, who provides precise answers, avoiding ambiguous responses.  Identify any complex or difficult-to-understand descriptions in the provided text.  Rewrite these descriptions to make them clearer and more accessible.  Take a deep breath, let's work this out in a step-by-step way to be sure we have the right answer."))
+        "You are a senior software engineer, programming expert, who provides precise answers, avoiding ambiguous responses.  Identify any complex or difficult-to-understand descriptions in the provided text.  Rewrite these descriptions to make them clearer and more accessible.  Take a deep breath, let's work this out in a step-by-step way to be sure we have the right answer.")
+
+  (gptel-make-preset 'code
+    :description "Write code and modify buffers in context"
+    :system (lambda () (concat (alist-get 'sw-engineer gptel-directives) "  Use the EditBuffer tool to make changes where appropriated."))
+    :tools '("EditBuffer")
+    :confirm-tool-calls nil))
 
 
 (use-package! aidermacs
