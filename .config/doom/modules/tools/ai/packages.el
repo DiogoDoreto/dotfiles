@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t; no-byte-compile: t; -*-
 
-(package! gptel :pin "c6e2339d43dc8c6d7a1ef50e8fe1e5e4b67c74ea")
+(package! gptel :pin "d91675db959b18cded8afb4902a52b19fd476ac9")
 
 (package! copilot :pin "fe3f51b636dea1c9ac55a0d5dc5d7df02dcbaa48")
 
