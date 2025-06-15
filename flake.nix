@@ -37,6 +37,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
+
+    whisper-to-text = {
+      # https://github.com/DiogoDoreto/whisper-to-text
+      url = "git+file:///home/dog/projects/whisper-to-text";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, ... }@inputs:

@@ -78,8 +78,3 @@
 
 (setq whisper-return-cursor-to-start nil)
 
-(defun dd/fill-after-whisper ()
-  "Auto wrap the long generated line from Whisper"
-  (evil-fill (line-beginning-position) (line-end-position)))
-
-(add-hook 'whisper-after-insert-hook #'dd/fill-after-whisper)

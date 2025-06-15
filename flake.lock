@@ -290,7 +290,8 @@
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nur": "nur",
-        "plasma-manager": "plasma-manager"
+        "plasma-manager": "plasma-manager",
+        "whisper-to-text": "whisper-to-text"
       }
     },
     "systems": {
@@ -349,6 +350,26 @@
         "owner": "numtide",
         "repo": "treefmt-nix",
         "type": "github"
+      }
+    },
+    "whisper-to-text": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1749984350,
+        "narHash": "sha256-1DTPwS8/8na0aEUsvJkaMbOjGjHvGShwtuY3iP0fs5Q=",
+        "ref": "refs/heads/master",
+        "rev": "6349bad98246fe3f9849697a635aea3123654b96",
+        "revCount": 4,
+        "type": "git",
+        "url": "file:///home/dog/projects/whisper-to-text"
+      },
+      "original": {
+        "type": "git",
+        "url": "file:///home/dog/projects/whisper-to-text"
       }
     }
   },

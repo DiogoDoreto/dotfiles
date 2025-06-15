@@ -56,6 +56,7 @@
     emacs = {
       enable = true;
       extraConfig = builtins.readFile ./emacs-extra.el;
+      whisperPackage = inputs.whisper-to-text.packages.${pkgs.system}.whisper-to-text;
     };
 
     aider = {
