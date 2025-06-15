@@ -7,6 +7,10 @@ let
       rocmSupport = false;
     };
   };
+  start-comfyui-script = pkgs-unstable.writeShellScript "start-comfyui.sh" ''
+    cd ${config.xdg.dataHome}/comfyui
+    comfyui
+  '';
 in {
   home = {
     packages = with pkgs-unstable; [
@@ -43,14 +47,15 @@ in {
     # '';
   };
 
+  home.file = {
+    "bin/start-comfyui".source = start-comfyui-script;
+  };
+
   # ComfyUI
   xdg.desktopEntries.comfyui = {
     name = "ComfyUI";
     categories = [ "Application" "Graphics" ];
     terminal = true;
-    exec = toString (pkgs-unstable.writeShellScript "start-comfyui.sh" ''
-      cd ${config.xdg.dataHome}/comfyui
-      comfyui
-    '');
+    exec = toString start-comfyui-script;
   };
 }
