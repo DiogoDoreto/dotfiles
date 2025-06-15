@@ -18,6 +18,9 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # https://discourse.nixos.org/t/realtek-audio-sound-card-not-recognized-by-pipewire/36637/2
+  boot.kernelParams = [ "snd_hda_intel.dmic_detect=0" ];
+
   # Needed for podman. See https://github.com/containers/podman/discussions/23193#discussioncomment-9958326
   boot.tmp.useTmpfs = true;
 
@@ -77,6 +80,8 @@
     # no need to redefine it in your config for now)
     #media-session.enable = true;
   };
+
+  hardware.enableAllFirmware = true;
 
   # OpenTabletDriver is an open source, cross-platform, low latency, user-mode tablet driver.
   hardware.opentabletdriver.enable = true;
