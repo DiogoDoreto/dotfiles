@@ -203,6 +203,10 @@
     package = pkgs-unstable.open-webui;
     openFirewall = true;
     host = "0.0.0.0";
+    # fix startup error. See https://github.com/NixOS/nixpkgs/issues/411914
+    environment = {
+      HOME = config.services.open-webui.stateDir;
+    };
   };
 
   services.sunshine = {

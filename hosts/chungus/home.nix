@@ -10,10 +10,10 @@
   home = {
     packages = with pkgs; [
       inkscape
-      inputs.home-manager.defaultPackage.x86_64-linux
+      inputs.home-manager.packages.x86_64-linux.home-manager
       nix-tree
       nodePackages.prettier
-      nodejs_23
+      nodejs_24
       ungoogled-chromium
     ];
   };
