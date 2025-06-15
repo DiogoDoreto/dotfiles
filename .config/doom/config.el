@@ -43,10 +43,15 @@
 ;; refresh your font settings. If Emacs still can't find your font, it likely
 ;; wasn't installed correctly. Font issues are rarely Doom issues!
 
+(defun dd--night? ()
+  "Return t if current time is after 8pm or before 8am, else nil."
+  (let ((hour (string-to-number (format-time-string "%H"))))
+    (or (>= hour 20) (< hour 8))))
+
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'ef-day)
+(setq doom-theme (if (dd--night?) 'ef-maris-dark 'ef-day))
 
 (setq doom-modeline-lsp-icon nil)
 (setq doom-modeline-modal nil)
