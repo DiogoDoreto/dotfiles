@@ -138,6 +138,10 @@ and return to the original position."
 
 (map! :i "C-<tab>" 'yas-expand)
 
+;; Sane pasting. Was `evil-quoted-insert' before
+(map! :i "C-v" (cmd! (insert (current-kill 0))))
+
+
 ;; something was overwriting this to cause indentation
 (map! :m "C-i" 'better-jumper-jump-forward)
 
@@ -175,6 +179,12 @@ and return to the original position."
                  :desc "rebuild boot"        :n "b" (cmd! (dd--make-nix "make nixos-mini-boot"))
                  :desc "rebuild switch"      :n "s" (cmd! (dd--make-nix "make nixos-mini-switch"))
                  :desc "home-manager switch" :n "h" (cmd! (dd--make-nix "make hm-dog-mini-switch")))))
+
+(defun dd/vterm (name)
+  "Create a new vterm buffer that won't be removed automatically."
+  (interactive "sVTerm buffer name: ")
+  (let (display-buffer-alist)
+    (vterm name)))
 
 (after! corfu
   (setq +corfu-want-tab-prefer-expand-snippets nil
