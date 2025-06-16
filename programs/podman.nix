@@ -18,14 +18,13 @@ in {
       virtiofsd
     ];
 
-    home.file = {
-      ".config/containers/policy.json".text = strings.toJSON {
-        default = [{ type = "insecureAcceptAnything"; }];
-      };
-    };
-
     services.podman = {
       enable = true;
+      settings = {
+        policy = {
+          default = [{ type = "insecureAcceptAnything"; }];
+        };
+      };
     };
   };
 }
