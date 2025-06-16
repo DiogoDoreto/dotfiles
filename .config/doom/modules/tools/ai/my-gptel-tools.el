@@ -3,6 +3,7 @@
 ;;; Code:
 
 (require 'gptel)
+(require 'doom-lib)
 
 (defcustom my-gptel-tools--allowed-directories '("/home/dog/projects/")
   "List of allowed directories where my-gptel-tools functions will be allowed to
@@ -10,6 +11,7 @@
   :type '(repeat directory)
   :group 'my-gptel-tools)
 
+(load! "tools/devdocs")
 
 (defun my-gptel-tools--expand-validate-path (filepath &optional default-dir)
   "Expand FILEPATH using DEFAULT-DIR if provided, and ensure the result is
@@ -217,6 +219,32 @@ a old-string and a new-string, new-string will replace the old-string at the spe
          (:name "content"
           :type string
           :description "Content to write to the buffer")))
+
+(gptel-make-tool
+ :name "ask_user_yes_no"
+ :description "Prompt the user with a yes/no question"
+ :category "ask_user"
+ :function (lambda (prompt)
+             (if (y-or-n-p prompt) "yes" "no"))
+ :args '((:name "prompt"
+          :type string
+          :description "The question to present to the user")))
+
+(gptel-make-tool
+ :name "ask_user_choices"
+ :description "Prompt the user with a question and a list of options"
+ :category "ask_user"
+ :function (lambda (prompt options)
+             (unless (and (stringp prompt) (sequencep options) (> (length options) 0))
+               (error "Invalid prompt or options"))
+             (completing-read prompt options nil t))
+ :args '((:name "prompt"
+          :type string
+          :description "The question to present to the user")
+         (:name "options"
+          :type array
+          :items (:type string)
+          :description "A list of strings representing available options")))
 
 (provide 'my-gptel-tools)
 ;;; my-gptel-tools.el ends here
