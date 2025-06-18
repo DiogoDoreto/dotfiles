@@ -275,8 +275,16 @@
       }
     ];
     services = [
+      # search for icons in https://dashboardicons.com
       {
-        Media = [
+        Apps = [
+          {
+            "HomeAssistant" = rec {
+              icon = "home-assistant.png";
+              href = "http://ha.dogdot.home";
+              ping = href;
+            };
+          }
           {
             "NextCloud" = rec {
               icon = "nextcloud.png";
@@ -285,12 +293,16 @@
             };
           }
           {
-            "HomeAssistant" = rec {
-              icon = "home-assistant.png";
-              href = "http://ha.dogdot.home";
+            "Open WebUI" = rec {
+              icon = "open-webui.png";
+              href = "http://chungus.home:8080";
               ping = href;
             };
           }
+        ];
+      }
+      {
+        Media = [
           {
             "jellyfin" = rec {
               icon = "jellyfin.png";
