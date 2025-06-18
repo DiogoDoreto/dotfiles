@@ -175,10 +175,13 @@ and return to the original position."
     (let ((default-directory "~/projects/dotfiles/"))
       (compile command)))
 
-  (map! :leader (:prefix "DEL n"
-                 :desc "rebuild boot"        :n "b" (cmd! (dd--make-nix "make nixos-mini-boot"))
-                 :desc "rebuild switch"      :n "s" (cmd! (dd--make-nix "make nixos-mini-switch"))
-                 :desc "home-manager switch" :n "h" (cmd! (dd--make-nix "make hm-dog-mini-switch")))))
+  (map! :leader :prefix "DEL n"
+        :desc "rebuild boot"        :n "b" (cmd! (dd--make-nix "make nixos-mini-boot"))
+        :desc "rebuild switch"      :n "s" (cmd! (dd--make-nix "make nixos-mini-switch"))
+        :desc "home-manager switch" :n "h" (cmd! (dd--make-nix "make hm-dog-mini-switch")))
+
+  (map! :leader :prefix ("DEL s" . "SSH")
+        :desc "Chungus dotfiles" :n "c" (cmd! (find-file "/sshx:chungus:p/dotfiles/"))))
 
 (defun dd/vterm (name)
   "Create a new vterm buffer that won't be removed automatically."
