@@ -189,6 +189,11 @@ and return to the original position."
   (let (display-buffer-alist)
     (vterm name)))
 
+(defun dd/run-cmd (command directory buffer-name)
+  "Run COMMMAND inside DIRECTORY and send output to BUFFER-NAME"
+  (let ((default-directory directory))
+    (compilation-start command nil (lambda (_mode) buffer-name))))
+
 (after! corfu
   (setq +corfu-want-tab-prefer-expand-snippets nil
         +corfu-want-tab-prefer-navigating-snippets t
