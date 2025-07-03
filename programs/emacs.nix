@@ -249,6 +249,8 @@ in
       "doom/modules/tools/lsp-extra/config.el".source = ../.config/doom/modules/tools/lsp-extra/config.el;
 
       "doom/modules/tools/ai/packages.el".source = ../.config/doom/modules/tools/ai/packages.el;
+      "doom/modules/tools/ai/gptel-oneshot.el".source = ../.config/doom/modules/tools/ai/gptel-oneshot.el;
+      "doom/modules/tools/ai/tools".source = ../.config/doom/modules/tools/ai/tools;
       "doom/modules/tools/ai/my-gptel-tools.el".source = ../.config/doom/modules/tools/ai/my-gptel-tools.el;
       "doom/modules/tools/ai/config.el".text = (readFile ../.config/doom/modules/tools/ai/config.el) + ''
         (defun whisper--find-whispercpp-main () "" "${getExe cfg.whisperPackage}")

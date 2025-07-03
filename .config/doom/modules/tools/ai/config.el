@@ -9,6 +9,7 @@
 ;;; Code:
 
 (load! "whisper.el")
+(load! "gptel-oneshot.el")
 
 (use-package! gptel
   :defer t
@@ -55,7 +56,7 @@
               ("M-i" . 'copilot-accept-completion-by-word)))
 
 (map! :leader
-      (:prefix-map ("l" . "LLM")
+      (:prefix ("l" . "LLM")
        :desc "Open chat buffer"  "o" #'gptel
        :desc "Send"              "RET" #'gptel-send
        :desc "Menu"              "l" #'gptel-menu
@@ -76,5 +77,8 @@
        :desc "Whisper Run"       "w" #'whisper-run
        :desc "Whisper File"      "W" #'whisper-file))
 
-(setq whisper-return-cursor-to-start nil)
+(map! :leader
+      (:prefix ("l ." . "OneShot cmds")
+       :desc "Create commit" "c" #'dd/gptel-create-commit))
 
+(setq whisper-return-cursor-to-start nil)
