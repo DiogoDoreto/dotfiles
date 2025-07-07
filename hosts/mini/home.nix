@@ -22,6 +22,12 @@
       ardour
       onedrivegui
     ]);
+
+    # I remember this fixed something, but I don't recall what. So I'm leaving
+    # it commented until it breaks again :D
+    # sessionVariablesExtra = ''
+    #   export NIX_PROFILES="$NIX_PROFILES /etc/profiles/per-user/$USER"
+    # '';
   };
 
   programs = {
