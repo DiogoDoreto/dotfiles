@@ -17,6 +17,7 @@ in
       htop
       nil # nix lsp server
       tldr
+      unzip
 
       # build tools
       cmake

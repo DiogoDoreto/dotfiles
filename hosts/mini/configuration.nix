@@ -107,8 +107,9 @@
   };
 
   home-manager = {
-    # TODO check if this is the optimal way to have nixos and hm sharing the same nixpkgs reference
+    # install packages in /etc/profiles/per-user/dog
     useUserPackages = true;
+    # reuse system pkgs
     useGlobalPkgs = true;
     users.dog = import ./home.nix;
   };
