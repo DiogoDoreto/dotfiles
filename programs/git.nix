@@ -29,6 +29,7 @@ in
         ra = "rebase --abort";
       };
       ignores = [
+        ".private/"
         # emacs
         ".dir-locals.el"
         # direnv
@@ -40,15 +41,10 @@ in
         "yarn-error.log*"
       ];
       extraConfig = {
-        core = {
-          autocrlf = false;
-        };
-        pull = {
-          ff = "only";
-        };
-        rebase = {
-          autoSquash = true;
-        };
+        core.autocrlf = false;
+        init.defaultBranch = "main";
+        pull.ff = "only";
+        rebase.autoSquash = true;
       };
     };
   };
