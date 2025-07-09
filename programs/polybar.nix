@@ -180,9 +180,9 @@ in
           type = "custom/script";
           tail = true;
           click.left = "${pkgs.i3}/bin/i3-msg '[class=Spotify] focus'";
-          format.prefix = "  ";
+          format.prefix = "󰝚  ";
           exec = let
-            playerctl = "${getExe pkgs.playerctl} -p spotify";
+            playerctl = "${getExe pkgs.playerctl} -p spotify,firefox";
             zscroll = getExe pkgs.zscroll;
             statusCmd = pkgs.writeShellScript "player-status.sh" ''
               status="$(${playerctl} status 2>/dev/null)"
