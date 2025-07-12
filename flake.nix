@@ -66,10 +66,6 @@
       extraSpecialArgs = specialArgs;
     in {
       homeConfigurations = {
-        "dog@dogdot" = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs extraSpecialArgs;
-          modules = [ ./home/home.nix ];
-        };
         "dog@chungus" = home-manager.lib.homeManagerConfiguration {
           inherit pkgs extraSpecialArgs;
           modules = [
@@ -83,10 +79,6 @@
             { home = { username = "dog"; homeDirectory = "/home/dog"; }; }
             ./hosts/mini/home.nix
           ];
-        };
-        work = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs extraSpecialArgs;
-          modules = [ ./home/work.nix ];
         };
       };
 
