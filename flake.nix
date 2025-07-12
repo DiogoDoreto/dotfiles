@@ -64,22 +64,26 @@
       pkgs-unstable = import nixpkgs-unstable pkgs-config;
       specialArgs = { inherit inputs pkgs-unstable; };
       extraSpecialArgs = specialArgs;
-    in {
+      buildHomeFromNixos = user: entryModule: home-manager.lib.homeManagerConfiguration {
+        inherit pkgs extraSpecialArgs;
+        modules = [
+          {
+            home = {
+              username = user.name;
+              homeDirectory = user.home;
+            };
+          }
+          entryModule
+        ];
+      };
+    in rec {
       homeConfigurations = {
-        "dog@chungus" = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs extraSpecialArgs;
-          modules = [
-            { home = { username = "dog"; homeDirectory = "/home/dog"; }; }
-            ./hosts/chungus/home.nix
-          ];
-        };
-        "dog@mini" = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs extraSpecialArgs;
-          modules = [
-            { home = { username = "dog"; homeDirectory = "/home/dog"; }; }
-            ./hosts/mini/home.nix
-          ];
-        };
+        "dog@chungus" = buildHomeFromNixos
+          nixosConfigurations.chungus.config.users.users.dog
+          ./hosts/chungus/home.nix;
+        "dog@mini" = buildHomeFromNixos
+          nixosConfigurations.mini.config.users.users.dog
+          ./hosts/mini/home.nix;
       };
 
       nixosConfigurations = {

@@ -12,7 +12,6 @@
     packages = (with pkgs; [
       calibre
       hydrogen
-      inputs.home-manager.packages.x86_64-linux.home-manager
       keepassxc
       moonlight-qt
       nodejs_24
