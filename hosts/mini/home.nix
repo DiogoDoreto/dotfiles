@@ -4,7 +4,6 @@
   imports = [
     ../../modules/home-manager
     inputs.plasma-manager.homeManagerModules.plasma-manager
-    ../../home/_linux.nix
     ./plasma.nix
   ];
 
@@ -52,6 +51,8 @@
 
     neovim.enable = true;
   };
+
+  dog.presets.linux.enable = true;
 
   dog.programs = {
     cli-tools.enable = true;

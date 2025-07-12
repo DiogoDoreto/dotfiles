@@ -3,7 +3,6 @@
 {
   imports = [
     ../../modules/home-manager
-    ../../home/_linux.nix
     ./ai.nix
   ];
 
@@ -45,6 +44,8 @@
       ];
     };
   };
+
+  dog.presets.linux.enable = true;
 
   dog.programs = {
     cli-tools.enable = true;
