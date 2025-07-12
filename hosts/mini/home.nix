@@ -2,8 +2,8 @@
 
 {
   imports = [
+    ../../modules/home-manager
     inputs.plasma-manager.homeManagerModules.plasma-manager
-    ../../home/_core.nix
     ../../home/_linux.nix
     ./plasma.nix
   ];

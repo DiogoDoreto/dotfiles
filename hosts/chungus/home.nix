@@ -2,7 +2,7 @@
 
 {
   imports = [
-    ../../home/_core.nix
+    ../../modules/home-manager
     ../../home/_linux.nix
     ./ai.nix
   ];

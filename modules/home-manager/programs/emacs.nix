@@ -234,25 +234,25 @@ in
       emacs.source = inputs.doomemacs;
 
       "doom/init.el".text = doomInitMacroFile;
-      "doom/config-javascript.el".source = ../.config/doom/config-javascript.el;
+      "doom/config-javascript.el".source = ../../../.config/doom/config-javascript.el;
       "doom/config.el" = {
-        text = (readFile ../.config/doom/config.el) + "\n\n" + cfg.extraConfig;
+        text = (readFile ../../../.config/doom/config.el) + "\n\n" + cfg.extraConfig;
         # try make it work later
         # onChange = "~/.config/emacs/bin/doom sync";
       };
-      "doom/packages.el".text = (readFile ../.config/doom/packages.el)
+      "doom/packages.el".text = (readFile ../../../.config/doom/packages.el)
         + "\n\n" + cfg.extraPackages;
-      "doom/dd".source = ../.config/doom/dd;
+      "doom/dd".source = ../../../.config/doom/dd;
 
-      "doom/modules/lang/nix-extras".source = ../.config/doom/modules/lang/nix-extras;
+      "doom/modules/lang/nix-extras".source = ../../../.config/doom/modules/lang/nix-extras;
 
-      "doom/modules/tools/lsp-extra/config.el".source = ../.config/doom/modules/tools/lsp-extra/config.el;
+      "doom/modules/tools/lsp-extra/config.el".source = ../../../.config/doom/modules/tools/lsp-extra/config.el;
 
-      "doom/modules/tools/ai/packages.el".source = ../.config/doom/modules/tools/ai/packages.el;
-      "doom/modules/tools/ai/gptel-oneshot.el".source = ../.config/doom/modules/tools/ai/gptel-oneshot.el;
-      "doom/modules/tools/ai/tools".source = ../.config/doom/modules/tools/ai/tools;
-      "doom/modules/tools/ai/my-gptel-tools.el".source = ../.config/doom/modules/tools/ai/my-gptel-tools.el;
-      "doom/modules/tools/ai/config.el".text = (readFile ../.config/doom/modules/tools/ai/config.el) + ''
+      "doom/modules/tools/ai/packages.el".source = ../../../.config/doom/modules/tools/ai/packages.el;
+      "doom/modules/tools/ai/gptel-oneshot.el".source = ../../../.config/doom/modules/tools/ai/gptel-oneshot.el;
+      "doom/modules/tools/ai/tools".source = ../../../.config/doom/modules/tools/ai/tools;
+      "doom/modules/tools/ai/my-gptel-tools.el".source = ../../../.config/doom/modules/tools/ai/my-gptel-tools.el;
+      "doom/modules/tools/ai/config.el".text = (readFile ../../../.config/doom/modules/tools/ai/config.el) + ''
         (defun whisper--find-whispercpp-main () "" "${getExe cfg.whisperPackage}")
         (setq whisper-install-whispercpp nil)
       '';
