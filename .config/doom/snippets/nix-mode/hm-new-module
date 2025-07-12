@@ -1,0 +1,21 @@
+# -*- mode: snippet -*-
+# name: Home Manager Module
+# key: hm-new-module
+# condition: t
+# --
+{ config, lib, pkgs, ... }:
+
+with lib;
+
+let
+  cfg = config.dog.$1;
+in
+{
+  options.dog.$1 = {
+    enable = mkEnableOption "${2:$1}";
+  };
+
+  config = mkIf cfg.enable {
+    $0
+  };
+}

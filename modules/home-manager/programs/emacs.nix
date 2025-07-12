@@ -41,6 +41,12 @@ in
       default = "";
     };
 
+    snippetsPath = mkOption {
+      type = types.nullOr types.path;
+      description = "Path to snippets directory";
+      default = null;
+    };
+
     whisperPackage = mkOption {
       type = types.package;
       default = pkgs.whisper-cpp;
@@ -263,6 +269,8 @@ in
         url = "https://raw.githubusercontent.com/natrys/whisper.el/${commit}/whisper.el";
         sha256 = "sha256-jr3fl628fJYMEomT0aR9jrhqCxdVlLIz5umPic1mw3w=";
       };
-    };
+    } // (optionalAttrs (cfg.snippetsPath != null) {
+      "doom/snippets".source = config.lib.file.mkOutOfStoreSymlink cfg.snippetsPath;
+    });
   };
 }

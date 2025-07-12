@@ -64,6 +64,7 @@
       enable = true;
       extraConfig = builtins.readFile ./emacs-extra.el;
       whisperPackage = inputs.whisper-to-text.packages.${pkgs.system}.whisper-to-text;
+      snippetsPath = /home/dog/projects/dotfiles/.config/doom/snippets;
     };
 
     aider = {
