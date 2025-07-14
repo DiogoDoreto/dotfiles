@@ -206,6 +206,10 @@ and return to the original position."
     (defun dd/add-yasnippet-capf-h ()
       (add-hook 'completion-at-point-functions #'yasnippet-capf -10 t))))
 
+(setq +file-templates-alist
+      (cons '("/\\.envrc$" :trigger "__envrc_use_flake" :mode envrc-file-mode)
+            +file-templates-alist))
+
 (after! vertico-posframe
   (setq vertico-posframe-poshandler #'posframe-poshandler-frame-bottom-center))
 

@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: envrc with nix flake support
+# key: __envrc_use_flake
+# condition: t
+# --
+nix_direnv_manual_reload
+use flake .
