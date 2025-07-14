@@ -4,7 +4,7 @@ with lib;
 
 let
   cfg = config.dog.programs.polybar;
-  colors = import ../utils/colors-beach.nix;
+  colors = import ../../colorschemes/colors-beach.nix;
 in
 {
   options.dog.programs.polybar = {

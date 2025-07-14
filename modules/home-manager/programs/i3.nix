@@ -4,8 +4,8 @@ with lib;
 
 let
   cfg = config.dog.programs.i3;
-  colors = import ../utils/colors-beach.nix;
-  wallpaper = ../wallpapers/wallhaven-x1xlmv.jpg;
+  colors = import ../../colorschemes/colors-beach.nix;
+  wallpaper = ../../../wallpapers/wallhaven-x1xlmv.jpg;
 in
 {
   options.dog.programs.i3 = {
