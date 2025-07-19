@@ -53,6 +53,9 @@
 ;; `load-theme' function. This is the default:
 (setq doom-theme (if (dd--night?) 'ef-maris-dark 'ef-day))
 
+(setq ef-themes-to-toggle '(ef-maris-dark ef-day))
+(map! :leader :desc "Theme" :n "t t" #'ef-themes-toggle)
+
 (setq doom-modeline-lsp-icon nil)
 (setq doom-modeline-modal nil)
 (setq doom-modeline-vcs-max-length 20)
