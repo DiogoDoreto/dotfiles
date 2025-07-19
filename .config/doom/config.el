@@ -31,7 +31,7 @@
 ;; See 'C-h v doom-font' for documentation and more examples of what they
 ;; accept. For example:
 ;;
-(setq doom-font (font-spec :family "VictorMono Nerd Font Mono" :size 17 :weight 'semi-light))
+(setq doom-font (font-spec :family "VictorMono Nerd Font Mono" :size 17 :weight 'light))
 
 (after! tree-sitter
   (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
@@ -196,6 +196,8 @@ and return to the original position."
   "Run COMMMAND inside DIRECTORY and send output to BUFFER-NAME"
   (let ((default-directory directory))
     (compilation-start command nil (lambda (_mode) buffer-name))))
+
+(add-to-list 'tramp-remote-path 'tramp-own-remote-path)
 
 (after! corfu
   (setq +corfu-want-tab-prefer-expand-snippets nil

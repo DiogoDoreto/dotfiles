@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./dog.nix
     ./presets
     ./programs
   ];

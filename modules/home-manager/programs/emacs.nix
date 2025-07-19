@@ -5,6 +5,9 @@ with lib;
 let
   cfg = config.dog.programs.emacs;
 
+  dotfilesSymlink = pathInsideRepo:
+    config.lib.file.mkOutOfStoreSymlink (config.dog.dotfilesPath + ("/" + pathInsideRepo));
+
   makeDoomMacroModules = moduleName: moduleCfg:
     let
       flags = concatStringsSep " " moduleCfg.flags;
@@ -30,22 +33,6 @@ in
 {
   options.dog.programs.emacs = {
     enable = mkEnableOption "emacs + doom";
-
-    extraConfig = mkOption {
-      type = types.lines;
-      default = "";
-    };
-
-    extraPackages = mkOption {
-      type = types.lines;
-      default = "";
-    };
-
-    snippetsPath = mkOption {
-      type = types.nullOr types.path;
-      description = "Path to snippets directory";
-      default = null;
-    };
 
     whisperPackage = mkOption {
       type = types.package;
@@ -240,25 +227,23 @@ in
       emacs.source = inputs.doomemacs;
 
       "doom/init.el".text = doomInitMacroFile;
-      "doom/config-javascript.el".source = ../../../.config/doom/config-javascript.el;
-      "doom/config.el" = {
-        text = (readFile ../../../.config/doom/config.el) + "\n\n" + cfg.extraConfig;
-        # try make it work later
-        # onChange = "~/.config/emacs/bin/doom sync";
-      };
-      "doom/packages.el".text = (readFile ../../../.config/doom/packages.el)
-        + "\n\n" + cfg.extraPackages;
-      "doom/dd".source = ../../../.config/doom/dd;
+      "doom/config-javascript.el".source = dotfilesSymlink ".config/doom/config-javascript.el";
+      "doom/config.el".source = dotfilesSymlink ".config/doom/config.el";
+      "doom/packages.el".source = dotfilesSymlink ".config/doom/packages.el";
 
-      "doom/modules/lang/nix-extras".source = ../../../.config/doom/modules/lang/nix-extras;
+      "doom/snippets".source = dotfilesSymlink ".config/doom/snippets";
 
-      "doom/modules/tools/lsp-extra/config.el".source = ../../../.config/doom/modules/tools/lsp-extra/config.el;
+      "doom/dd".source = dotfilesSymlink ".config/doom/dd";
 
-      "doom/modules/tools/ai/packages.el".source = ../../../.config/doom/modules/tools/ai/packages.el;
-      "doom/modules/tools/ai/gptel-oneshot.el".source = ../../../.config/doom/modules/tools/ai/gptel-oneshot.el;
-      "doom/modules/tools/ai/tools".source = ../../../.config/doom/modules/tools/ai/tools;
-      "doom/modules/tools/ai/my-gptel-tools.el".source = ../../../.config/doom/modules/tools/ai/my-gptel-tools.el;
-      "doom/modules/tools/ai/config.el".text = (readFile ../../../.config/doom/modules/tools/ai/config.el) + ''
+      "doom/modules/lang/nix-extras".source = dotfilesSymlink ".config/doom/modules/lang/nix-extras";
+      "doom/modules/tools/lsp-extra/config.el".source = dotfilesSymlink ".config/doom/modules/tools/lsp-extra/config.el";
+
+      "doom/modules/tools/ai/packages.el".source = dotfilesSymlink ".config/doom/modules/tools/ai/packages.el";
+      "doom/modules/tools/ai/gptel-oneshot.el".source = dotfilesSymlink ".config/doom/modules/tools/ai/gptel-oneshot.el";
+      "doom/modules/tools/ai/tools".source = dotfilesSymlink ".config/doom/modules/tools/ai/tools";
+      "doom/modules/tools/ai/my-gptel-tools.el".source = dotfilesSymlink ".config/doom/modules/tools/ai/my-gptel-tools.el";
+      "doom/modules/tools/ai/config.el".source = dotfilesSymlink ".config/doom/modules/tools/ai/config.el";
+      "doom/modules/tools/ai/whisper-config.el".text = ''
         (defun whisper--find-whispercpp-main () "" "${getExe cfg.whisperPackage}")
         (setq whisper-install-whispercpp nil)
       '';
@@ -269,8 +254,6 @@ in
         url = "https://raw.githubusercontent.com/natrys/whisper.el/${commit}/whisper.el";
         sha256 = "sha256-jr3fl628fJYMEomT0aR9jrhqCxdVlLIz5umPic1mw3w=";
       };
-    } // (optionalAttrs (cfg.snippetsPath != null) {
-      "doom/snippets".source = config.lib.file.mkOutOfStoreSymlink cfg.snippetsPath;
-    });
+    };
   };
 }

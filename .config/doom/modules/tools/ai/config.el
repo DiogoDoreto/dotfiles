@@ -14,17 +14,15 @@
 (use-package! gptel
   :defer t
   :config
+  (setq gptel--known-backends (assoc-delete-all "ChatGPT" gptel--known-backends))
+
   (load! "my-gptel-tools.el")
 
-  (setq gptel--known-backends (assoc-delete-all "ChatGPT" gptel--known-backends))
-  (and-let* ((auth-item (auth-source-search :host "github.com"))
-             (token (funcall (plist-get (car auth-item) :secret))))
-    (gptel-make-openai "Free Copilot"
-      :host "models.inference.ai.azure.com"
-      :endpoint "/chat/completions?api-version=2024-12-01-preview"
+  (when (s-equals? "dogdot" (system-name))
+    (gptel-make-ollama "Ollama"
+      :host "chungus.home:11434"
       :stream t
-      :key token
-      :models '(gpt-4o o1 DeepSeek-R1)))
+      :models '(qwen2.5-coder:32b deepseek-r1:32b qwq)))
 
   (setq gptel-model 'gpt-4.1
         gptel-backend (gptel-make-gh-copilot "Copilot")
@@ -110,4 +108,11 @@
       (:prefix ("l ." . "OneShot cmds")
        :desc "Create commit" "c" #'dd/gptel-create-commit))
 
+(defun whisper-command (input-file)
+  "Produces whisper command to be run on the INPUT-FILE."
+  `(,(whisper--find-whispercpp-main)
+    "--model" ,whisper-model
+    ,input-file))
+
 (setq whisper-return-cursor-to-start nil)
+(load! "whisper-config.el")

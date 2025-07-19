@@ -52,6 +52,8 @@
     neovim.enable = true;
   };
 
+  dog.dotfilesPath = /home/dog/projects/dotfiles;
+
   dog.presets.linux.enable = true;
 
   dog.programs = {
@@ -62,9 +64,7 @@
 
     emacs = {
       enable = true;
-      extraConfig = builtins.readFile ./emacs-extra.el;
       whisperPackage = inputs.whisper-to-text.packages.${pkgs.system}.whisper-to-text;
-      snippetsPath = /home/dog/projects/dotfiles/.config/doom/snippets;
     };
 
     aider = {
