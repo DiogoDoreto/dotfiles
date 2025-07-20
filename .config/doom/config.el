@@ -159,6 +159,8 @@ and return to the original position."
 
 (map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
 
+(map! :map vterm-mode-map :ni "C-<escape>" #'vterm-send-escape)
+
 (advice-add #'+default/search-buffer :around #'doom-set-jump-maybe-a)
 
 (after! flycheck
