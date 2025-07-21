@@ -5,6 +5,10 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'nerd-icons)
+
+(push '("mjs" nerd-icons-devicon "nf-dev-javascript" :face nerd-icons-yellow) nerd-icons-extension-icon-alist)
+(push '("mts" nerd-icons-sucicon "nf-seti-typescript" :face nerd-icons-blue-alt) nerd-icons-extension-icon-alist)
 
 (defvar dd/js-lockfile-to-pkgmgr '(("package-lock.json" . "npm")
                                    ("yarn.lock" . "yarn")
