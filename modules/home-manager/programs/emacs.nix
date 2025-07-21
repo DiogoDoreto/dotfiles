@@ -76,6 +76,10 @@ in
             enable = true;
             flags = [ "+interpolate" ];
           };
+          treemacs = {
+            enable = true;
+            flags = [ "+lsp" ];
+          };
           vc-gutter = {
             enable = true;
             flags = [ "+pretty" ];
