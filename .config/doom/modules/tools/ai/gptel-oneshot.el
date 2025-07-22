@@ -1,22 +1,25 @@
 ;;; gptel-oneshot.el --- One shot commands to send to gptel -*- lexical-binding: t; -*-
 
-(defun dd--git-diff-staged ()
-  "Return the diff of staged files only"
+(defun dd--get-staged-diff (context-lines)
+  "Return the diff of staged files with CONTEXT-LINES of context.
+Lockfiles are ignored."
   (let ((default-directory (projectile-project-root)))
-    (shell-command-to-string "git diff --cached -- . ':!package-lock.json' ':!yarn.lock' ':!flake.lock'")))
+    (shell-command-to-string
+     (concat (format "git diff --cached --unified=%d" context-lines)
+             " -- . ':!package-lock.json' ':!yarn.lock' ':!flake.lock'"))))
 
 (defun dd--create-commit-system-prompt ()
-  (concat "Your goal is to write good commit messages. "
-          "You should follow the semantic commit conventions. "
-          "Write a short and expressive first line. "
-          "You are allowed to write more paragraphs, but only when the information in them add more value and do not repeat what's already stated on the first line."
-          "Your answer will be used directly inside the git commit command, so do not respond with anything else besides the commit message itself. "
-          "When a <commit_reason> block is provided, it must be used to write the message. "
-          "Describing why a change was made is more important than describing what has changed. "))
+  (concat "You are an expert programmer writing a commit message. "
+          "Follow the semantic commit conventions. "
+          "The first line must be a short, expressive summary. "
+          "Subsequent paragraphs are optional. Use them to explain the 'why' behind the change, not the 'what'. "
+          "Do not repeat information from the summary. "
+          "If a <commit_reason> is provided, you must use it to inform your message. "
+          "Output only the raw commit message text, with no additional explanations or markdown formatting."))
 
 (defun dd--create-commit-user-prompt (commit-reason)
   (concat "<current_git_diff>\n"
-          (dd--git-diff-staged)
+          (dd--get-staged-diff 3)
           "\n</current_git_diff>\n"
           (when commit-reason
             (concat "<commit_reason>\n" commit-reason "</commit_reason>\n"))
