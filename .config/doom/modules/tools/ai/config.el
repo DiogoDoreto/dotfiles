@@ -107,7 +107,8 @@
 
 (map! :leader
       (:prefix ("l ." . "OneShot cmds")
-       :desc "Create commit" "c" #'dd/gptel-create-commit))
+       :desc "Create commit"         "c" #'dd/gptel-create-commit
+       :desc "Review staged changes" "r" #'dd/gptel-code-review-staged-changes))
 
 (defun whisper-command (input-file)
   "Produces whisper command to be run on the INPUT-FILE."
