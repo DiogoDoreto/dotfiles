@@ -89,6 +89,7 @@
        :desc "Menu"              "l" #'gptel-menu
        :desc "Add buffer/region" "a" #'gptel-add
        :desc "Abort"             "x" #'gptel-abort
+       :desc "Rewrite region" :v "r" #'gptel-rewrite
 
        :desc "Buffer Copilot"    "i" #'copilot-mode
        :desc "Global Copilot"    "I" #'global-copilot-mode
