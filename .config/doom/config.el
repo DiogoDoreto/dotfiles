@@ -75,7 +75,7 @@
 
 (defun dd/scan-org-agenda-files ()
   (interactive)
-  (setq org-agenda-files (directory-files-recursively org-directory "\.org$")))
+  (setq org-agenda-files (directory-files-recursively org-directory "\\.org$")))
 (dd/scan-org-agenda-files)
 (map! :leader :desc "Scan org agenda files" "nU" #'dd/scan-org-agenda-files)
 
