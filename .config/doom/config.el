@@ -199,7 +199,8 @@ and return to the original position."
   (let ((default-directory directory))
     (compilation-start command nil (lambda (_mode) buffer-name))))
 
-(add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+(after! tramp
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 (after! corfu
   (setq +corfu-want-tab-prefer-expand-snippets nil
