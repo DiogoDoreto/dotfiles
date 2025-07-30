@@ -148,6 +148,8 @@ and return to the original position."
 
 ;; Sane pasting. Was `evil-quoted-insert' before
 (map! :i "C-v" (cmd! (insert (current-kill 0))))
+(map! :map evil-ex-search-keymap
+      "C-v" (cmd! (insert (current-kill 0))))
 
 
 ;; something was overwriting this to cause indentation
