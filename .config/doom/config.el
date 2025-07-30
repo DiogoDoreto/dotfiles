@@ -134,10 +134,15 @@ and return to the original position."
 
 (map! :n "g b" 'browse-url)
 
-(map! :n "M-<left>" #'evil-window-left)
-(map! :n "M-<down>" #'evil-window-down)
-(map! :n "M-<up>" #'evil-window-up)
-(map! :n "M-<right>" #'evil-window-right)
+(map! :n "M-<left>"  #'evil-window-left
+      :n "M-<down>"  #'evil-window-down
+      :n "M-<up>"    #'evil-window-up
+      :n "M-<right>" #'evil-window-right)
+(map! :map treemacs-mode-map
+      "M-<left>"  #'evil-window-left
+      "M-<down>"  #'evil-window-down
+      "M-<up>"    #'evil-window-up
+      "M-<right>" #'evil-window-right)
 
 (map! :i "C-<tab>" 'yas-expand)
 
