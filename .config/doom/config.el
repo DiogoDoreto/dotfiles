@@ -155,6 +155,10 @@ and return to the original position."
       :m "<mouse-8>" #'better-jumper-jump-backward
       :m "<mouse-9>" #'better-jumper-jump-forward)
 
+;; use middle click to go-to-definition - the down event ensures we navigate to the target point
+(map! :n "<down-mouse-2>" #'evil-mouse-drag-region
+      :n "<mouse-2>" #'+lookup/definition)
+
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 (map! :leader :n "c I" 'dd/js-install)
 
