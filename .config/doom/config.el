@@ -151,9 +151,9 @@ and return to the original position."
 (map! :map evil-ex-search-keymap
       "C-v" (cmd! (insert (current-kill 0))))
 
-
-;; something was overwriting this to cause indentation
-(map! :m "C-i" 'better-jumper-jump-forward)
+(map! :m "C-i"       #'better-jumper-jump-forward ;; something was overwriting this to cause indentation
+      :m "<mouse-8>" #'better-jumper-jump-backward
+      :m "<mouse-9>" #'better-jumper-jump-forward)
 
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 (map! :leader :n "c I" 'dd/js-install)
