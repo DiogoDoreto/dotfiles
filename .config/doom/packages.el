@@ -1,6 +1,9 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; $DOOMDIR/packages.el
 
+(package! dd-taskrunner-javascript
+  :recipe (:host github :repo "DiogoDoreto/dd-taskrunner-javascript.el"))
+
 (package! dd :recipe (:local-repo "dd"))
 
 (package! ef-themes)
