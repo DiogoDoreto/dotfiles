@@ -176,6 +176,14 @@ and return to the original position."
 
 (map! :map evil-org-mode-map :n "z g" #'+org/play-gif-at-point)
 
+(map! :localleader
+      :map (emacs-lisp-mode-map lisp-interaction-mode-map)
+      (:prefix ("d" . "debug")
+               "t" #'trace-function
+               "T" #'trace-function-background
+               "u" #'untrace-function
+               "U" #'untrace-all))
+
 (advice-add #'+default/search-buffer :around #'doom-set-jump-maybe-a)
 
 (after! flycheck
