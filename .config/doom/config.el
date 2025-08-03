@@ -174,6 +174,8 @@ and return to the original position."
 
 (map! :map vterm-mode-map :ni "C-<escape>" #'vterm-send-escape)
 
+(map! :map evil-org-mode-map :n "z g" #'+org/play-gif-at-point)
+
 (advice-add #'+default/search-buffer :around #'doom-set-jump-maybe-a)
 
 (after! flycheck
