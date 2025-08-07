@@ -164,7 +164,9 @@ and return to the original position."
 
 (map! :leader :desc "Find related file" :n "f o" 'projectile-find-other-file)
 
-(map! :leader :desc "Auto fill" :n "t C" #'auto-fill-mode)
+(map! :leader
+      :desc "Auto fill"            :n "t C" #'auto-fill-mode
+      :desc "Highline cursor line" :n "t L" #'hl-line-mode)
 
 (map! :leader :n "w w" #'dd/window-prefix)
 
