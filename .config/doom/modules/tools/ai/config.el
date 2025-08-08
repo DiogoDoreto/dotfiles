@@ -14,6 +14,17 @@
 (use-package! gptel
   :defer t
   :config
+  (setq gptel-display-buffer-action nil)  ; if user changes this, popup manager will bow out
+  (set-popup-rule!
+    (lambda (bname _action)
+      (and (null gptel-display-buffer-action)
+           (buffer-local-value 'gptel-mode (get-buffer bname))))
+    :select t
+    :side 'right
+    :width 80
+    :quit nil
+    :ttl nil)
+
   (setq gptel--known-backends (assoc-delete-all "ChatGPT" gptel--known-backends))
 
   (load! "my-gptel-tools.el")
@@ -32,6 +43,7 @@
   (defun dd--gh-parse-enabled-models (api-response)
     "Return a list of models with policy state `enabled' from the API-RESPONSE."
     (let* ((data (cdr (assoc 'data api-response))))
+      ;; (pp data)
       (delq nil
             (mapcar (lambda (model)
                       (let* ((policy (assoc 'policy model))
@@ -94,11 +106,10 @@
        :desc "Buffer Copilot"    "i" #'copilot-mode
        :desc "Global Copilot"    "I" #'global-copilot-mode
 
-       :desc "model=gpt-4.1" "1" (cmd! (setq gptel-model 'gpt-4.1))
-       :desc "model=o1"      "2" (cmd! (setq gptel-model 'o1))
-       :desc "model=gpt-4o"  "3" (cmd! (setq gptel-model 'gpt-4o))
-       :desc "model=claude-3.7-sonnet"         "4" (cmd! (setq gptel-model 'claude-3.7-sonnet))
-       :desc "model=claude-3.7-sonnet-thought" "5" (cmd! (setq gptel-model 'claude-3.7-sonnet-thought))
+       :desc "model=gpt-4.1"         "1" (cmd! (setq gptel-model 'gpt-4.1))
+       :desc "model=gpt-5"           "2" (cmd! (setq gptel-model 'gpt-5))
+       :desc "model=gpt-4o"          "3" (cmd! (setq gptel-model 'gpt-4o))
+       :desc "model=claude-sonnet-4" "4" (cmd! (setq gptel-model 'claude-sonnet-4))
 
        :desc "Aider" "d" #'aidermacs-transient-menu
 
