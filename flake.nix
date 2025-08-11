@@ -45,7 +45,14 @@
     };
   };
 
-  outputs = { nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, ... }@inputs:
+  outputs =
+    {
+      nixpkgs,
+      nixpkgs-unstable,
+      home-manager,
+      nixos-hardware,
+      ...
+    }@inputs:
     let
       system = "x86_64-linux";
       overlays = [
@@ -64,26 +71,27 @@
       pkgs-unstable = import nixpkgs-unstable pkgs-config;
       specialArgs = { inherit inputs pkgs-unstable; };
       extraSpecialArgs = specialArgs;
-      buildHomeFromNixos = user: entryModule: home-manager.lib.homeManagerConfiguration {
-        inherit pkgs extraSpecialArgs;
-        modules = [
-          {
-            home = {
-              username = user.name;
-              homeDirectory = user.home;
-            };
-          }
-          entryModule
-        ];
-      };
-    in rec {
+      buildHomeFromNixos =
+        user: entryModule:
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs extraSpecialArgs;
+          modules = [
+            {
+              home = {
+                username = user.name;
+                homeDirectory = user.home;
+              };
+            }
+            entryModule
+          ];
+        };
+    in
+    rec {
       homeConfigurations = {
-        "dog@chungus" = buildHomeFromNixos
-          nixosConfigurations.chungus.config.users.users.dog
-          ./hosts/chungus/home.nix;
-        "dog@mini" = buildHomeFromNixos
-          nixosConfigurations.mini.config.users.users.dog
-          ./hosts/mini/home.nix;
+        "dog@chungus" =
+          buildHomeFromNixos nixosConfigurations.chungus.config.users.users.dog ./hosts/chungus/home.nix;
+        "dog@mini" =
+          buildHomeFromNixos nixosConfigurations.mini.config.users.users.dog ./hosts/mini/home.nix;
       };
 
       nixosConfigurations = {
@@ -91,7 +99,7 @@
           inherit system specialArgs;
           modules = [
             ./hosts/chungus/configuration.nix
-            ./nix-config.nix
+            (import ../../nix-config.nix nixpkgs)
             home-manager.nixosModules.home-manager
             {
               home-manager.extraSpecialArgs = specialArgs;
@@ -104,20 +112,7 @@
           modules = [
             nixos-hardware.nixosModules.common-cpu-intel
             ./hosts/mini/configuration.nix
-            ./nix-config.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.extraSpecialArgs = specialArgs;
-              nixpkgs = { inherit overlays; };
-            }
-          ];
-        };
-        lapdog = nixpkgs-unstable.lib.nixosSystem rec {
-          inherit system specialArgs;
-          modules = [
-            nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
-            ./hosts/lapdog/configuration.nix
-            ./nix-config.nix
+            (import ../../nix-config.nix nixpkgs)
             home-manager.nixosModules.home-manager
             {
               home-manager.extraSpecialArgs = specialArgs;
@@ -130,7 +125,7 @@
           modules = [
             ./hosts/inspiron7520/hardware.nix
             ./hosts/inspiron7520/configuration.nix
-            ./nix-config.nix
+            (import ../../nix-config.nix nixpkgs)
             home-manager.nixosModules.home-manager
             nixos-hardware.nixosModules.common-cpu-intel
             nixos-hardware.nixosModules.common-gpu-amd

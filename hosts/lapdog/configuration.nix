@@ -2,13 +2,12 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ pkgs, inputs, ... }:
+{ pkgs, ... }:
 
 {
-  imports =
-    [
-      ./hardware.nix # Include the results of the hardware scan.
-    ];
+  imports = [
+    ./hardware.nix # Include the results of the hardware scan.
+  ];
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -25,8 +24,8 @@
     networkmanager.enable = true;
     firewall = {
       enable = true;
-      allowedTCPPorts = [];
-      allowedUDPPorts = [];
+      allowedTCPPorts = [ ];
+      allowedUDPPorts = [ ];
     };
   };
 
@@ -91,7 +90,10 @@
   users.users.dog = {
     isNormalUser = true;
     description = "Diogo Doreto";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+    ];
   };
 
   home-manager = {
@@ -113,7 +115,7 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    inputs.home-manager.packages.x86_64-linux.home-manager
+    home-manager
     openvpn
   ];
 

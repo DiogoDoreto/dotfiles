@@ -22,18 +22,6 @@ nixos-mini-boot:
 nixos-mini-switch:
 	sudo -A nixos-rebuild --flake .#mini switch
 
-.PHONY: hm-dog-lapdog-switch
-hm-dog-lapdog-switch:
-	home-manager --flake .#dog@lapdog switch
-
-.PHONY: nixos-lapdog-boot
-nixos-lapdog-boot:
-	sudo -A nixos-rebuild --flake .#lapdog boot
-
-.PHONY: nixos-lapdog-switch
-nixos-lapdog-switch:
-	sudo -A nixos-rebuild --flake .#lapdog switch
-
 .PHONY: gc
 gc:
 	nix-collect-garbage -d
