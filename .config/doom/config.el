@@ -159,6 +159,8 @@ and return to the original position."
 (map! :n "<down-mouse-2>" #'evil-mouse-drag-region
       :n "<mouse-2>" #'+lookup/definition)
 
+(map! :leader :desc "Browse man pages" :n "h w" #'woman)
+
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 (map! :leader :n "c I" 'dd/js-install)
 
