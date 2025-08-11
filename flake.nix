@@ -112,6 +112,19 @@
             }
           ];
         };
+        lapdog = nixpkgs-unstable.lib.nixosSystem rec {
+          inherit system specialArgs;
+          modules = [
+            nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
+            ./hosts/lapdog/configuration.nix
+            ./nix-config.nix
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.extraSpecialArgs = specialArgs;
+              nixpkgs = { inherit overlays; };
+            }
+          ];
+        };
         inspiron7520 = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
