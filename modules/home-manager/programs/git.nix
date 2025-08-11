@@ -39,6 +39,8 @@ in
         "npm-debug.log*"
         "yarn-debug.log*"
         "yarn-error.log*"
+        # opencode
+        "AGENTS.md"
       ];
       extraConfig = {
         core.autocrlf = false;
