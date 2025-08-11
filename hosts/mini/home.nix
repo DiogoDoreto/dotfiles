@@ -61,6 +61,7 @@
     git.enable = true;
     firefox.enable = true;
     ghostty.enable = true;
+    wezterm.enable = true;
 
     emacs = {
       enable = true;
