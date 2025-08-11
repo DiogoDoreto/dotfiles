@@ -1,7 +1,3 @@
-.PHONY: hm-dog-dogdot-switch
-hm-dog-dogdot-switch:
-	home-manager --flake .#dog@dogdot switch
-
 .PHONY: hm-dog-chungus-switch
 hm-dog-chungus-switch:
 	home-manager --flake .#dog@chungus switch
@@ -25,6 +21,18 @@ nixos-mini-boot:
 .PHONY: nixos-mini-switch
 nixos-mini-switch:
 	sudo -A nixos-rebuild --flake .#mini switch
+
+.PHONY: hm-dog-lapdog-switch
+hm-dog-lapdog-switch:
+	home-manager --flake .#dog@lapdog switch
+
+.PHONY: nixos-lapdog-boot
+nixos-lapdog-boot:
+	sudo -A nixos-rebuild --flake .#lapdog boot
+
+.PHONY: nixos-lapdog-switch
+nixos-lapdog-switch:
+	sudo -A nixos-rebuild --flake .#lapdog switch
 
 .PHONY: gc
 gc:

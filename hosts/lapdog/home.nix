@@ -31,6 +31,11 @@
     };
 
     neovim.enable = true;
+
+    ssh = {
+      enable = true;
+      addKeysToAgent = "yes";
+    };
   };
 
   dog.dotfilesPath = /home/dog/projects/dotfiles;
