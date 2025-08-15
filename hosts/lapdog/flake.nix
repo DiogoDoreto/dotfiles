@@ -12,6 +12,10 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    plasma-toggle-tablet-mode = {
+      url = "../../scripts/plasma-toggle-tablet-mode";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     doomemacs = {
       url = "github:doomemacs/doomemacs";
       flake = false;
@@ -27,12 +31,12 @@
     }@inputs:
     let
       system = "x86_64-linux";
-      hmOverlay = final: prev: {
-        inherit (inputs.home-manager.packages.${system}) home-manager;
-      };
       overlays = [
         inputs.nur.overlays.default
-        hmOverlay
+        (final: prev: {
+          inherit (inputs.home-manager.packages.${system}) home-manager;
+          inherit (inputs.plasma-toggle-tablet-mode.packages.${system}) plasma-toggle-tablet-mode;
+        })
       ];
       pkgs-config = {
         inherit system overlays;

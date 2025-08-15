@@ -17,6 +17,14 @@
     ];
   };
 
+  xdg.desktopEntries.plasma-toggle-tablet-mode = {
+    name = "Plasma Toggle Tablet Mode";
+    exec = "${pkgs.plasma-toggle-tablet-mode}/bin/plasma-toggle-tablet-mode";
+    icon = "preferences-system-tablet";
+    terminal = false;
+    categories = [ "Utility" ];
+  };
+
   programs = {
     mpv = {
       enable = true;
