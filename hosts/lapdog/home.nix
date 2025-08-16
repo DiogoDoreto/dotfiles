@@ -10,6 +10,7 @@
       calibre
       hydrogen
       keepassxc
+      krita
       nodejs_24
       pods # podman GUI
       ungoogled-chromium
