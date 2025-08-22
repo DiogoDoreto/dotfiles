@@ -31,7 +31,10 @@
 ;; See 'C-h v doom-font' for documentation and more examples of what they
 ;; accept. For example:
 ;;
-(setq doom-font (font-spec :family "VictorMono Nerd Font Mono" :size 17 :weight 'light))
+(setq doom-font (font-spec
+                 :family "VictorMono Nerd Font Mono"
+                 :weight 'light
+                 :size (if (s-equals? "lapdog" (system-name)) 24 17)))
 
 (after! tree-sitter
   (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
@@ -51,7 +54,9 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme (if (dd--night?) 'ef-maris-dark 'ef-day))
+(setq doom-theme (if (s-equals? "lapdog" (system-name))
+                     'modus-vivendi-deuteranopia
+                   (if (dd--night?) 'ef-maris-dark 'ef-day)))
 
 (setq ef-themes-to-toggle '(ef-maris-dark ef-day))
 (map! :leader :desc "Theme" :n "t t" #'ef-themes-toggle)

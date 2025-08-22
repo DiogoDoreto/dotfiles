@@ -10,6 +10,9 @@
   (when (and (eq major-mode 'typescript-mode) (bound-and-true-p +format-with-lsp-mode))
     (+format-with-lsp-mode -1)))
 
+(after! apheleia
+  (add-to-list 'apheleia-formatters '(xo "apheleia-npx" "xo" "--fix" "--stdin")))
+
 (after! projectile
   (add-to-list 'projectile-other-file-alist '("ts" . ("spec.ts")))
   (add-to-list 'projectile-other-file-alist '("spec.ts" . ("ts"))))

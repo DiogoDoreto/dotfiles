@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -23,7 +28,7 @@ in
           weight = "Medium",
           harfbuzz_features = { 'calt=0', 'clig=0', 'liga=0' },
         }
-        config.color_scheme = "duskfox"
+        config.color_scheme = "Brewer (base16)"
         config.font_size = 10
         config.line_height = 1.1
         config.default_prog = { "${lib.getExe pkgs.fish}", "-l" }

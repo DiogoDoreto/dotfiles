@@ -109,6 +109,8 @@
 
   programs.kdeconnect.enable = true;
 
+  programs.steam.enable = true;
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
