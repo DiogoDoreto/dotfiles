@@ -300,6 +300,10 @@ and return to the original position."
   :config
   (map! :leader "s k" #'devdocs-browser-open-in))
 
+(use-package! org-block-capf
+  :config
+  (add-hook 'org-mode-hook #'org-block-capf-add-to-completion-at-point-functions))
+
 (load! "config-javascript")
 
 (after! good-scroll

@@ -31,6 +31,9 @@
 ;; fix from: https://github.com/doomemacs/doomemacs/issues/8287#issuecomment-2683336880
 (package! track-changes :built-in t)
 
+(package! org-block-capf
+  :recipe (:host github :repo "xenodium/org-block-capf"))
+
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or
 ;; use 'M-x doom/reload'.

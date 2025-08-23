@@ -17,6 +17,38 @@
   (add-to-list 'projectile-other-file-alist '("ts" . ("spec.ts")))
   (add-to-list 'projectile-other-file-alist '("spec.ts" . ("ts"))))
 
+(after! org
+  (require 'ob-js)
+  (defalias 'org-babel-execute:javascript #'org-babel-execute:js)
+
+  ;; adapted from `org-babel-execute:js'
+  (defun org-babel-execute:typescript (body params)
+    "Execute TypeScript BODY according to PARAMS.
+This function is called by `org-babel-execute-src-block'."
+    (let* ((org-babel-js-cmd (or (cdr (assq :cmd params)) org-babel-js-cmd))
+           (result-type (cdr (assq :result-type params)))
+           (full-body (org-babel-expand-body:generic
+                       body params (org-babel-variable-assignments:js params)))
+           (script-file (org-babel-temp-file "ts-script-" ".ts"))
+           (result (progn
+                     (with-temp-file script-file
+                       (insert
+                        ;; return the value or the output
+                        (if (string= result-type "value")
+                            (format org-babel-js-function-wrapper full-body)
+                          full-body)))
+                     (org-babel-eval
+                      (format "%s %s" org-babel-js-cmd
+                              (org-babel-process-file-name script-file)) ""))))
+      (org-babel-result-cond (cdr (assq :result-params params))
+        result (org-babel-js-read result))))
+
+  (add-to-list 'org-babel-load-languages '(js . t))
+  (org-babel-do-load-languages 'org-babel-load-languages org-babel-load-languages)
+  (add-to-list 'org-babel-tangle-lang-exts '("js" . "js"))
+  (add-to-list 'org-babel-tangle-lang-exts '("javascript" . "js"))
+  (add-to-list 'org-babel-tangle-lang-exts '("typescript" . "ts")))
+
 (use-package! jest-test-mode
   :commands jest-test-mode
   :hook (typescript-mode typescript-tsx-mode)
