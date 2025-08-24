@@ -7,6 +7,7 @@
 
   home = {
     packages = with pkgs; [
+      aider-chat
       calibre
       hydrogen
       keepassxc
@@ -16,6 +17,30 @@
       ungoogled-chromium
       onedrivegui
     ];
+
+    file = {
+      ".aider.conf.yml".text = builtins.toJSON {
+        model = "github_copilot/gpt-4.1";
+        show-model-warnings = false;
+        max-chat-history-tokens = 8000;
+        dark-mode = true;
+        auto-commits = false;
+      };
+      ".aider.model.settings.yml".text = builtins.toJSON [
+        {
+          name = "github_copilot/gpt-4.1";
+          extra_params = {
+            max_tokens = 80000;
+            extra_headers = {
+              User-Agent = "GithubCopilot/1.155.0";
+              Editor-Plugin-Version = "copilot/1.155.0";
+              Editor-Version = "vscode/1.85.1";
+              Copilot-Integration-Id = "vscode-chat";
+            };
+          };
+        }
+      ];
+    };
   };
 
   programs = {

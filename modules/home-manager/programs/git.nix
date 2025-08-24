@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -41,6 +46,8 @@ in
         "yarn-error.log*"
         # opencode
         "AGENTS.md"
+        # aider
+        ".aider*"
       ];
       extraConfig = {
         core.autocrlf = false;
