@@ -14,14 +14,12 @@ export const kwinInputDevice = {
 	async getDevicesSysNames() {
 		const dmInterface = 'org.kde.KWin.InputDeviceManager'
 		const dmProperty = 'devicesSysNames'
-		const lines =
-			$`qdbus ${this.service} ${this.path} ${dbus.propGet} ${dmInterface} ${dmProperty}`.lines()
-		const names = []
-		for await (const line of lines) {
-			const name = line.trim()
-			if (name) names.push(name)
-		}
-
+		const response =
+			await $`qdbus ${this.service} ${this.path} ${dbus.propGet} ${dmInterface} ${dmProperty}`.text()
+		const names = response
+			.split('\n')
+			.map((line) => line.trim())
+			.filter(Boolean)
 		return names
 	},
 
@@ -33,11 +31,14 @@ export const kwinInputDevice = {
 	},
 
 	async updateDeviceMap() {
-		for (const sysName of await this.getDevicesSysNames()) {
-			if (sysName) {
-				const name = await this.getDevices(sysName)
-				this.deviceMap.set(name, sysName)
-			}
+		const sysNames = await this.getDevicesSysNames()
+		const namePromises = sysNames.map(async (sysName) => {
+			const name = await this.getDevices(sysName)
+			return {name, sysName}
+		})
+		const nameSysNamePairs = await Promise.all(namePromises)
+		for (const {name, sysName} of nameSysNamePairs) {
+			this.deviceMap.set(name, sysName)
 		}
 	},
 

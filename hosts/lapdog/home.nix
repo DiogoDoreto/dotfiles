@@ -18,14 +18,6 @@
     ];
   };
 
-  xdg.desktopEntries.plasma-toggle-tablet-mode = {
-    name = "Plasma Toggle Tablet Mode";
-    exec = "${pkgs.plasma-toggle-tablet-mode}/bin/plasma-toggle-tablet-mode";
-    icon = "preferences-system-tablet";
-    terminal = false;
-    categories = [ "Utility" ];
-  };
-
   programs = {
     mpv = {
       enable = true;
@@ -59,6 +51,16 @@
 
     emacs = {
       enable = true;
+    };
+
+    plasma-toggle-tablet-mode = {
+      enable = true;
+      devices = [
+        "AT Translated Set 2 keyboard"
+        "ELAN06D5:00 04F3:32B7 Touchpad"
+        "TPPS/2 Elan TrackPoint"
+        "ThinkPad Extra Buttons"
+      ];
     };
   };
 

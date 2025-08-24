@@ -33,9 +33,9 @@
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
+        inputs.plasma-toggle-tablet-mode.overlays.${system}.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
-          inherit (inputs.plasma-toggle-tablet-mode.packages.${system}) plasma-toggle-tablet-mode;
         })
       ];
       pkgs-config = {

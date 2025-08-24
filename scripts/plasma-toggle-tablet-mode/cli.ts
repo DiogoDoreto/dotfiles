@@ -1,13 +1,37 @@
 import {parseArgs} from 'node:util'
-import {kconfig, kwinInputDevice} from './lib.ts'
+import {homedir} from 'node:os'
+import {join} from 'node:path'
 import {name} from './package.json'
+import {kconfig, kwinInputDevice} from './lib.ts'
 
-const devicesToToggle = [
-	'AT Translated Set 2 keyboard',
-	'ELAN06D5:00 04F3:32B7 Touchpad',
-	'TPPS/2 Elan TrackPoint',
-	'ThinkPad Extra Buttons',
-]
+function getXdgConfigDir(): string {
+	return process.env.XDG_CONFIG_HOME || join(homedir(), '.config')
+}
+
+async function loadDevicesToToggle(): Promise<string[]> {
+	const configPath = join(
+		getXdgConfigDir(),
+		'plasma-toggle-tablet-mode/config.json',
+	)
+	try {
+		const config = await Bun.file(configPath).json()
+		const {devices} = config
+		if (
+			Array.isArray(devices) &&
+			devices.every((dev: unknown) => typeof dev === 'string')
+		) {
+			return devices
+		}
+
+		console.error('config.json file is invalid; using an empty list.')
+	} catch (error) {
+		console.error('Failed to load devices from config:', error)
+	}
+
+	return []
+}
+
+const devicesToToggle = await loadDevicesToToggle()
 
 const {values, positionals} = parseArgs({
 	args: Bun.argv,
@@ -29,11 +53,15 @@ Options:
   -h, --help            Display this help message.
 
 Description:
-  Toggle tablet mode and enable/disable the following devices:
-    - AT Translated Set 2 keyboard
-    - ELAN06D5:00 04F3:32B7 Touchpad
-    - TPPS/2 Elan TrackPoint
-    - ThinkPad Extra Buttons
+  Toggle tablet mode and enable/disable the devices listed in your configuration
+   file (~/.config/plasma-toggle-tablet-mode/config.json).
+
+Configured devices to toggle:
+${
+	devicesToToggle.length > 0
+		? devicesToToggle.map((dev) => `  - ${dev}`).join('\n')
+		: '  (none found in config)'
+}
 `)
 }
 

@@ -1,0 +1,97 @@
+#+TITLE: plasma-toggle-tablet-mode
+
+A CLI tool for toggling KDE Plasma's tablet mode and enabling/disabling input
+devices.
+
+** Contents :TOC:
+  - [[#features][Features]]
+  - [[#usage][Usage]]
+  - [[#configuration][Configuration]]
+  - [[#building-with-bun][Building with Bun]]
+
+** Features
+
+- Toggle tablet mode on/off in KDE Plasma.
+- Enable or disable specific input devices based on your configuration.
+- List available input devices and their system names.
+
+** Usage
+
+- Toggle tablet mode and enable/disable configured devices:
+
+  #+BEGIN_SRC sh
+  plasma-toggle-tablet-mode toggle
+  #+END_SRC
+
+- List available input devices:
+
+  #+BEGIN_SRC sh
+  plasma-toggle-tablet-mode list-devices
+  #+END_SRC
+
+- Show help:
+
+  #+BEGIN_SRC sh
+  plasma-toggle-tablet-mode --help
+  #+END_SRC
+
+** Configuration
+
+To use this tool, you need to create a configuration file that lists the input
+devices you want to enable or disable when toggling tablet mode.
+
+1. *Find available device names:*
+
+   Run the following command to list all available input devices and their
+   system names:
+
+   #+BEGIN_SRC sh
+   plasma-toggle-tablet-mode list-devices
+   #+END_SRC
+
+   Use the device names (not the system names in parentheses) in your
+   configuration file.
+
+2. *Edit ~/.config/plasma-toggle-tablet-mode/config.json to include your
+   devices:*
+
+   The file should contain a JSON object with a ~devices~ array. Each entry
+   should be the name of an input device as listed by the CLI tool.
+
+   Example:
+
+   #+BEGIN_SRC json
+   {
+     "devices": [
+       "AT Translated Set 2 keyboard",
+       "ELAN06D5:00 04F3:32B7 Touchpad"
+     ]
+   }
+   #+END_SRC
+
+** Building with Bun
+
+This project uses [[https://bun.sh/][Bun]] as its JavaScript runtime and package manager.
+
+1. *Install dependencies*
+
+   In the project directory, run:
+
+   #+BEGIN_SRC sh
+   bun install
+   #+END_SRC
+
+2. *Build the CLI*
+
+   To build the CLI executable, run:
+
+   #+BEGIN_SRC sh
+   bun build --compile --outfile=plasma-toggle-tablet-mode ./cli.ts
+   #+END_SRC
+
+   This will produce a standalone binary named ~plasma-toggle-tablet-mode~ in
+   the current directory.
+
+3. *(Optional) Install the binary*
+
+   You can move the binary to a directory in your ~$PATH~.
