@@ -131,6 +131,56 @@
 
   # List services that you want to enable:
 
+  # Keyboard remaping
+  services.evremap = {
+    enable = true;
+    settings = {
+      device_name = "AT Translated Set 2 keyboard";
+      dual_role = [
+        {
+          input = "KEY_CAPSLOCK";
+          hold = [ "KEY_RIGHTCTRL" ];
+          tap = [ "KEY_ESC" ];
+        }
+        {
+          input = "KEY_LEFTCTRL";
+          hold = [ "KEY_LEFTCTRL" ];
+          tap = [ "KEY_CAPSLOCK" ];
+        }
+      ];
+      remap = [
+        {
+          input = [
+            "KEY_LEFTCTRL"
+            "KEY_H"
+          ];
+          output = [ "KEY_LEFT" ];
+        }
+        {
+          input = [
+            "KEY_LEFTCTRL"
+            "KEY_J"
+          ];
+          output = [ "KEY_DOWN" ];
+        }
+        {
+          input = [
+            "KEY_LEFTCTRL"
+            "KEY_K"
+          ];
+          output = [ "KEY_UP" ];
+        }
+        {
+          input = [
+            "KEY_LEFTCTRL"
+            "KEY_L"
+          ];
+          output = [ "KEY_RIGHT" ];
+        }
+      ];
+    };
+  };
+
   # Enable the OpenSSH daemon.
   services.openssh = {
     enable = true;
