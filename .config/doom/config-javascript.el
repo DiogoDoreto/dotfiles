@@ -11,6 +11,7 @@
     (+format-with-lsp-mode -1)))
 
 (after! apheleia
+  (add-to-list 'apheleia-formatters '(eslint "apheleia-npx" "eslint_d" "--fix-to-stdout" "--stdin" "--stdin-filename" file))
   (add-to-list 'apheleia-formatters '(xo "apheleia-npx" "xo" "--fix" "--stdin")))
 
 (after! projectile
