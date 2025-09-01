@@ -175,7 +175,10 @@ and return to the original position."
       :desc "Auto fill"            :n "t C" #'auto-fill-mode
       :desc "Highline cursor line" :n "t L" #'hl-line-mode)
 
-(map! :leader :n "w w" #'dd/window-prefix)
+(map! :leader
+      :n "w w" #'dd/window-prefix
+      :n "w ." #'ace-select-window
+      :n "w X" #'ace-swap-window)
 
 (map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
 
