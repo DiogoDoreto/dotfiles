@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: Arrow-Function
+# key: arrow-function
+# condition: t
+# --
+($1) => {`yas-selected-text`$0}
