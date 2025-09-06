@@ -99,7 +99,7 @@
           inherit system specialArgs;
           modules = [
             ./hosts/chungus/configuration.nix
-            (import ../../nix-config.nix nixpkgs)
+            (import ./nix-config.nix nixpkgs)
             home-manager.nixosModules.home-manager
             {
               home-manager.extraSpecialArgs = specialArgs;
@@ -112,7 +112,7 @@
           modules = [
             nixos-hardware.nixosModules.common-cpu-intel
             ./hosts/mini/configuration.nix
-            (import ../../nix-config.nix nixpkgs)
+            (import ./nix-config.nix nixpkgs)
             home-manager.nixosModules.home-manager
             {
               home-manager.extraSpecialArgs = specialArgs;
@@ -125,7 +125,7 @@
           modules = [
             ./hosts/inspiron7520/hardware.nix
             ./hosts/inspiron7520/configuration.nix
-            (import ../../nix-config.nix nixpkgs)
+            (import ./nix-config.nix nixpkgs)
             home-manager.nixosModules.home-manager
             nixos-hardware.nixosModules.common-cpu-intel
             nixos-hardware.nixosModules.common-gpu-amd

@@ -3,11 +3,11 @@
     "doomemacs": {
       "flake": false,
       "locked": {
-        "lastModified": 1756934157,
-        "narHash": "sha256-HFXOBOhbWkUgJu4sW2RHIkrG4Kuo45x6tsypXR+ee9s=",
+        "lastModified": 1757106921,
+        "narHash": "sha256-vHwgENjip2+AFzs4oZfnKEAJKwf5Zid7fakImvxxQUw=",
         "owner": "doomemacs",
         "repo": "doomemacs",
-        "rev": "26a5ad72e161f53151e78580a62bcd0757a7bf40",
+        "rev": "8f55404781edacf66fa330205533b002de3fb5ee",
         "type": "github"
       },
       "original": {
@@ -158,11 +158,11 @@
     },
     "nixos-hardware": {
       "locked": {
-        "lastModified": 1757081837,
-        "narHash": "sha256-wAgZ+BaRR/cqmKP0bWnJ9rO9KLz91R5aOdJiT+k/J2E=",
+        "lastModified": 1757103352,
+        "narHash": "sha256-PtT7ix43ss8PONJ1VJw3f6t2yAoGH+q462Sn8lrmWmk=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "7e56e39db4008521552e9d2b0d9ae9bf8e0cdce2",
+        "rev": "11b2a10c7be726321bb854403fdeec391e798bf0",
         "type": "github"
       },
       "original": {
@@ -212,11 +212,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1757090439,
-        "narHash": "sha256-2Mz1S/XoRl6SiKs1WxTioRemv3Lc624aTUfewfM0FEM=",
+        "lastModified": 1757166200,
+        "narHash": "sha256-fLB6EoMRYgHEgwjj68cGK66SV6wl1fay6Y1TxSeWXO8=",
         "owner": "nix-community",
         "repo": "NUR",
-        "rev": "381e1fa04eccb9304d0f4c19a5899e13dd6290e6",
+        "rev": "4d10e65c528b1d24c98c7ec850423aabd635647a",
         "type": "github"
       },
       "original": {

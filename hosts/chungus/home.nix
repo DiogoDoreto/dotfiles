@@ -47,6 +47,8 @@
 
   dog.presets.linux.enable = true;
 
+  dog.dotfilesPath = /home/dog/p/dotfiles;
+
   dog.programs = {
     cli-tools.enable = true;
     git.enable = true;
