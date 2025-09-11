@@ -310,6 +310,21 @@ and return to the original position."
   :config
   (add-hook 'org-mode-hook #'org-block-capf-add-to-completion-at-point-functions))
 
+(use-package! hnreader
+  :defer t
+  :config
+  (defun +hnreader/read-only-advice (_dom buf _url)
+    (with-current-buffer buf
+      (read-only-mode 1)
+      (evil-local-set-key 'normal (kbd "q") #'kill-current-buffer)))
+  (advice-add 'hnreader--print-frontpage :after #'+hnreader/read-only-advice))
+
+(add-to-list '+doom-dashboard-menu-sections
+             '("Read HackerNews"
+               :icon (nerd-icons-faicon "nf-fa-hacker_news" :face 'doom-dashboard-menu-title)
+               :action hnreader-news)
+             t)
+
 (load! "config-javascript")
 
 (after! good-scroll
