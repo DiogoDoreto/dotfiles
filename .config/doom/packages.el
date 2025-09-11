@@ -1,6 +1,9 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; $DOOMDIR/packages.el
 
+(package! jsts
+  :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
+
 (package! dd-taskrunner-javascript
   :recipe (:host github :repo "DiogoDoreto/dd-taskrunner-javascript.el"))
 

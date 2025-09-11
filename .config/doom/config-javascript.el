@@ -1,8 +1,9 @@
 ;;; $DOOMDIR/config-javascript.el -*- lexical-binding: t; -*-
 
-(use-package! dd-taskrunner-javascript
-  :config
-  (map! :map npm-mode-command-keymap "r" #'dd-taskrunner-javascript))
+(use-package! jsts :defer t)
+(use-package! jsts-package-json-mode :hook (json-ts-mode-hook . jsts-package-json--maybe-activate))
+
+(use-package! dd-taskrunner-javascript :commands dd-taskrunner-javascript)
 
 (setq lsp-eslint-run "onSave")
 

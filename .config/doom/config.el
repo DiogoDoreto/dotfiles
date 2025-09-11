@@ -279,6 +279,9 @@ and return to the original position."
 (with-eval-after-load 'compile
   (fancy-compilation-mode))
 
+(after! envrc
+  (advice-add 'shell-command-to-string :around #'envrc-propagate-environment))
+
 (use-package! info-rename-buffer :hook 'Info-selection-hook)
 
 (use-package ct :defer t)
