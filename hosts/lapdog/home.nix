@@ -54,6 +54,10 @@
         quality-menu
         youtube-upnext
       ];
+      bindings = {
+        "Alt+RIGHT" = "cycle_values video-rotate 90 180 270 0";
+        "Alt+LEFT" = "cycle_values video-rotate 0 270 180 90";
+      };
     };
 
     neovim.enable = true;
