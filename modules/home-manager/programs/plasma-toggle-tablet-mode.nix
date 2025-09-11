@@ -36,12 +36,14 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [ cfg.package ];
 
-    xdg.configFile."plasma-toggle-tablet-mode/config.json".text = builtins.toJSON { devices = cfg.devices; };
+    xdg.configFile."plasma-toggle-tablet-mode/config.json".text = builtins.toJSON {
+      devices = cfg.devices;
+    };
 
     xdg.desktopEntries = lib.mkIf cfg.createDesktopEntry {
       plasma-toggle-tablet-mode = {
         name = "Plasma Toggle Tablet Mode";
-        exec = lib.getExe cfg.package;
+        exec = "${lib.getExe cfg.package} toggle";
         icon = "input-tablet";
         type = "Application";
         categories = [ "Utility" ];

@@ -3,6 +3,7 @@ import {homedir} from 'node:os'
 import {join} from 'node:path'
 import {name} from './package.json'
 import {kconfig, kwinInputDevice} from './lib.ts'
+import process from 'node:process'
 
 function getXdgConfigDir(): string {
 	return process.env.XDG_CONFIG_HOME || join(homedir(), '.config')
@@ -14,8 +15,7 @@ async function loadDevicesToToggle(): Promise<string[]> {
 		'plasma-toggle-tablet-mode/config.json',
 	)
 	try {
-		const config = await Bun.file(configPath).json()
-		const {devices} = config
+		const {devices} = (await Bun.file(configPath).json()) as unknown
 		if (
 			Array.isArray(devices) &&
 			devices.every((dev: unknown) => typeof dev === 'string')
