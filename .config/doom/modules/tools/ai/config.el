@@ -11,9 +11,27 @@
 (load! "whisper.el")
 (load! "gptel-oneshot.el")
 
+(use-package! mcp
+  :after gptel
+  :config
+  (setq mcp-hub-servers
+        `(("playwright" . (:command "podman"
+                           :args ,(string-split "run -i --rm --replace --name playwright-mcp --init --pull=always mcr.microsoft.com/playwright/mcp"))))))
+
+(defun +mcp/prepare-filesystem (root)
+  (interactive "DProject root directory: ")
+  (let* ((root (expand-file-name root))
+         (cmd (string-split (format "podman run -i --rm --replace --name filesystem-mcp --mount type=bind,src=%s,dst=%s docker.io/mcp/filesystem %s" root root root))))
+    (mcp-stop-server "filesystem")
+    (gptel-mcp-disconnect '("filesystem"))
+    (setf (alist-get "filesystem" mcp-hub-servers nil t #'string=)
+          `(:command ,(car cmd) :args ,(cdr cmd)))
+    (gptel-mcp-connect '("filesystem") nil t)))
+
 (use-package! gptel
   :defer t
   :config
+  (require 'gptel-integrations)
   (setq gptel-display-buffer-action nil)  ; if user changes this, popup manager will bow out
   (set-popup-rule!
     (lambda (bname _action)
@@ -24,6 +42,21 @@
     :width 80
     :quit nil
     :ttl nil)
+
+  (defun dd/gptel-context--use-file-name (orig-fun buffer contexts)
+    "Advice to prefer file name over buffer name in the first line."
+    (insert
+     (with-temp-buffer
+       (funcall orig-fun buffer contexts)
+       (when-let* ((filename (buffer-file-name buffer)))
+         (goto-char (point-min))
+         (when (looking-at "In buffer `.*`:")
+           (delete-region (point) (line-end-position))
+           (insert (format "In file `%s`:" filename))))
+       (buffer-string))))
+
+  (advice-add 'gptel-context--insert-buffer-string
+              :around #'dd/gptel-context--use-file-name)
 
   (setq gptel--known-backends (assoc-delete-all "ChatGPT" gptel--known-backends))
 
@@ -102,6 +135,7 @@
        :desc "Add buffer/region" "a" #'gptel-add
        :desc "Abort"             "x" #'gptel-abort
        :desc "Rewrite region" :v "r" #'gptel-rewrite
+       :desc "Setup File System MCP" "f" #'+mcp/prepare-filesystem
 
        :desc "Buffer Copilot"    "i" #'copilot-mode
        :desc "Global Copilot"    "I" #'global-copilot-mode
