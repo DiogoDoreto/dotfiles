@@ -313,11 +313,16 @@ and return to the original position."
 (use-package! hnreader
   :defer t
   :config
-  (defun +hnreader/read-only-advice (_dom buf _url)
+  (defun +hnreader/update-buffer (buf)
     (with-current-buffer buf
       (read-only-mode 1)
       (evil-local-set-key 'normal (kbd "q") #'kill-current-buffer)))
-  (advice-add 'hnreader--print-frontpage :after #'+hnreader/read-only-advice))
+  (defun +hnreader/frontpage-advice (_dom buf _url)
+    (+hnreader/update-buffer buf))
+  (advice-add 'hnreader--print-frontpage :after #'+hnreader/frontpage-advice)
+  (defun +hnreader/comments-advice (_dom _url)
+    (+hnreader/update-buffer (hnreader--get-hn-comment-buffer)))
+  (advice-add 'hnreader--print-comments  :after #'+hnreader/comments-advice))
 
 (add-to-list '+doom-dashboard-menu-sections
              '("Read HackerNews"
