@@ -295,7 +295,8 @@ in
       "doom/modules/tools/ai/config.el".source =
         dotfilesSymlink ".config/doom/modules/tools/ai/config.el";
       "doom/modules/tools/ai/whisper-config.el".text = ''
-        (defun whisper--find-whispercpp-main () "" "${getExe cfg.whisperPackage}")
+        (setq whisper-cpp-models-directory "~/.local/share/whisper/models/")
+        (setq whisper-cpp-directory "${cfg.whisperPackage}")
         (setq whisper-install-whispercpp nil)
       '';
 

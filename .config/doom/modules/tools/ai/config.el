@@ -123,9 +123,42 @@
 
 (defun whisper-command (input-file)
   "Produces whisper command to be run on the INPUT-FILE."
-  `(,(whisper--find-whispercpp-main)
-    "--model" ,whisper-model
-    ,input-file))
+  (let ((model-file (expand-file-name (format "ggml-%s.bin" whisper-model)
+                                      whisper-cpp-models-directory)))
+    (unless (file-exists-p model-file)
+      (if (yes-or-no-p (format "Model [%s] does not exist. Download to %s?" whisper-model whisper-cpp-models-directory))
+          (progn (whisper-download-model)
+                 (user-error "Model is downloading. Please try recording again when completed."))
+        (user-error "Cannot transcribe. %s does not exist." model-file)))
+    `(,(expand-file-name "bin/whisper-cli" whisper-cpp-directory)
+      "--model" ,model-file
+      ,input-file)))
 
 (setq whisper-return-cursor-to-start nil)
+
+(defun whisper-download-model ()
+  "Download a Whisper model using the external whisper-cpp downloader.
+
+Creates the directory `whisper-cpp-models-directory' if needed, then runs the
+\"whisper-cpp-download-ggml-model\" binary from `whisper-cpp-directory' to
+download the model specified by `whisper-model'."
+  (interactive)
+  (make-directory whisper-cpp-models-directory t)
+  (let ((default-directory whisper-cpp-models-directory)
+        (download-cmd (expand-file-name "bin/whisper-cpp-download-ggml-model" whisper-cpp-directory)))
+    (compile (concat download-cmd " " whisper-model))))
+
+(defun dd/clean-whisper-transcription ()
+  "Remove Whisper timestamps and join buffer text into a single line."
+  (goto-char (point-min))
+  (let ((timestamp-regexp (rx line-start "[" (+ (any digit space ?- ":.>")) "]" (* space))))
+    (while (re-search-forward timestamp-regexp nil t)
+      (replace-match "")))
+  (goto-char (point-min))
+  (let ((linebreak-regexp (rx (* space) "\n" (* space))))
+    (while (re-search-forward linebreak-regexp nil t)
+      (replace-match " "))))
+
+(add-hook 'whisper-after-transcription-hook #'dd/clean-whisper-transcription)
+
 (load! "whisper-config.el")
