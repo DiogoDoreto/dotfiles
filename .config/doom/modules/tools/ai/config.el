@@ -110,10 +110,10 @@
         "You are a senior software engineer, programming expert, who provides precise answers, avoiding ambiguous responses.  Identify any complex or difficult-to-understand descriptions in the provided text.  Rewrite these descriptions to make them clearer and more accessible.  Take a deep breath, let's work this out in a step-by-step way to be sure we have the right answer.  When asked to implement a change, use the edit_buffer tool to perform the modifications in the relevant buffer.")
 
   (gptel-make-preset 'code
-    :description "Write code and modify buffers in context"
-    :system 'sw-engineer
-    :tools '("edit_buffer")
-    :confirm-tool-calls nil))
+                     :description "Write code and modify buffers in context"
+                     :system 'sw-engineer
+                     :tools '("edit_buffer")
+                     :confirm-tool-calls nil))
 
 
 (use-package! aidermacs
@@ -140,10 +140,11 @@
        :desc "Buffer Copilot"    "i" #'copilot-mode
        :desc "Global Copilot"    "I" #'global-copilot-mode
 
-       :desc "model=gpt-4.1"         "1" (cmd! (setq gptel-model 'gpt-4.1))
-       :desc "model=gpt-5"           "2" (cmd! (setq gptel-model 'gpt-5))
-       :desc "model=gpt-4o"          "3" (cmd! (setq gptel-model 'gpt-4o))
-       :desc "model=claude-sonnet-4" "4" (cmd! (setq gptel-model 'claude-sonnet-4))
+       :desc "model=gpt-4.1"          "1" (cmd! (setq gptel-model 'gpt-4.1))
+       :desc "model=gpt-5"            "2" (cmd! (setq gptel-model 'gpt-5))
+       :desc "model=gpt-4o"           "3" (cmd! (setq gptel-model 'gpt-4o))
+       :desc "model=claude-sonnet-4"  "4" (cmd! (setq gptel-model 'claude-sonnet-4))
+       :desc "model=grok-code-fast-1" "5" (cmd! (setq gptel-model 'grok-code-fast-1))
 
        :desc "Aider" "d" #'aidermacs-transient-menu
 
