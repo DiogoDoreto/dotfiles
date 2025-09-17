@@ -19,6 +19,9 @@
   (add-to-list 'projectile-other-file-alist '("ts" . ("spec.ts")))
   (add-to-list 'projectile-other-file-alist '("spec.ts" . ("ts"))))
 
+(after! dape
+  (push 'typescript-ts-mode (plist-get (alist-get 'js-debug-node dape-configs) 'modes)))
+
 (after! org
   (require 'ob-js)
   (defalias 'org-babel-execute:javascript #'org-babel-execute:js)

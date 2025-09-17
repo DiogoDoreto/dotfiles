@@ -146,6 +146,7 @@ in
             syntax.enable = true;
           };
           tools = {
+            debugger.enable = true;
             direnv.enable = true;
             editorconfig.enable = true;
             eval = {
