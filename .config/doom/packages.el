@@ -13,6 +13,8 @@
 
 (package! dts-mode)
 
+(package! groovy-mode)
+
 (package! magit-delta)
 
 (package! git-link)

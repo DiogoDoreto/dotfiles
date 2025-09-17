@@ -284,7 +284,9 @@ and return to the original position."
 
 (use-package! info-rename-buffer :hook 'Info-selection-hook)
 
-(use-package ct :defer t)
+(use-package! ct :defer t)
+
+(use-package! groovy-mode :defer t)
 
 (use-package! cov
   :defer t
