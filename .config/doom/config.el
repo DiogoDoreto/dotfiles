@@ -166,6 +166,8 @@ and return to the original position."
 
 (map! :leader :desc "Browse man pages" :n "h w" #'woman)
 
+(map! :leader :desc "Open IELM" :n "o i" #'ielm)
+
 (map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
 (map! :leader :n "c I" 'dd/js-install)
 
