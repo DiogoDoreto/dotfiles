@@ -79,7 +79,6 @@
 
 (after! org
   (require 'ob-js)
-  (defalias 'org-babel-execute:javascript #'org-babel-execute:js)
 
   ;; adapted from `org-babel-execute:js'
   (defun org-babel-execute:ts (body params)
@@ -103,14 +102,23 @@ This function is called by `org-babel-execute-src-block'."
       (org-babel-result-cond (cdr (assq :result-params params))
         result (org-babel-js-read result))))
 
+  (defalias 'org-babel-execute:javascript #'org-babel-execute:js)
+  (defalias 'org-babel-execute:typescript #'org-babel-execute:ts)
+
   (org-babel-do-load-languages 'org-babel-load-languages
                                (append '((js . t)
                                          (ts . t))
                                        org-babel-load-languages))
-  (add-to-list 'org-babel-tangle-lang-exts '("js" . "js"))
-  (add-to-list 'org-babel-tangle-lang-exts '("javascript" . "js"))
-  (add-to-list 'org-babel-tangle-lang-exts '("ts" . "ts"))
-  (add-to-list 'org-babel-tangle-lang-exts '("typescript" . "ts")))
+  (setq org-babel-tangle-lang-exts (append org-babel-tangle-lang-exts
+                                           '(("js" . "js")
+                                             ("javascript" . "js")
+                                             ("ts" . "ts")
+                                             ("typescript" . "ts"))))
+  (setq org-src-lang-modes (append org-src-lang-modes
+                                   '(("js" . javascript)
+                                     ("javascript" . javascript)
+                                     ("ts" . typescript-ts)
+                                     ("typescript" . typescript-ts)))))
 
 (after! projectile
   (add-to-list 'projectile-other-file-alist '("ts" . ("spec.ts")))
