@@ -333,6 +333,9 @@ and return to the original position."
              t)
 
 (load! "config-javascript")
+(load! "dd/dd-javascript")
+(load! "dd/dd-nix")
+(load! "dd/dd-window")
 
 (after! good-scroll
   (setq good-scroll-step 20))

@@ -4,11 +4,6 @@
 (package! jsts
   :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
 
-(package! dd-taskrunner-javascript
-  :recipe (:host github :repo "DiogoDoreto/dd-taskrunner-javascript.el"))
-
-(package! dd :recipe (:local-repo "dd"))
-
 (package! ef-themes)
 
 (package! dts-mode)
