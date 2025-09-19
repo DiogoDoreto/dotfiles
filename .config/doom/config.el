@@ -336,6 +336,7 @@ and return to the original position."
 (load! "dd/dd-javascript")
 (load! "dd/dd-nix")
 (load! "dd/dd-window")
+(load! "dd/tts")
 
 (after! good-scroll
   (setq good-scroll-step 20))
