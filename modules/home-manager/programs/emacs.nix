@@ -274,17 +274,12 @@ in
       emacs.source = inputs.doomemacs;
 
       "doom/init.el".text = doomInitMacroFile;
-      "doom/config-javascript.el".source = dotfilesSymlink ".config/doom/config-javascript.el";
       "doom/config.el".source = dotfilesSymlink ".config/doom/config.el";
       "doom/packages.el".source = dotfilesSymlink ".config/doom/packages.el";
 
       "doom/snippets".source = dotfilesSymlink ".config/doom/snippets";
 
       "doom/dd".source = dotfilesSymlink ".config/doom/dd";
-
-      "doom/modules/lang/nix-extras".source = dotfilesSymlink ".config/doom/modules/lang/nix-extras";
-      "doom/modules/tools/lsp-extra/config.el".source =
-        dotfilesSymlink ".config/doom/modules/tools/lsp-extra/config.el";
 
       "doom/modules/tools/ai/packages.el".source =
         dotfilesSymlink ".config/doom/modules/tools/ai/packages.el";

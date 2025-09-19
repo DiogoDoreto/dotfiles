@@ -1,16 +1,42 @@
-;;; dd-nix.el --- Nix helpers -*- lexical-binding: t; -*-
-;;
+;;; $DOOMDIR/dd/nix.el --- Nix Customizations -*- lexical-binding: t; -*-
+
 ;; Copyright (C) 2025 Diogo Doreto
-;;
-;;; Commentary:
-;;
-;;  Nix helpers
-;;
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;; This file is not part of GNU Emacs.
+
 ;;; Code:
 
-(require 'json)
-(require 'tabulated-list)
-(require 'url)
+(setq +lookup-provider-url-alist
+      (append +lookup-provider-url-alist
+              '(("Nix Packages" "https://search.nixos.org/packages?query=%s")
+                ("Nix Options" "https://search.nixos.org/options?query=%s")
+                ("Nix Wiki" "https://nixos.wiki/index.php?search=%s&go=Go&fulltext=1"))))
+
+(after! nix-mode
+  (defun +nix-extras/send-pkgs-to-nix-repl ()
+    "Send `pkgs = import <nixpkgs> {}` to the active REPL."
+    (interactive)
+    (comint-send-string (get-buffer-process (current-buffer))
+                        "pkgs = import <nixpkgs> {}\n"))
+
+  (map! :map nix-repl-mode-map
+        :localleader
+        :desc "Send pkgs import" "p" #'+nix-extras/send-pkgs-to-nix-repl))
+
+;;; dd-nix-search
 
 (defvar-local dd-nix-search--package-alist nil
   "stores (ID . full-package-info) for the search results buffer")
@@ -142,5 +168,3 @@
   (define-key dd-nix-search-results-mode-map (kbd "RET") #'dd-nix-search--show-details)
   (evil-local-set-key 'normal (kbd "RET") #'dd-nix-search--show-details))
 
-(provide 'dd-nix)
-;;; dd-nix.el ends here

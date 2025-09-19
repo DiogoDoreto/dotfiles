@@ -16,13 +16,9 @@
 
 (package! fancy-compilation)
 
-(package! jest-test-mode)
-
 (package! info-rename-buffer)
 
 (package! ct) ;; Color Tools
-
-(package! cov)
 
 (package! devdocs-browser)
 

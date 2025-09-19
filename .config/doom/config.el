@@ -1,13 +1,11 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
-;; Place your private configuration here! Remember, you do not need to run 'doom
-;; sync' after modifying this file!
+;;; Personal info
 
+(setq user-full-name "Diogo Doreto"
+      user-mail-address "diogo@doreto.com.br")
 
-;; Some functionality uses this to identify you, e.g. GPG configuration, email
-;; clients, file templates and snippets. It is optional.
-;; (setq user-full-name "John Doe"
-;;       user-mail-address "john@doe.com")
+;;; User Interface
 
 (setq frame-title-format '((multiple-frames (:eval (+workspace-current-name)))
                            (multiple-frames " | ")
@@ -27,33 +25,17 @@
 ;;   presentations or streaming.
 ;; - `doom-symbol-font' -- for symbols
 ;; - `doom-serif-font' -- for the `fixed-pitch-serif' face
-;;
-;; See 'C-h v doom-font' for documentation and more examples of what they
-;; accept. For example:
-;;
+
 (setq doom-font (font-spec
                  :family "VictorMono Nerd Font Mono"
                  :weight 'light
                  :size (if (s-equals? "lapdog" (system-name)) 24 17)))
-
-(after! tree-sitter
-  (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
-  (set-face-attribute 'tree-sitter-hl-face:comment nil :slant 'italic))
-
-;;
-;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
-;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
-;; refresh your font settings. If Emacs still can't find your font, it likely
-;; wasn't installed correctly. Font issues are rarely Doom issues!
 
 (defun dd--night? ()
   "Return t if current time is after 8pm or before 8am, else nil."
   (let ((hour (string-to-number (format-time-string "%H"))))
     (or (>= hour 20) (< hour 8))))
 
-;; There are two ways to load a theme. Both assume the theme is installed and
-;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
 (setq doom-theme (if (s-equals? "lapdog" (system-name))
                      'modus-vivendi-deuteranopia
                    (if (dd--night?) 'ef-maris-dark 'ef-day)))
@@ -61,186 +43,112 @@
 (setq ef-themes-to-toggle '(ef-maris-dark ef-day))
 (map! :leader :desc "Theme" :n "t t" #'ef-themes-toggle)
 
+(after! tree-sitter
+  (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
+  (set-face-attribute 'tree-sitter-hl-face:comment nil :slant 'italic))
+
+(remove-hook 'doom-modeline-mode-hook #'size-indication-mode)
 (setq doom-modeline-lsp-icon nil)
 (setq doom-modeline-modal nil)
+(setq doom-modeline-major-mode-icon t)
 (setq doom-modeline-vcs-max-length 20)
 (setq doom-modeline-buffer-file-name-style 'truncate-with-project)
 
-;; This determines the style of line numbers in effect. If set to `nil', line
-;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type 'relative)
 
-(add-to-list 'auto-mode-alist '("\\.keymap\\'" . dts-mode))
-(add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
-(add-to-list 'auto-mode-alist '("\\.mts\\'" . typescript-mode))
-
-(setq projectile-project-search-path (list "~/projects"))
-
-(setq org-directory "~/org/")
-
-(defun dd/scan-org-agenda-files ()
-  (interactive)
-  (setq org-agenda-files (directory-files-recursively org-directory "\\.org$")))
-(dd/scan-org-agenda-files)
-(map! :leader :desc "Scan org agenda files" "nU" #'dd/scan-org-agenda-files)
-
-(setq vterm-shell "fish")
+;;; Flymake / Flycheck diagnostics
 
 (setq flymake-show-diagnostics-at-end-of-line t)
 
-(setq tramp-use-connection-share t
-      tramp-ssh-controlmaster-options (concat "-o ControlPath=/tmp/ssh-ControlPath-%%r@%%h:%%p "
-                                              "-o ControlMaster=auto -o ControlPersist=yes"))
+(after! flycheck
+  (map! :leader
+        :desc "Explain error"  :n "c ," #'flycheck-explain-error-at-point
+        :desc "List errors"    :n "c x" #'flycheck-list-errors))
 
-;; Whenever you reconfigure a package, make sure to wrap your config in an
-;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
-;;
-;;   (after! PACKAGE
-;;     (setq x y))
-;;
-;; The exceptions to this rule:
-;;
-;;   - Setting file/directory variables (like `org-directory')
-;;   - Setting variables which explicitly tell you to set them before their
-;;     package is loaded (see 'C-h v VARIABLE' to look up their documentation).
-;;   - Setting doom variables (which start with 'doom-' or '+').
-;;
-;; Here are some additional functions/macros that will help you configure Doom.
-;;
-;; - `load!' for loading external *.el files relative to this one
-;; - `use-package!' for configuring packages
-;; - `after!' for running code after a package has loaded
-;; - `add-load-path!' for adding directories to the `load-path', relative to
-;;   this file. Emacs searches the `load-path' when you load packages with
-;;   `require' or `use-package'.
-;; - `map!' for binding new keys
-;;
-;; To get information about any of these functions/macros, move the cursor over
-;; the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
-;; This will open documentation for it, including demos of how they are used.
-;; Alternatively, use `C-h o' to look up a symbol (functions, variables, faces,
-;; etc).
-;;
-;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
-;; they are implemented.
+;;; Jumping / Repeating
 
-(map! "C-s" 'save-buffer)
+(map! :m "C-i"       #'better-jumper-jump-forward ;; something was overwriting this to cause indentation
+      :m "<mouse-8>" #'better-jumper-jump-backward
+      :m "<mouse-9>" #'better-jumper-jump-forward)
 
-(defun dd/insert-semicolon-and-return ()
-  "Save the current position in the line, move to the end, insert a semicolon,
-and return to the original position."
-  (interactive)
-  (let ((current-pos (point)))
-    (end-of-line)
-    (insert ";")
-    (goto-char current-pos)))
+;; - The commands that should set a jump mark can be adviced with `doom-set-jump-maybe-a'
+;; - The commands that should not be repeated with "." can be adviced with `evil-without-repeat-a'
 
-(map! :ni "C-b" #'dd/insert-semicolon-and-return)
+(defun evil-without-repeat-a (fn &rest args)
+  (evil-without-repeat
+    (apply fn args)))
 
-(map! :n "g b" 'browse-url)
+(advice-add #'+default/search-buffer :around #'doom-set-jump-maybe-a)
+
+(after! flycheck
+  ;; `flycheck-previous-error' uses `flycheck-next-error' internaly, just one advice is needed
+  (advice-add #'flycheck-next-error :around #'doom-set-jump-maybe-a)
+  (advice-add #'flycheck-next-error :around #'evil-without-repeat-a))
+
+(after! avy
+  (advice-add #'avy-process :around #'doom-set-jump-maybe-a)
+  (advice-add #'avy-process :around #'evil-without-repeat-a))
+
+;;; Window navigation
 
 (map! :n "M-<left>"  #'evil-window-left
       :n "M-<down>"  #'evil-window-down
       :n "M-<up>"    #'evil-window-up
       :n "M-<right>" #'evil-window-right)
+
 (map! :map treemacs-mode-map
       "M-<left>"  #'evil-window-left
       "M-<down>"  #'evil-window-down
       "M-<up>"    #'evil-window-up
       "M-<right>" #'evil-window-right)
 
-(map! :i "C-<tab>" 'yas-expand)
-
-;; Sane pasting. Was `evil-quoted-insert' before
-(map! :i "C-v" (cmd! (insert (current-kill 0))))
-(map! :map evil-ex-search-keymap
-      "C-v" (cmd! (insert (current-kill 0))))
-
-(map! :m "C-i"       #'better-jumper-jump-forward ;; something was overwriting this to cause indentation
-      :m "<mouse-8>" #'better-jumper-jump-backward
-      :m "<mouse-9>" #'better-jumper-jump-forward)
-
-;; use middle click to go-to-definition - the down event ensures we navigate to the target point
-(map! :n "<down-mouse-2>" #'evil-mouse-drag-region
-      :n "<mouse-2>" #'+lookup/definition)
-
-(map! :leader :desc "Browse man pages" :n "h w" #'woman)
-
-(map! :leader :desc "Open IELM" :n "o i" #'ielm)
-
-(map! :leader :desc "Format buffer with apheleia" :n "c F" 'apheleia-format-buffer)
-(map! :leader :n "c I" 'dd/js-install)
-
-(map! :leader :desc "Find related file" :n "f o" 'projectile-find-other-file)
-
-(map! :leader
-      :desc "Auto fill"            :n "t C" #'auto-fill-mode
-      :desc "Highline cursor line" :n "t L" #'hl-line-mode)
-
 (map! :leader
       :n "w w" #'dd/window-prefix
       :n "w ." #'ace-select-window
       :n "w X" #'ace-swap-window)
 
-(map! :map dired-mode-map :n "<backspace>" 'dired-up-directory)
+(defun dd/window-prefix ()
+  "Use `ace-window' to display the buffer of the next command.
+The next buffer is the buffer displayed by the next command invoked
+immediately after this command (ignoring reading from the minibuffer).
+Creates a new window before displaying the buffer.
+When `switch-to-buffer-obey-display-actions' is non-nil,
+`switch-to-buffer' commands are also supported.
+From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-prefix-command-for-ace-window"
+  (interactive)
+  (display-buffer-override-next-command
+   (lambda (_buffer _alist)
+     (let ((window (aw-select (propertize " ACE" 'face 'mode-line-highlight))))
+       (cons window 'reuse)))
+   nil "[ace-window]")
+  (message "Use `ace-window' to display next command buffer..."))
 
-(map! :map vterm-mode-map :ni "C-<escape>" #'vterm-send-escape)
+;;; Org-mode
+
+(setq org-directory "~/org/")
 
 (map! :map evil-org-mode-map :n "z g" #'+org/play-gif-at-point)
 
-(map! :localleader
-      :map (emacs-lisp-mode-map lisp-interaction-mode-map)
-      (:prefix ("d" . "debug")
-               "t" #'trace-function
-               "T" #'trace-function-background
-               "u" #'untrace-function
-               "U" #'untrace-all))
+(defun dd/scan-org-agenda-files ()
+  (interactive)
+  (setq org-agenda-files (directory-files-recursively org-directory "\\.org$")))
 
-(advice-add #'+default/search-buffer :around #'doom-set-jump-maybe-a)
+(dd/scan-org-agenda-files)
 
-(after! flycheck
-  (advice-add #'flycheck-next-error :around #'doom-set-jump-maybe-a)
+(map! :leader :desc "Scan org agenda files" "nU" #'dd/scan-org-agenda-files)
 
-  (map! :desc "Next error"     :m "]e" (cmd! (evil-without-repeat (flycheck-next-error)))
-        :desc "Previous error" :m "[e" (cmd! (evil-without-repeat (flycheck-previous-error)))
-        :leader
-        :desc "Explain error"  :n "c ," #'flycheck-explain-error-at-point
-        :desc "List errors"    :n "c x" #'flycheck-list-errors))
+(use-package! org-block-capf
+  :hook (org-mode-hook . org-block-capf-add-to-completion-at-point-functions))
 
-(map! :leader :prefix ("DEL" . "Mine!"))
-(map! :leader :prefix ("DEL n" . " Nix"))
+;;; Projectile
 
-(when (s-equals? "dogdot" (system-name))
-  (defun dd--make-nix (command)
-    (let ((default-directory "~/projects/dotfiles/"))
-      (compile command)))
+(setq projectile-project-search-path '("~/projects"))
 
-  (map! :leader :prefix "DEL n"
-        :desc "rebuild boot"        :n "b" (cmd! (dd--make-nix "make nixos-mini-boot"))
-        :desc "rebuild switch"      :n "s" (cmd! (dd--make-nix "make nixos-mini-switch"))
-        :desc "home-manager switch" :n "h" (cmd! (dd--make-nix "make hm-dog-mini-switch")))
+(map! :leader :desc "Find related file" :n "f o" #'projectile-find-other-file)
 
-  (map! :leader :prefix ("DEL s" . "SSH")
-        :desc "Chungus dotfiles" :n "c" (cmd! (find-file "/sshx:chungus:p/dotfiles/"))))
+;;; Snippets
 
-(defun dd/vterm (name)
-  "Create a new vterm buffer that won't be removed automatically."
-  (interactive "sVTerm buffer name: ")
-  (let (display-buffer-alist)
-    (vterm name)))
-
-(defun dd/run-cmd (command directory buffer-name)
-  "Run COMMMAND inside DIRECTORY and send output to BUFFER-NAME"
-  (let ((default-directory directory))
-    (compilation-start command nil (lambda (_mode) buffer-name))))
-
-(after! tramp
-  (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
-
-(after! corfu
-  (setq +corfu-want-tab-prefer-expand-snippets nil
-        +corfu-want-tab-prefer-navigating-snippets t
-        +corfu-want-tab-prefer-navigating-org-tables t))
+(map! :i "C-<tab>" #'yas-expand)
 
 (after! yasnippet-capf
   (remove-hook 'yas-minor-mode-hook #'+corfu-add-yasnippet-capf-h)
@@ -254,10 +162,70 @@ and return to the original position."
                 ("/\\flake.nix$" :trigger "__devShell-flake"  :mode nix-mode))
               +file-templates-alist))
 
-(after! vertico-posframe
-  (setq vertico-posframe-poshandler #'posframe-poshandler-frame-bottom-center))
+;;; File modes
+
+(add-to-list 'auto-mode-alist '("\\.keymap\\'" . dts-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
+
+;;; Extra config files
+
+(load! "dd/elisp")
+(load! "dd/javascript")
+(load! "dd/lsp")
+(load! "dd/nix")
+(load! "dd/terminal")
+(load! "dd/tts")
+
+(pcase (system-name)
+  ("dogdot" (load! "dd/host-dogdot"))
+  ("lapdog" (load! "dd/host-lapdog")))
+
+;;; General mappings
+
+;; Sane saving.
+(map! "C-s" #'save-buffer)
+
+;; Sane pasting. Was `evil-quoted-insert' before
+(map! :i "C-v" (cmd! (insert (current-kill 0))))
+(map! :map evil-ex-search-keymap
+      "C-v" (cmd! (insert (current-kill 0))))
+
+;; use middle click to go-to-definition - the down event ensures we navigate to the target point
+(map! :n "<down-mouse-2>" #'evil-mouse-drag-region
+      :n "<mouse-2>" #'+lookup/definition)
+
+(defun dd/insert-semicolon-and-return ()
+  "Save the current position in the line, move to the end, insert a semicolon,
+and return to the original position."
+  (interactive)
+  (save-excursion
+    (end-of-line)
+    (insert ";")))
+
+(map! :ni "C-b" #'dd/insert-semicolon-and-return)
+
+(map! :n "g b" #'browse-url)
+
+(map! :leader :prefix "h" ;; help
+      :desc "Browse man pages" :n "w" #'woman
+      :leader :prefix "i" ;; insert
+      :desc "Nerd icon" :n "n" #'nerd-icons-insert
+      :leader :prefix "t" ;; toggle
+      :desc "Auto fill"            :n "C" #'auto-fill-mode
+      :desc "Highline cursor line" :n "L" #'hl-line-mode)
+
+(map! :map dired-mode-map :n "<backspace>" #'dired-up-directory)
+
+;;; After packages
+
+(after! corfu
+  (setq +corfu-want-tab-prefer-expand-snippets nil
+        +corfu-want-tab-prefer-navigating-snippets t
+        +corfu-want-tab-prefer-navigating-org-tables t))
 
 (after! ibuffer
+  ;; Update the value set by doom's :emacs/ibuffer module to increase the width
+  ;; of the name column
   (setq ibuffer-formats
         `((mark modified read-only locked
            ,@(if (modulep! :emacs ibuffer +icons)
@@ -271,48 +239,33 @@ and return to the original position."
                '(" " (vc-status 12 :left)))
            " " filename-and-process))))
 
-(use-package! magit-delta
-  :hook magit-mode)
-
-(use-package! fancy-compilation
-  :commands fancy-compilation-mode
-  :config
-  (setq fancy-compilation-override-colors nil))
-(with-eval-after-load 'compile
-  (fancy-compilation-mode))
-
 (after! envrc
   (advice-add 'shell-command-to-string :around #'envrc-propagate-environment))
 
-(use-package! info-rename-buffer :hook 'Info-selection-hook)
+(after! good-scroll
+  (setq good-scroll-step 20))
+
+(after! qml-mode
+  (add-hook 'qml-mode-hook #'lsp-deferred))
+
+;;; Use packages
+
+(use-package! magit-delta
+  :defer t
+  :hook magit-mode)
+
+(use-package! info-rename-buffer
+  :defer t
+  :hook 'Info-selection-hook)
 
 (use-package! ct :defer t)
 
 (use-package! groovy-mode :defer t)
 
-(use-package! cov
+(use-package! devdocs-browser
   :defer t
   :config
-  (custom-set-faces
-   '(cov-none-face  ((((class color)) :foreground "red")))
-   '(cov-light-face ((((class color)) :foreground "orange")))
-   '(cov-med-face   ((((class color)) :foreground "yellow")))
-   '(cov-heavy-face ((((class color)) :foreground "green"))))
-  (defun cov--locate-jest-lcov (file-dir file-name)
-    (and-let* ((jest-root (projectile-locate-dominating-file file-dir "jest.config.js"))
-               (lcov-file (f-join jest-root "test-results/lcov.info"))
-               ((file-exists-p lcov-file)))
-      (setq cov-lcov-project-root jest-root)
-      (cons lcov-file 'lcov)))
-  (add-to-list 'cov-coverage-file-paths #'cov--locate-jest-lcov))
-
-(use-package! devdocs-browser
-  :config
   (map! :leader "s k" #'devdocs-browser-open-in))
-
-(use-package! org-block-capf
-  :config
-  (add-hook 'org-mode-hook #'org-block-capf-add-to-completion-at-point-functions))
 
 (use-package! hnreader
   :defer t
@@ -321,27 +274,15 @@ and return to the original position."
     (with-current-buffer buf
       (read-only-mode 1)
       (evil-local-set-key 'normal (kbd "q") #'kill-current-buffer)))
-  (defun +hnreader/frontpage-advice (_dom buf _url)
-    (+hnreader/update-buffer buf))
-  (advice-add 'hnreader--print-frontpage :after #'+hnreader/frontpage-advice)
-  (defun +hnreader/comments-advice (_dom _url)
-    (+hnreader/update-buffer (hnreader--get-hn-comment-buffer)))
-  (advice-add 'hnreader--print-comments  :after #'+hnreader/comments-advice))
+  (advice-add #'hnreader--print-frontpage :after
+              (defun +hnreader/frontpage-advice (_dom buf _url)
+                (+hnreader/update-buffer buf)))
+  (advice-add #'hnreader--print-comments  :after
+              (defun +hnreader/comments-advice (_dom _url)
+                (+hnreader/update-buffer (hnreader--get-hn-comment-buffer)))))
 
 (add-to-list '+doom-dashboard-menu-sections
              '("Read HackerNews"
                :icon (nerd-icons-faicon "nf-fa-hacker_news" :face 'doom-dashboard-menu-title)
                :action hnreader-news)
              t)
-
-(load! "config-javascript")
-(load! "dd/dd-javascript")
-(load! "dd/dd-nix")
-(load! "dd/dd-window")
-(load! "dd/tts")
-
-(after! good-scroll
-  (setq good-scroll-step 20))
-
-(after! qml-mode
-  (add-hook 'qml-mode-hook #'lsp))
