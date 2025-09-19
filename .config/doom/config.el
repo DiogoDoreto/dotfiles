@@ -137,6 +137,9 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 (map! :leader :desc "Scan org agenda files" "nU" #'dd/scan-org-agenda-files)
 
+(after! (org eww)
+  (require 'ol-eww))
+
 (use-package! org-block-capf
   :hook (org-mode-hook . org-block-capf-add-to-completion-at-point-functions))
 
