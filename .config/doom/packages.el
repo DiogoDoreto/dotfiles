@@ -4,33 +4,31 @@
 (package! jsts
   :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
 
-(package! ef-themes)
+(package! ef-themes :pin "1e66551474c514a5364fb8cbb6a4eae783b2a191")
 
-(package! dts-mode)
+(package! dts-mode :pin "cd1847d0e7162c1ecab772c6ca7ef4f3c5d2214d")
 
-(package! groovy-mode)
+(package! groovy-mode :pin "7b8520b2e2d3ab1d62b35c426e17ac25ed0120bb")
 
-(package! magit-delta)
+(package! magit-delta :pin "5fc7dbddcfacfe46d3fd876172ad02a9ab6ac616")
 
-(package! git-link)
+(package! git-link :pin "e4cfed05d110a6af07543d069f12e1894f553c2e")
 
-(package! fancy-compilation)
+(package! fancy-compilation :pin "51f6945c84e6d0e09d45698f1b9056e73fd79fa9")
 
-(package! info-rename-buffer)
+(package! info-rename-buffer :pin "87fb263b18717538fd04878e3358e1e720415db8")
 
-(package! ct) ;; Color Tools
+(package! ct :pin "e3d082136e06c0ec777ab032bec5a785239f412b") ;; Color Tools
 
-(package! devdocs-browser)
+(package! devdocs-browser :pin "e6ccbaafc795e8be54762b2e930ada2967cec08b")
 
-(package! daemons)
-
-;; fix from: https://github.com/doomemacs/doomemacs/issues/8287#issuecomment-2683336880
-(package! track-changes :built-in t)
+(package! daemons :pin "7b08ce315c0be901d88c1099483f9607c653712e")
 
 (package! org-block-capf
-  :recipe (:host github :repo "xenodium/org-block-capf"))
+  :recipe (:host github :repo "xenodium/org-block-capf")
+  :pin "080cfd2ed630a6739633b07a8ab6b896a1b5ef4a")
 
-(package! hnreader)
+(package! hnreader :pin "a56f67a99a855ca656da1c1985e09f44509e4bbb")
 
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or
