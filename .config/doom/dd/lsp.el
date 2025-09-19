@@ -21,6 +21,10 @@
 
 (after! lsp-mode
   (setq lsp-enable-file-watchers nil)
+  (setq lsp-headerline-breadcrumb-enable t)
+  (setq lsp-headerline-breadcrumb-segments '(symbols))
+
+  (add-hook 'lsp-mode-hook #'lsp-headerline-breadcrumb-mode)
 
   (defun lsp-extra--code-action-to-popup-item (hs)
     (popup-make-item (lsp:code-action-title hs)))
