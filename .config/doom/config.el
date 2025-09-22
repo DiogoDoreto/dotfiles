@@ -121,7 +121,11 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
      (let ((window (aw-select (propertize " ACE" 'face 'mode-line-highlight))))
        (cons window 'reuse)))
    nil "[ace-window]")
-  (message "Use `ace-window' to display next command buffer..."))
+  (message "Using `ace-window' to display next command buffer..."))
+
+(use-package! ace-window
+  :autoload (aw-select)
+  :defer t)
 
 ;;; Org-mode
 
@@ -137,8 +141,7 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 (map! :leader :desc "Scan org agenda files" "nU" #'dd/scan-org-agenda-files)
 
-(after! (org eww)
-  (require 'ol-eww))
+(use-package! ol-eww :after org)
 
 (use-package! org-block-capf
   :hook (org-mode-hook . org-block-capf-add-to-completion-at-point-functions))
