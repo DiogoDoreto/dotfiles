@@ -285,7 +285,16 @@ and return to the original position."
                 (+hnreader/update-buffer buf)))
   (advice-add #'hnreader--print-comments  :after
               (defun +hnreader/comments-advice (_dom _url)
-                (+hnreader/update-buffer (hnreader--get-hn-comment-buffer)))))
+                (+hnreader/update-buffer (hnreader--get-hn-comment-buffer))))
+  (advice-add #'hnreader--get-reply :override (lambda (_) nil))
+  (set-popup-rule!
+    (lambda (bname _action)
+      (string= bname hnreader--comment-buffer))
+    :select t
+    :side 'right
+    :width 0.5
+    :quit nil
+    :ttl nil))
 
 (add-to-list '+doom-dashboard-menu-sections
              '("Read HackerNews"
