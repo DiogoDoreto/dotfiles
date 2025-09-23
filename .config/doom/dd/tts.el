@@ -44,7 +44,10 @@
 ;; `tts-backend-generate-function-alist'. Similarly, for frontends, define
 ;; playback functions (e.g., like `tts--ffplay-play-audio') and update
 ;; `tts-frontend-play-function-alist'. Ensure new backends implement the
-;; expected callback interface for asynchronous processing.
+;; expected callback interface for asynchronous processing.  For preprocessing,
+;; define transformation functions (e.g., like `tts--preprocess-org-links') and
+;; add them to `tts-preprocessing-functions'.  These apply per sentence before
+;; TTS generation.
 
 ;; You can find more information about Kokoro in this URL:
 ;; https://huggingface.co/hexgrad/Kokoro-82M
@@ -106,6 +109,13 @@
 (defcustom tts-kokoro-port 8880
   "The port number on which the Kokoro TTS server will run."
   :type 'integer
+  :group 'tts)
+
+(defcustom tts-preprocessing-functions '(tts--preprocess-org-links)
+  "List of functions to preprocess TTS text per sentence.
+
+Each function takes a string (sentence text) and returns the transformed string."
+  :type '(repeat function)
   :group 'tts)
 
 (defface tts-highlight-face
@@ -293,6 +303,11 @@ playback finishes."
 
 ;;; Pre-processing
 
+(defun tts--preprocess-org-links (text)
+  "Replace org-mode links [[url][description]] with description in TEXT."
+  (replace-regexp-in-string (rx "[[" (+? nonl) "][" (group (+? nonl)) "]")
+                            "\\1" text))
+
 (defun tts--split-into-sentences (beg end)
   "Split the text between BEG and END into a list of (text beg end) triples for
 each sentence."
@@ -313,6 +328,8 @@ each sentence."
                 (skip-chars-backward " \t\n\r" sentence-beg)
                 (setq actual-end (point)))
               (let ((text (buffer-substring-no-properties actual-beg actual-end)))
+                (dolist (func tts-preprocessing-functions)
+                  (setq text (funcall func text)))
                 (when (> (length text) 0)
                   (push (list text actual-beg actual-end) sentences))))))))
     (nreverse sentences)))
