@@ -128,6 +128,11 @@ Each function takes a string (sentence text) and returns the transformed string.
   :type 'boolean
   :group 'tts)
 
+(defcustom tts-enable-autoscroll t
+  "Enable automatic scroll of the buffer window to keep spoken text visible."
+  :type 'boolean
+  :group 'tts)
+
 (defvar tts--current-session nil
   "The active TTS session, instance of `tts--session', or nil if none.")
 
@@ -426,7 +431,14 @@ request the next pending chunk if possible."
                                          (let ((overlay (make-overlay beg end buffer)))
                                            (overlay-put overlay 'face 'tts-highlight-face)
                                            overlay))
-            (tts--chunk-audio-proc chunk) (funcall play-function file callback)))))
+            (tts--chunk-audio-proc chunk) (funcall play-function file callback))
+      ;; Ensure the playing chunk is visible in its window if possible
+      (when (and tts-enable-autoscroll (buffer-live-p buffer))
+        (when-let ((win (get-buffer-window buffer t)))
+          (with-selected-window win
+            (unless (pos-visible-in-window-p end win)
+              (goto-char beg)
+              (recenter 3))))))))
 
 (defun tts--chunk-abort (chunk)
   "Abort any ongoing processes for CHUNK and reset its status appropriately."
