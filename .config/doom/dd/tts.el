@@ -35,7 +35,9 @@
 ;; `tts-abort'.  Customize voices and speed using `tts-kokoro-set-voice' and
 ;; `tts-kokoro-set-speed'; prefix arguments make settings buffer-local.
 ;; Customize the port via `tts-kokoro-port'.  Logs and process outputs appear in
-;; the *tts-log* buffer for debugging.
+;; the *tts-log* buffer for debugging.  When you start playing, `tts-mode' will
+;; be enabled in that buffer to display a header-line showing playback progress
+;; and controls.
 
 ;; To extend this package, add new backends by defining generation functions
 ;; (e.g., like `tts--kokoro-generate-audio') and updating
@@ -108,6 +110,9 @@
 
 (defvar tts--current-session nil
   "The active TTS session, instance of `tts--session', or nil if none.")
+
+(defvar-local tts--region-active-p nil
+  "Buffer-local flag tracking if a region is active for header-line updates.")
 
 ;;; Log helpers
 
@@ -183,7 +188,8 @@ with the process name."
           (set 'tts-kokoro-voice voice)
           (message "Buffer-local TTS voice set to %s" voice))
       (customize-set-variable 'tts-kokoro-voice voice)
-      (message "Global TTS voice set to %s" voice))))
+      (message "Global TTS voice set to %s" voice))
+    (tts--update-header-line)))
 
 (defun tts-kokoro-set-speed (arg)
   "Set the TTS speed for Kokoro. With prefix ARG, make it buffer-local."
@@ -196,7 +202,8 @@ with the process name."
           (set 'tts-kokoro-speed speed)
           (message "Buffer-local TTS speed set to %s" speed))
       (customize-set-variable 'tts-kokoro-speed speed)
-      (message "Global TTS speed set to %s" speed))))
+      (message "Global TTS speed set to %s" speed))
+    (tts--update-header-line)))
 
 (defun tts--kokoro-generate-audio (text file callback)
   "Generate audio for TEXT using the Kokoro TTS backend, saving to FILE. Call
@@ -311,7 +318,8 @@ playing the next ready chunk."
   "Advance the TTS session by attempting to play the next ready chunk and
 request the next pending chunk if possible."
   (tts--session-maybe-play-next-chunk)
-  (tts--session-maybe-request-next-chunk))
+  (tts--session-maybe-request-next-chunk)
+  (tts--update-header-line))
 
 (defun tts--chunk-generate-audio (chunk)
   "Generate the audio file for CHUNK using the current TTS backend."
@@ -378,6 +386,82 @@ request the next pending chunk if possible."
      (setf (tts--chunk-audio-proc chunk) nil)
      (setf (tts--chunk-status chunk) 'ready))))
 
+;;; tts-mode
+
+(define-minor-mode tts-mode
+  "Toggle TTS header-line display."
+  :init-value nil
+  :lighter " TTS"
+  :global nil
+  (if tts-mode
+      (progn
+        (unless (local-variable-p 'tts--original-header-line-format)
+          (set (make-local-variable 'tts--original-header-line-format) header-line-format))
+        (set (make-local-variable 'tts--region-active-p) (use-region-p))
+        (add-hook 'post-command-hook #'tts--check-region-change nil t)
+        (tts--update-header-line))
+    (when (local-variable-p 'tts--original-header-line-format)
+      (setq header-line-format tts--original-header-line-format)
+      (kill-local-variable 'tts--original-header-line-format))
+    (when (local-variable-p 'tts--region-active-p)
+      (kill-local-variable 'tts--region-active-p))
+    (remove-hook 'post-command-hook #'tts--check-region-change t)))
+
+(defun tts--check-region-change ()
+  "Check if the region selection status has changed and update header-line if
+necessary."
+  (let ((active (use-region-p)))
+    (when (and tts-mode (not (eq active tts--region-active-p)))
+      (setq tts--region-active-p active)
+      (tts--update-header-line))))
+
+(defun tts--header-line-format ()
+  "Return the list for the TTS header-line with left and right aligned parts."
+  (let* ((playing nil)
+         (requesting nil)
+         (total 0)
+         (has-active nil))
+    (when tts--current-session
+      (let ((chunks (tts--session-chunks tts--current-session)))
+        (setq total (length chunks))
+        (cl-loop for chunk across chunks
+                 do (pcase (tts--chunk-status chunk)
+                      ('playing (setq playing (1+ (tts--chunk-index chunk)))
+                                (setq has-active t))
+                      ('requesting (setq requesting (1+ (tts--chunk-index chunk)))
+                                   (setq has-active t))))))
+    (let ((left-part (concat
+                      (propertize " TTS:" 'face 'bold)
+                      (when (> total 0)
+                        (format " Playing: %s / Requesting: %s / Total: %d |"
+                                (or playing "-") (or requesting "-") total))
+                      " "
+                      (buttonize (format "[Read %s]" (if (use-region-p) "Region" "Buffer"))
+                                 (lambda (_) (tts-play)))
+                      (when has-active
+                        (concat " "
+                                (buttonize "[Abort]" (lambda (_) (tts-abort)) nil "Stop TTS playback and prefetching")))))
+          (right-part (when (eq tts-backend 'kokoro)
+                        (concat
+                         (buttonize (format "[Voice: %s]" tts-kokoro-voice)
+                                    (lambda (_) (let ((current-prefix-arg '(4))) (call-interactively 'tts-kokoro-set-voice)))
+                                    nil "Change TTS voice")
+                         " "
+                         (buttonize (format "[Speed: %s]" tts-kokoro-speed)
+                                    (lambda (_) (let ((current-prefix-arg '(4))) (call-interactively 'tts-kokoro-set-speed)))
+                                    nil "Change TTS speed")
+                         " "))))
+      (list left-part
+            (propertize " " 'display `(space :align-to (- right ,(length right-part))))
+            right-part))))
+
+(defun tts--update-header-line ()
+  "Update the header-line in all buffers where tts-mode is active."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when tts-mode
+        (setq header-line-format (tts--header-line-format))))))
+
 ;;; Interactive functions
 
 (defun tts-play ()
@@ -400,7 +484,10 @@ audio chunks become available."
     (message "TTS: Session %s started with %d chunk(s)."
              (tts--session-id tts--current-session)
              (length (tts--session-chunks tts--current-session)))
-    (tts--session-maybe-request-next-chunk)))
+    (tts--session-maybe-request-next-chunk)
+    (if tts-mode
+        (tts--update-header-line)
+      (tts-mode 1))))
 
 (defun tts-abort ()
   "Abort the current TTS session if one is active."
@@ -409,7 +496,8 @@ audio chunks become available."
     (setf (tts--session-aborted tts--current-session) t)
     (mapc #'tts--chunk-abort (tts--session-chunks tts--current-session))
     (when (called-interactively-p 'interactive)
-      (message "TTS: Session %s aborted." (tts--session-id tts--current-session)))))
+      (message "TTS: Session %s aborted." (tts--session-id tts--current-session)))
+    (tts--update-header-line)))
 
 (provide 'tts)
 ;;; tts.el ends here
