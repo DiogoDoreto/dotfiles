@@ -263,7 +263,7 @@ CALLBACK with error or nil when done."
 playback finishes."
   (make-process
    :name "tts-ffplay"
-   :command (list "ffplay" "-nodisp" "-autoexit" file)
+   :command (list "ffplay" "-nodisp" "-autoexit" "-v" "level+error" file)
    :noquery t
    :buffer (get-buffer-create "*tts-log*")
    :filter #'tts--logger-insertion-filter
@@ -280,7 +280,7 @@ playback finishes."
   text
   (beg nil :documentation "Point in session's buffer where this chunk begins. Used for highlighting.")
   (end nil :documentation "Point in session's buffer where this chunk ends. Used for highlighting.")
-  (status 'pending :documentation "pending | requesting | ready | playing | done | error")
+  (status 'pending :documentation "pending | requesting | ready | playing | error")
   (file nil :documentation "path to the generated audio file")
   (request-proc nil :documentation "Process for audio generation.")
   (audio-proc nil :documentation "Process for audio playback.")
@@ -300,11 +300,17 @@ playback finishes."
   (id (format-time-string "%Y%m%d%H%M%S"))
   (buffer nil :documentation "Buffer where TTS is playing.")
   (chunks nil :type vector :documentation "Vector of `tts--chunk'.")
+  (current-chunk-index 0 :documentation "Index of currently playing chunk.")
   (aborted nil :documentation "t when this session has been aborted, nil otherwise."))
 
-(defun tts--session-chunk (session index)
-  "Return chunk at INDEX of SESSION or nil."
-  (aref (tts--session-chunks session) index))
+(defun tts--session-chunk (index)
+  "Return chunk at INDEX of current session or nil."
+  (aref (tts--session-chunks tts--current-session) index))
+
+(defun tts--current-chunk ()
+  (when tts--current-session
+    (when-let ((current-index (tts--session-current-chunk-index tts--current-session)))
+      (tts--session-chunk current-index))))
 
 ;;; Pre-processing
 
@@ -351,20 +357,8 @@ currently being requested and the session is not aborted."
              if (eq status 'pending)
              return (tts--chunk-generate-audio chunk))))
 
-(defun tts--session-maybe-play-next-chunk ()
-  "If no chunk is currently playing and the session is not aborted, start
-playing the next ready chunk."
-  (unless (tts--session-aborted tts--current-session)
-    (cl-loop for chunk across (tts--session-chunks tts--current-session)
-             for status = (tts--chunk-status chunk)
-             until (eq status 'playing)
-             if (eq status 'ready)
-             return (tts--chunk-play chunk))))
-
 (defun tts--session-process-next-chunk ()
-  "Advance the TTS session by attempting to play the next ready chunk and
-request the next pending chunk if possible."
-  (tts--session-maybe-play-next-chunk)
+  "Advance the TTS session by requesting the next pending chunk if possible."
   (tts--session-maybe-request-next-chunk)
   (tts--update-header-line))
 
@@ -398,17 +392,20 @@ request the next pending chunk if possible."
                          (setf (tts--chunk-error chunk) err
                                (tts--chunk-status chunk) 'error)
                          (message "TTS: Error while generating audio for chunk %s. Check buffer *tts-log* for details."
-                                  chunk-index))
+                                  chunk-index)
+                         (when (= chunk-index (tts--session-current-chunk-index session))
+                           (tts-next)))
                         (t
                          (setf (tts--chunk-status chunk) 'ready)
                          (tts--log "tts--chunk-generate-audio"
                                    (format "%s generated for chunk %d" temp-file
-                                           chunk-index))))
+                                           chunk-index))
+                         (when (= chunk-index (tts--session-current-chunk-index session))
+                           (tts-play))))
                        (tts--session-process-next-chunk)))))))
 
 (defun tts--chunk-play (chunk)
   "Play the audio file associated with CHUNK using the current TTS frontend."
-  (message "TTS: Playing chunk %d..." (tts--chunk-index chunk))
   (let* ((session tts--current-session)
          (play-function (alist-get tts-frontend tts-frontend-play-function-alist))
          (callback
@@ -422,8 +419,8 @@ request the next pending chunk if possible."
                       (tts--chunk-error chunk) (format "playback failed: %s" err))
                 (message "TTS: Error while playing chunk %d. Check buffer *tts-log* for details." (tts--chunk-index chunk)))
                (t
-                (setf (tts--chunk-status chunk) 'done)))
-              (tts--session-process-next-chunk)))))
+                (setf (tts--chunk-status chunk) 'ready)
+                (tts-next)))))))
     (pcase-let (((cl-struct tts--session buffer) session)
                 ((cl-struct tts--chunk file beg end) chunk))
       (setf (tts--chunk-status chunk) 'playing
@@ -452,6 +449,18 @@ request the next pending chunk if possible."
      (delete-process (tts--chunk-audio-proc chunk))
      (setf (tts--chunk-audio-proc chunk) nil)
      (setf (tts--chunk-status chunk) 'ready))))
+
+(defun tts--play-chunk-at (index)
+  "Plays the chunk at INDEX as long as it's ready. Will stop the current chunk
+if it's playing."
+  (let ((chunk (tts--session-chunk index)))
+    (when-let ((current-chunk (tts--current-chunk)))
+      (when (eq (tts--chunk-status current-chunk) 'playing)
+        (tts--chunk-abort current-chunk)))
+    (setf (tts--session-current-chunk-index tts--current-session) index)
+    (when (eq (tts--chunk-status chunk) 'ready)
+      (tts--chunk-play chunk))
+    (tts--update-header-line)))
 
 ;;; tts-mode
 
@@ -487,27 +496,38 @@ necessary."
   (let* ((playing nil)
          (requesting nil)
          (total 0)
-         (has-active nil))
+         (is-active nil))
     (when tts--current-session
       (let ((chunks (tts--session-chunks tts--current-session)))
-        (setq total (length chunks))
-        (cl-loop for chunk across chunks
-                 do (pcase (tts--chunk-status chunk)
-                      ('playing (setq playing (1+ (tts--chunk-index chunk)))
-                                (setq has-active t))
-                      ('requesting (setq requesting (1+ (tts--chunk-index chunk)))
-                                   (setq has-active t))))))
+        (setq total (length chunks)
+              playing (1+ (tts--session-current-chunk-index tts--current-session))
+              is-active (not (tts--session-aborted tts--current-session))
+              requesting (cl-loop for chunk across chunks
+                                  for position from 1
+                                  if (eq 'requesting (tts--chunk-status chunk))
+                                  return position))))
     (let ((left-part (concat
-                      (propertize " TTS:" 'face 'bold)
-                      (when (> total 0)
-                        (format " Playing: %s / Requesting: %s / Total: %d |"
-                                (or playing "-") (or requesting "-") total))
-                      " "
+                      (propertize " /TTS/ " 'face 'bold)
                       (buttonize (format "[Read %s]" (if (use-region-p) "Region" "Buffer"))
-                                 (lambda (_) (tts-play)))
-                      (when has-active
-                        (concat " "
-                                (buttonize "[Abort]" (lambda (_) (tts-abort)) nil "Stop TTS playback and prefetching")))))
+                                 (lambda (_) (tts-read)))
+                      (when (and is-active (> total 0))
+                        (concat " | "
+                                (if (> playing 1)
+                                    (buttonize "[Prev]" (lambda (_) (tts-prev)))
+                                  (propertize "[Prev]" 'face 'shadow))
+                                " "
+                                (buttonize "[Play]" (lambda (_) (tts-play)))
+                                " "
+                                (buttonize "[Pause]" (lambda (_) (tts-pause)))
+                                " "
+                                (if (< playing total)
+                                    (buttonize "[Next]" (lambda (_) (tts-next)))
+                                  (propertize "[Next]" 'face 'shadow))
+                                " "
+                                (buttonize "[Stop]" (lambda (_) (tts-abort)) nil "Stop TTS playback and prefetching")
+                                (format " | %s" playing)
+                                (when requesting (format " / %s" requesting))
+                                (format " / %d" total)))))
           (right-part (when (eq tts-backend 'kokoro)
                         (concat
                          (buttonize (format "[Voice: %s]" tts-kokoro-voice)
@@ -531,7 +551,7 @@ necessary."
 
 ;;; Interactive functions
 
-(defun tts-play ()
+(defun tts-read ()
   "Start a new TTS session for the selected region or the entire buffer if no
 region is active.  The text is split into sentences and played sequentially as
 audio chunks become available."
@@ -566,6 +586,39 @@ audio chunks become available."
     (when (called-interactively-p 'interactive)
       (message "TTS: Session %s aborted." (tts--session-id tts--current-session)))
     (tts--update-header-line)))
+
+(defun tts-play ()
+  "Play or resume the current chunk in the TTS session."
+  (interactive)
+  (when tts--current-session
+    (tts--play-chunk-at (tts--session-current-chunk-index tts--current-session))))
+
+(defun tts-pause ()
+  "Pause the current TTS playback."
+  (interactive)
+  (when tts--current-session
+    (when-let ((chunk (tts--current-chunk)))
+      (when (eq (tts--chunk-status chunk) 'playing)
+        (tts--chunk-abort chunk)))
+    (tts--update-header-line)))
+
+(defun tts-next ()
+  "Play the next chunk in the TTS session."
+  (interactive)
+  (when tts--current-session
+    (let* ((max-index (1- (length (tts--session-chunks tts--current-session))))
+           (current-index (tts--session-current-chunk-index tts--current-session))
+           (next-index (min (1+ current-index) max-index)))
+      (when (/= current-index next-index)
+        (tts--play-chunk-at next-index)))))
+
+(defun tts-prev ()
+  "Play the previous chunk in the TTS session."
+  (interactive)
+  (when tts--current-session
+    (let* ((current-index (tts--session-current-chunk-index tts--current-session))
+           (prev-index (max 0 (1- current-index))))
+      (tts--play-chunk-at prev-index))))
 
 (provide 'tts)
 ;;; tts.el ends here
