@@ -108,6 +108,16 @@
   :type 'integer
   :group 'tts)
 
+(defface tts-highlight-face
+  '((t (:inherit highlight)))
+  "Face for highlighting sentences being spoken by TTS."
+  :group 'tts)
+
+(defcustom tts-enable-highlighting t
+  "Enable highlighting of sentences being spoken by TTS."
+  :type 'boolean
+  :group 'tts)
+
 (defvar tts--current-session nil
   "The active TTS session, instance of `tts--session', or nil if none.")
 
@@ -249,25 +259,31 @@ playback finishes."
 
 ;;; Data Structures
 
-(cl-defstruct (tts--chunk (:constructor tts--chunk-create (index text)))
+(cl-defstruct (tts--chunk (:constructor tts--chunk-create (index text &optional beg end)))
   "Represents a single unit of TTS synthesis and playback."
   index
   text
+  (beg nil :documentation "Point in session's buffer where this chunk begins. Used for highlighting.")
+  (end nil :documentation "Point in session's buffer where this chunk ends. Used for highlighting.")
   (status 'pending :documentation "pending | requesting | ready | playing | done | error")
   (file nil :documentation "path to the generated audio file")
   (request-proc nil :documentation "Process for audio generation.")
   (audio-proc nil :documentation "Process for audio playback.")
+  (overlay nil :documentation "Overlay for highlighting the sentence.")
   (error nil :documentation "Error string if status is error."))
 
 (cl-defstruct (tts--session
                (:constructor tts--session-create
-                             (text
-                              &aux (chunks (cl-loop for sentence in (tts--split-into-sentences text)
+                             (sentences
+                              buffer
+                              &aux (chunks (cl-loop for sentence in sentences
                                                     for index from 0
-                                                    collect (tts--chunk-create index sentence) into lst
+                                                    collect (apply #'tts--chunk-create index sentence)
+                                                    into lst
                                                     finally return (vconcat lst))))))
   "Represents a multi-chunk TTS streaming session."
   (id (format-time-string "%Y%m%d%H%M%S"))
+  (buffer nil :documentation "Buffer where TTS is playing.")
   (chunks nil :type vector :documentation "Vector of `tts--chunk'.")
   (aborted nil :documentation "t when this session has been aborted, nil otherwise."))
 
@@ -277,20 +293,29 @@ playback finishes."
 
 ;;; Pre-processing
 
-(defun tts--split-into-sentences (text)
-  "Split TEXT into a list of sentences using Emacs' sentence navigation."
-  (with-temp-buffer
-    (insert text)
-    (goto-char (point-min))
-    (let (sentences)
-      (while (not (eobp))
-        (let ((beg (point)))
+(defun tts--split-into-sentences (beg end)
+  "Split the text between BEG and END into a list of (text beg end) triples for
+each sentence."
+  (let (sentences)
+    (save-excursion
+      (goto-char beg)
+      (while (< (point) end)
+        (let ((sentence-beg (point)))
           (forward-sentence)
-          (let* ((raw (buffer-substring-no-properties beg (point)))
-                 (trimmed (string-trim raw)))
-            (when (> (length trimmed) 0)
-              (push trimmed sentences)))))
-      (nreverse sentences))))
+          (let ((sentence-end (min (point) end)))
+            (let ((actual-beg sentence-beg)
+                  (actual-end sentence-end))
+              (save-excursion
+                (goto-char sentence-beg)
+                (skip-chars-forward " \t\n\r" sentence-end)
+                (setq actual-beg (point))
+                (goto-char sentence-end)
+                (skip-chars-backward " \t\n\r" sentence-beg)
+                (setq actual-end (point)))
+              (let ((text (buffer-substring-no-properties actual-beg actual-end)))
+                (when (> (length text) 0)
+                  (push (list text actual-beg actual-end) sentences))))))))
+    (nreverse sentences)))
 
 ;;; Processing
 
@@ -320,6 +345,12 @@ request the next pending chunk if possible."
   (tts--session-maybe-play-next-chunk)
   (tts--session-maybe-request-next-chunk)
   (tts--update-header-line))
+
+(defun tts--chunk-cleanup-overlay (chunk)
+  "Clean up the overlay for CHUNK if it exists."
+  (when-let ((ov (tts--chunk-overlay chunk)))
+    (delete-overlay ov)
+    (setf (tts--chunk-overlay chunk) nil)))
 
 (defun tts--chunk-generate-audio (chunk)
   "Generate the audio file for CHUNK using the current TTS backend."
@@ -357,12 +388,12 @@ request the next pending chunk if possible."
   "Play the audio file associated with CHUNK using the current TTS frontend."
   (message "TTS: Playing chunk %d..." (tts--chunk-index chunk))
   (let* ((session tts--current-session)
-         (file (tts--chunk-file chunk))
          (play-function (alist-get tts-frontend tts-frontend-play-function-alist))
          (callback
           (lambda (err)
             (when (eq session tts--current-session)
               (setf (tts--chunk-audio-proc chunk) nil)
+              (tts--chunk-cleanup-overlay chunk)
               (cond
                (err
                 (setf (tts--chunk-status chunk) 'error
@@ -371,11 +402,18 @@ request the next pending chunk if possible."
                (t
                 (setf (tts--chunk-status chunk) 'done)))
               (tts--session-process-next-chunk)))))
-    (setf (tts--chunk-status chunk) 'playing
-          (tts--chunk-audio-proc chunk) (funcall play-function file callback))))
+    (pcase-let (((cl-struct tts--session buffer) session)
+                ((cl-struct tts--chunk file beg end) chunk))
+      (setf (tts--chunk-status chunk) 'playing
+            (tts--chunk-overlay chunk) (when (and tts-enable-highlighting (buffer-live-p buffer) beg end)
+                                         (let ((overlay (make-overlay beg end buffer)))
+                                           (overlay-put overlay 'face 'tts-highlight-face)
+                                           overlay))
+            (tts--chunk-audio-proc chunk) (funcall play-function file callback)))))
 
 (defun tts--chunk-abort (chunk)
   "Abort any ongoing processes for CHUNK and reset its status appropriately."
+  (tts--chunk-cleanup-overlay chunk)
   (pcase (tts--chunk-status chunk)
     ('requesting
      (delete-process (tts--chunk-request-proc chunk))
@@ -469,18 +507,19 @@ necessary."
 region is active.  The text is split into sentences and played sequentially as
 audio chunks become available."
   (interactive)
-  (let ((text (if (use-region-p)
-                  (buffer-substring-no-properties (region-beginning) (region-end))
-                (buffer-substring-no-properties (point-min) (point-max)))))
-    (setq text (string-trim text))
-    (when (string-empty-p text)
+  (let* ((beg (if (use-region-p) (region-beginning) (point-min)))
+         (end (if (use-region-p) (region-end) (point-max)))
+         (sentences (tts--split-into-sentences beg end)))
+    (when (use-region-p)
+      (deactivate-mark))
+    (unless sentences
       (user-error "TTS: No text to speak."))
     ;; Abort existing session (if any)
     (when (and tts--current-session
                (not (tts--session-aborted tts--current-session)))
       (tts-abort))
     ;; Create new session
-    (setq tts--current-session (tts--session-create text))
+    (setq tts--current-session (tts--session-create sentences (current-buffer)))
     (message "TTS: Session %s started with %d chunk(s)."
              (tts--session-id tts--current-session)
              (length (tts--session-chunks tts--current-session)))
