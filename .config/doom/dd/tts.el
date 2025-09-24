@@ -71,14 +71,14 @@
 (defcustom tts-backend-generate-function-alist
   '((kokoro . tts--kokoro-generate-audio))
   "Alist mapping backends to their audio generation functions."
-  :type 'alist
+  :type '(alist :key-type symbol :value-type function)
   :group 'tts)
 
 (defcustom tts-backend-ui-controls-function-alist
   '((kokoro . tts--kokoro-ui-controls))
   "Alist mapping backends to their UI controls rendering functions for the
 header line. The function must return a string."
-  :type 'alist
+  :type '(alist :key-type symbol :value-type function)
   :group 'tts)
 
 (defcustom tts-frontend 'ffplay
@@ -89,7 +89,7 @@ header line. The function must return a string."
 (defcustom tts-frontend-play-function-alist
   '((ffplay . tts--ffplay-play-audio))
   "Alist mapping frontends to their audio playback functions."
-  :type 'alist
+  :type '(alist :key-type symbol :value-type function)
   :group 'tts)
 
 (defcustom tts-kokoro-voice-list
