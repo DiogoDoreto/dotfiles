@@ -126,6 +126,10 @@ in
             };
             parinfer.enable = true;
             snippets.enable = true;
+            whitespace = {
+              enable = true;
+              flags = [ "+guess" "+trim" ];
+            };
           };
           emacs = {
             dired.enable = true;
