@@ -8,11 +8,14 @@
   home = {
     packages = with pkgs; [
       aider-chat
+      blender
       calibre
       hydrogen
+      kdePackages.kdenlive
       keepassxc
       krita
       nodejs_24
+      obs-studio
       pods # podman GUI
       ungoogled-chromium
       onedrivegui
