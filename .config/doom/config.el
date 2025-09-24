@@ -180,7 +180,6 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 (load! "dd/lsp")
 (load! "dd/nix")
 (load! "dd/terminal")
-(load! "dd/tts")
 
 (pcase (system-name)
   ("dogdot" (load! "dd/host-dogdot"))
@@ -255,6 +254,10 @@ and return to the original position."
   (add-hook 'qml-mode-hook #'lsp-deferred))
 
 ;;; Use packages
+
+(use-package! tts
+  :defer t
+  :commands (tts-read tts-mode tts-kokoro-start-server))
 
 (use-package! magit-delta
   :defer t
