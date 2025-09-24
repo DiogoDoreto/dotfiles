@@ -43,11 +43,14 @@
 ;; (e.g., like `tts--kokoro-generate-audio') and updating
 ;; `tts-backend-generate-function-alist'. Similarly, for frontends, define
 ;; playback functions (e.g., like `tts--ffplay-play-audio') and update
-;; `tts-frontend-play-function-alist'. Ensure new backends implement the
-;; expected callback interface for asynchronous processing.  For preprocessing,
-;; define transformation functions (e.g., like `tts--preprocess-org-links') and
-;; add them to `tts-preprocessing-functions'.  These apply per sentence before
-;; TTS generation.
+;; `tts-frontend-play-function-alist'. Ensure new backends and frontends
+;; implement the expected callback interface for asynchronous processing.  For
+;; backend-specific UI controls in the header line, define a UI function (e.g.,
+;; like `tts--kokoro-ui-controls') and update
+;; `tts-backend-ui-controls-function-alist'. For preprocessing, define
+;; transformation functions (e.g., like `tts--preprocess-org-links') and add
+;; them to `tts-preprocessing-functions'.  These apply per sentence before TTS
+;; generation.
 
 ;; You can find more information about Kokoro in this URL:
 ;; https://huggingface.co/hexgrad/Kokoro-82M
@@ -68,6 +71,13 @@
 (defcustom tts-backend-generate-function-alist
   '((kokoro . tts--kokoro-generate-audio))
   "Alist mapping backends to their audio generation functions."
+  :type 'alist
+  :group 'tts)
+
+(defcustom tts-backend-ui-controls-function-alist
+  '((kokoro . tts--kokoro-ui-controls))
+  "Alist mapping backends to their UI controls rendering functions for the
+header line. The function must return a string."
   :type 'alist
   :group 'tts)
 
@@ -255,6 +265,17 @@ CALLBACK with error or nil when done."
                  (funcall callback
                           (unless (string= event "finished\n")
                             (string-trim event)))))))
+
+(defun tts--kokoro-ui-controls ()
+  "Return a string of UI controls for the Kokoro TTS backend."
+  (concat
+   (buttonize (format "[Voice: %s]" tts-kokoro-voice)
+              (lambda (_) (let ((current-prefix-arg '(4))) (call-interactively 'tts-kokoro-set-voice)))
+              nil "Change TTS voice")
+   " "
+   (buttonize (format "[Speed: %s]" tts-kokoro-speed)
+              (lambda (_) (let ((current-prefix-arg '(4))) (call-interactively 'tts-kokoro-set-speed)))
+              nil "Change TTS speed")))
 
 ;;; Frontend: ffplay
 
@@ -535,16 +556,9 @@ necessary."
                                 (format " | %s" playing)
                                 (when requesting (format " / %s" requesting))
                                 (format " / %d" total)))))
-          (right-part (when (eq tts-backend 'kokoro)
-                        (concat
-                         (buttonize (format "[Voice: %s]" tts-kokoro-voice)
-                                    (lambda (_) (let ((current-prefix-arg '(4))) (call-interactively 'tts-kokoro-set-voice)))
-                                    nil "Change TTS voice")
-                         " "
-                         (buttonize (format "[Speed: %s]" tts-kokoro-speed)
-                                    (lambda (_) (let ((current-prefix-arg '(4))) (call-interactively 'tts-kokoro-set-speed)))
-                                    nil "Change TTS speed")
-                         " "))))
+          (right-part (when-let ((backend-controls (alist-get tts-backend tts-backend-ui-controls-function-alist)))
+                        (concat (funcall backend-controls)
+                                " "))))
       (list left-part
             (propertize " " 'display `(space :align-to (- right ,(length right-part))))
             right-part))))
