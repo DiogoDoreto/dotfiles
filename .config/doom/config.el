@@ -173,6 +173,49 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 (add-to-list 'auto-mode-alist '("\\.keymap\\'" . dts-mode))
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
 
+;;; Package management
+
+(defun dd/diff-bump-package-at-point (&optional select)
+  "Show a diff of the available update to the package recipe under the cursor.
+
+Based on the code of `doom/bump-package-at-point'"
+  (interactive "P")
+  (doom-initialize-packages)
+  (cl-destructuring-bind (&key package plist beg end)
+      (or (doom--package-at-point)
+          (user-error "Not on a `package!' call"))
+    (let* ((recipe (doom--package-merge-recipes package plist))
+           (branch (plist-get recipe :branch))
+           (oldid (or (plist-get plist :pin)
+                      (doom-package-get package :pin)))
+           (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
+                  (straight-vc-git--encode-url upstream-repo upstream-host)))
+           (id (or (when url
+                     (cdr (doom-call-process
+                           "git" "ls-remote" url
+                           (unless select branch))))
+                   (user-error "Couldn't find a recipe for %s" package)))
+           (id (car (split-string
+                     (if select
+                         (completing-read "Commit: " (split-string id "\n" t))
+                       id))))
+           (local-repo (doom-package-recipe-repo package))
+           (repo-dir (straight--repos-dir local-repo))
+           (default-directory repo-dir))
+      (when (and oldid
+                 (plist-member plist :pin)
+                 (equal oldid id))
+        (user-error "%s: no update necessary" package))
+      (message "Preparing diff...")
+      (doom-call-process "git" "fetch" "origin")
+      (magit-diff-range (concat "..." id))
+      (other-window-prefix)
+      (magit-log-other (list (concat "..." id))))))
+
+(map! :leader :prefix ("C-SPC p" . "  package mgmt")
+      :desc "Diff this package with next bump" "d" #'dd/diff-bump-package-at-point
+      :desc "Bump this package" "b" #'doom/bump-package-at-point)
+
 ;;; Extra config files
 
 (load! "dd/elisp")
