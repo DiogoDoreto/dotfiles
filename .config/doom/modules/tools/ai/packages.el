@@ -1,9 +1,9 @@
 ;; -*- lexical-binding: t; no-byte-compile: t; -*-
 
-(package! gptel :pin "688fcb088b14aafb08bec57263623390d7dc6728")
+(package! gptel :pin "33363745eae0819c58a0a48f84a0474789f2c9e5")
 
-(package! mcp :pin "5f06a78fe74f58888f115bf30838ede5e013f4af")
+(package! mcp :pin "826ce208384940ed1f2e21184308f61ab0c8f477")
 
-(package! copilot :pin "4f51b3c21c42756d09ee17011201ea7d6e18ff69")
+(package! copilot :pin "6a2ad80489b8a0d021df95293eb7ac370aea140b")
 
 (package! aidermacs :pin "d944f430eae936de2a9aa8121c7eaca2ca7be948")
