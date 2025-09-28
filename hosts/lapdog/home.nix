@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 {
   imports = [
@@ -64,6 +64,11 @@
     };
 
     neovim.enable = true;
+
+    nh = {
+      enable = true;
+      flake = config.dog.dotfilesPath + "/hosts/lapdog";
+    };
 
     ssh = {
       enable = true;
