@@ -83,8 +83,10 @@
             (mapcar (lambda (model)
                       (let* ((policy (assoc 'policy model))
                              (state (when policy (cdr (assoc 'state (cdr policy)))))
-                             (id (cdr (assoc 'id model))))
-                        (when (and state (string= state "enabled"))
+                             (id (cdr (assoc 'id model)))
+                             (model-picker-enabled (assoc 'model_picker_enabled model)))
+                        (when (or model-picker-enabled
+                                  (and state (string= state "enabled")))
                           id)))
                     data))))
 
