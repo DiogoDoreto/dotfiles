@@ -8,8 +8,8 @@ hm-news:
 
 .PHONY: nixos-lapdog-boot
 nixos-lapdog-boot:
-	sudo -A nixos-rebuild --flake . boot
+	nh os boot -a
 
 .PHONY: nixos-lapdog-switch
 nixos-lapdog-switch:
-	sudo -A nixos-rebuild --flake . switch
+	nh os switch -a
