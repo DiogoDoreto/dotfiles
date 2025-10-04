@@ -1,10 +1,6 @@
 { pkgs, config, ... }:
 
 {
-  imports = [
-    ../../modules/home-manager
-  ];
-
   home = {
     packages = with pkgs; [
       aider-chat
@@ -85,6 +81,7 @@
     cli-tools.enable = true;
     git.enable = true;
     firefox.enable = true;
+    niri.enable = true;
     wezterm.enable = true;
 
     emacs = {

@@ -20,6 +20,14 @@
       url = "github:doomemacs/doomemacs";
       flake = false;
     };
+    niri = {
+      url = "github:sodiboo/niri-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    dankMaterialShell = {
+      url = "github:AvengeMedia/DankMaterialShell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -33,6 +41,7 @@
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
+        inputs.niri.overlays.niri
         inputs.plasma-toggle-tablet-mode.overlays.${system}.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
@@ -50,12 +59,27 @@
         inherit inputs;
         pkgs-unstable = pkgs;
       };
+      home-manager-modules = [
+        inputs.dankMaterialShell.homeModules.dankMaterialShell.default
+        inputs.dankMaterialShell.homeModules.dankMaterialShell.niri
+        ../../modules/home-manager
+      ];
+      nixos-modules = [
+        (import ../../nix-config.nix nixpkgs)
+        inputs.niri.nixosModules.niri
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.extraSpecialArgs = specialArgs;
+          home-manager.sharedModules = home-manager-modules;
+          nixpkgs = { inherit overlays; };
+        }
+      ];
       buildHomeFromNixos =
         user: entryModule:
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           extraSpecialArgs = specialArgs;
-          modules = [
+          modules = home-manager-modules ++ [
             {
               home = {
                 username = user.name;
@@ -74,15 +98,9 @@
       nixosConfigurations = {
         lapdog = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
-          modules = [
+          modules = nixos-modules ++ [
             nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
-            (import ../../nix-config.nix nixpkgs)
             ./configuration.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.extraSpecialArgs = specialArgs;
-              nixpkgs = { inherit overlays; };
-            }
           ];
         };
       };

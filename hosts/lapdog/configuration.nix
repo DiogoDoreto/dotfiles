@@ -117,6 +117,11 @@
     users.dog = ./home.nix;
   };
 
+  # Niri WM
+  programs.niri.enable = true;
+  programs.niri.package = pkgs.niri-unstable;
+  environment.variables.NIXOS_OZONE_WL = "1";
+
   # Install firefox.
   programs.firefox.enable = true;
 
