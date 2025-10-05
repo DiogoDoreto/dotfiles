@@ -8,7 +8,7 @@ Lockfiles are ignored."
      (concat (format "git diff --cached --unified=%d" context-lines)
              " -- . ':!package-lock.json' ':!yarn.lock' ':!flake.lock'"))))
 
-;; ** Create commit command
+;;; ** Create commit command
 
 (defun dd--create-commit-system-prompt ()
   "Commit prompt"
@@ -259,7 +259,7 @@ by adding B-tree index on frequently queried column.
       :system (dd--create-commit-system-prompt)
       :callback #'dd--create-commit-callback)))
 
-;; ** Code review command
+;;; ** Code review command
 
 (defun dd--create-code-review-system-prompt ()
   (string-join
@@ -314,5 +314,3 @@ With prefix ARG, prompt for a review focus."
           (dd--create-code-review-user-prompt focus-area)
         :system (dd--create-code-review-system-prompt)
         :stream t))))
-
-(provide 'gptel-oneshot)

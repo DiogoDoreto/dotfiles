@@ -128,7 +128,10 @@ in
             snippets.enable = true;
             whitespace = {
               enable = true;
-              flags = [ "+guess" "+trim" ];
+              flags = [
+                "+guess"
+                "+trim"
+              ];
             };
           };
           emacs = {
@@ -289,6 +292,8 @@ in
         dotfilesSymlink ".config/doom/modules/tools/ai/packages.el";
       "doom/modules/tools/ai/gptel-oneshot.el".source =
         dotfilesSymlink ".config/doom/modules/tools/ai/gptel-oneshot.el";
+      "doom/modules/tools/ai/gptel-prompts.el".source =
+        dotfilesSymlink ".config/doom/modules/tools/ai/gptel-prompts.el";
       "doom/modules/tools/ai/tools".source = dotfilesSymlink ".config/doom/modules/tools/ai/tools";
       "doom/modules/tools/ai/my-gptel-tools.el".source =
         dotfilesSymlink ".config/doom/modules/tools/ai/my-gptel-tools.el";
