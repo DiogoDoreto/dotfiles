@@ -62,7 +62,14 @@
 
 (after! dape
   ;; node can natively load ts files now
-  (push 'typescript-ts-mode (plist-get (alist-get 'js-debug-node dape-configs) 'modes)))
+  (push 'typescript-ts-mode (plist-get (alist-get 'js-debug-node dape-configs) 'modes))
+
+  (let ((vitest-config (copy-sequence (alist-get 'js-debug-node dape-configs))))
+    (plist-put! vitest-config
+                :autoAttachChildProcesses t
+                :program "node_modules/vitest/vitest.mjs"
+                :args ["--test-timeout=0" "--no-file-parallelism" dape-buffer-default])
+    (setf (alist-get 'js-debug-vitest dape-configs) vitest-config)))
 
 (after! lsp-eslint
   (setq lsp-eslint-run "onSave"))
