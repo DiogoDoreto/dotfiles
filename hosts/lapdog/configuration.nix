@@ -13,21 +13,8 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # FIXME kernel v6.16.9 is preventing machine initialization
   # Use latest kernel.
-  # boot.kernelPackages = pkgs.linuxPackages_latest;
-  boot.kernelPackages = pkgs.linuxPackagesFor (
-    pkgs.linux_6_16.override {
-      argsOverride = rec {
-        src = pkgs.fetchurl {
-          url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
-          sha256 = "sha256-IxMRvXCE3DEplE0mu0O+b/g32oL7IQSmdwSuvKi/pp8=";
-        };
-        version = "6.16.8";
-        modDirVersion = "6.16.8";
-      };
-    }
-  );
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # Needed for podman. See https://github.com/containers/podman/discussions/23193#discussioncomment-9958326
   boot.tmp.useTmpfs = true;
