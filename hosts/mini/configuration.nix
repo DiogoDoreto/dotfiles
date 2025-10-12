@@ -169,6 +169,7 @@
   # Enable the OpenSSH daemon.
   services.openssh = {
     enable = true;
+    ports = [ 17098 ];
     # require public key authentication for better security
     settings = {
       PasswordAuthentication = false;
