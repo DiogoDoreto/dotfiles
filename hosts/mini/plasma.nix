@@ -289,6 +289,7 @@
       "kiorc"."Executable scripts"."behaviourOnLaunch" = "alwaysAsk";
       "kscreenlockerrc"."Daemon"."Autolock" = false;
       "kscreenlockerrc"."Daemon"."Timeout" = 0;
+      "ksmserverrc"."General"."loginMode" = "emptySession";
       "ktrashrc"."\\/home\\/dog\\/.local\\/share\\/Trash"."Days" = 7;
       "ktrashrc"."\\/home\\/dog\\/.local\\/share\\/Trash"."LimitReachedAction" = 0;
       "ktrashrc"."\\/home\\/dog\\/.local\\/share\\/Trash"."Percent" = 10;
