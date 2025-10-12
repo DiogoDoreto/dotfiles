@@ -141,6 +141,8 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 (map! :leader :desc "Scan org agenda files" "nU" #'dd/scan-org-agenda-files)
 
+(add-hook 'org-mode-hook 'auto-fill-mode)
+
 (use-package! ol-eww :after org)
 
 (use-package! org-block-capf
@@ -173,6 +175,9 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 (add-to-list 'auto-mode-alist '("\\.keymap\\'" . dts-mode))
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
 
+;; When something changes a file, automatically refresh the buffer containing that file so they can’t get out of sync.
+(global-auto-revert-mode t)
+
 ;;; Package management
 
 (defun dd/diff-bump-package-at-point (&optional select)
@@ -181,7 +186,7 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 Based on the code of `doom/bump-package-at-point'"
   (interactive "P")
   (doom-initialize-packages)
-  (cl-destructuring-bind (&key package plist beg end)
+  (cl-destructuring-bind (&key package plist)
       (or (doom--package-at-point)
           (user-error "Not on a `package!' call"))
     (let* ((recipe (doom--package-merge-recipes package plist))
@@ -189,7 +194,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                  (straight-vc-git--encode-url upstream-repo upstream-host)))
+                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (cdr (doom-call-process
                            "git" "ls-remote" url
@@ -229,6 +234,10 @@ Based on the code of `doom/bump-package-at-point'"
   ("lapdog" (load! "dd/host-lapdog")))
 
 ;;; General mappings
+
+;; navigate through visual lines by default
+(map! :nv "j" #'evil-next-visual-line
+      :nv "k" #'evil-previous-visual-line)
 
 ;; Sane saving.
 (map! "C-s" #'save-buffer)
@@ -319,6 +328,8 @@ and return to the original position."
   :config
   (map! :leader "s k" #'devdocs-browser-open-in))
 
+(use-package! writegood-mode)
+
 (use-package! hnreader
   :defer t
   :config
@@ -347,3 +358,21 @@ and return to the original position."
                :icon (nerd-icons-faicon "nf-fa-hacker_news" :face 'doom-dashboard-menu-title)
                :action hnreader-news)
              t)
+
+;;; Random stuff...
+
+;; https://www.reddit.com/r/emacs/comments/idz35e/emacs_27_can_take_svg_screenshots_of_itself/
+(defun dd/screenshot-emacs ()
+  "Save a screenshot of the current frame as a PNG image by default.
+With a prefix argument (C-u), save as an SVG image.
+Saves to a temp file and puts the filename in the kill ring."
+  (interactive)
+  (let* ((use-svg (when current-prefix-arg t))
+         (extension (if use-svg ".svg" ".png"))
+         (format (if use-svg 'svg 'png))
+         (filename (make-temp-file "Emacs" nil extension))
+         (data (x-export-frames nil format)))
+    (with-temp-file filename
+      (insert data))
+    (kill-new filename)
+    (message filename)))

@@ -33,6 +33,8 @@
 
 (package! hnreader :pin "a56f67a99a855ca656da1c1985e09f44509e4bbb")
 
+(package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")
+
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or
 ;; use 'M-x doom/reload'.
