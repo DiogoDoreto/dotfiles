@@ -37,11 +37,6 @@ in
       bottom = {
         enable = true;
         package = pkgs-unstable.bottom;
-        settings = {
-          flags = {
-            enable_gpu = true;
-          };
-        };
       };
 
       direnv = {

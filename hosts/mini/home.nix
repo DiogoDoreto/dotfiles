@@ -1,23 +1,19 @@
-{ pkgs, pkgs-unstable, inputs, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 {
   imports = [
     ../../modules/home-manager
-    inputs.plasma-manager.homeManagerModules.plasma-manager
     ./plasma.nix
   ];
 
   home = {
     packages = (with pkgs; [
       calibre
-      hydrogen
       keepassxc
-      moonlight-qt
       nodejs_24
       pods # podman GUI
       ungoogled-chromium
     ]) ++ (with pkgs-unstable; [
-      ardour
       onedrivegui
     ]);
 
@@ -58,20 +54,10 @@
 
   dog.programs = {
     cli-tools.enable = true;
-    git.enable = true;
+    emacs.enable = true;
     firefox.enable = true;
     ghostty.enable = true;
-    wezterm.enable = true;
-
-    emacs = {
-      enable = true;
-      whisperPackage = inputs.whisper-to-text.packages.${pkgs.system}.whisper-to-text;
-    };
-
-    aider = {
-      enable = true;
-      ollamaApiBase = "http://chungus.home:11434";
-    };
+    git.enable = true;
   };
 
   services.podman = {

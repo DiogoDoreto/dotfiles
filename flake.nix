@@ -90,8 +90,6 @@
       homeConfigurations = {
         "dog@chungus" =
           buildHomeFromNixos nixosConfigurations.chungus.config.users.users.dog ./hosts/chungus/home.nix;
-        "dog@mini" =
-          buildHomeFromNixos nixosConfigurations.mini.config.users.users.dog ./hosts/mini/home.nix;
       };
 
       nixosConfigurations = {
@@ -99,19 +97,6 @@
           inherit system specialArgs;
           modules = [
             ./hosts/chungus/configuration.nix
-            (import ./nix-config.nix nixpkgs)
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.extraSpecialArgs = specialArgs;
-              nixpkgs = { inherit overlays; };
-            }
-          ];
-        };
-        mini = nixpkgs.lib.nixosSystem rec {
-          inherit system specialArgs;
-          modules = [
-            nixos-hardware.nixosModules.common-cpu-intel
-            ./hosts/mini/configuration.nix
             (import ./nix-config.nix nixpkgs)
             home-manager.nixosModules.home-manager
             {
