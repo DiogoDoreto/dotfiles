@@ -1,3 +1,11 @@
+.PHONY: remote-mini-switch
+remote-mini-switch:
+	nh os switch -a --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/
+
+.PHONY: remote-mini-boot
+remote-mini-boot:
+	nh os boot -a --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/ && ssh dogdot reboot
+
 .PHONY: hm-dog-chungus-switch
 hm-dog-chungus-switch:
 	home-manager --flake .#dog@chungus switch
