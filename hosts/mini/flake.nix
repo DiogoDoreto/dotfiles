@@ -54,7 +54,7 @@
         inherit inputs pkgs-unstable;
       };
       home-manager-modules = [
-        inputs.plasma-manager.homeManagerModules.plasma-manager
+        inputs.plasma-manager.homeModules.plasma-manager
         ../../modules/home-manager
       ];
       nixos-modules = [
