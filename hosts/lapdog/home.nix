@@ -69,7 +69,27 @@
     ssh = {
       enable = true;
       enableDefaultConfig = false;
-      matchBlocks."*".addKeysToAgent = "yes";
+      matchBlocks = {
+        "*" = {
+          forwardAgent = false;
+          addKeysToAgent = "no";
+          compression = false;
+          serverAliveInterval = 0;
+          serverAliveCountMax = 3;
+          hashKnownHosts = false;
+          userKnownHostsFile = "~/.ssh/known_hosts";
+          controlMaster = "no";
+          controlPath = "~/.ssh/master-%r@%n:%p";
+          controlPersist = "no";
+        };
+        "dogdot" = {
+          hostname = "192.168.0.2";
+          port = 17098;
+          user = "root";
+          addKeysToAgent = "yes";
+          identityFile = "~/.ssh/id_ed25519_dogdot";
+        };
+      };
     };
   };
 

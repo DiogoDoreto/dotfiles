@@ -96,13 +96,18 @@
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.dog = {
-    isNormalUser = true;
-    description = "Diogo Doreto";
-    extraGroups = [ "networkmanager" "wheel" ];
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDDhA9Eum8X+nly3QFAhrazy+5JLdVx+r8natZ6tCex0 diogo@doreto.com.br"
+  users.users = {
+    dog = {
+      isNormalUser = true;
+      description = "Diogo Doreto";
+      extraGroups = [
+        "networkmanager"
+        "wheel"
+      ];
+    };
+
+    root.openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
     ];
   };
 
