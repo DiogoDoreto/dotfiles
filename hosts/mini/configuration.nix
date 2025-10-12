@@ -104,6 +104,9 @@
         "networkmanager"
         "wheel"
       ];
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
+      ];
     };
 
     root.openssh.authorizedKeys.keys = [
