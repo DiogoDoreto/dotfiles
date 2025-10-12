@@ -7,15 +7,17 @@
   ];
 
   home = {
-    packages = (with pkgs; [
-      calibre
-      keepassxc
-      nodejs_24
-      pods # podman GUI
-      ungoogled-chromium
-    ]) ++ (with pkgs-unstable; [
-      onedrivegui
-    ]);
+    packages =
+      (with pkgs; [
+        calibre
+        keepassxc
+        nodejs_24
+        pods # podman GUI
+        ungoogled-chromium
+      ])
+      ++ (with pkgs-unstable; [
+        onedrivegui
+      ]);
 
     # I remember this fixed something, but I don't recall what. So I'm leaving
     # it commented until it breaks again :D
@@ -62,13 +64,21 @@
 
   services.podman = {
     enable = true;
+    autoUpdate.enable = true;
+
     containers = {
       home-assistant = {
         image = "ghcr.io/home-assistant/home-assistant:stable";
         autoStart = true;
-        environment = { TZ = "Europe/Madrid"; };
+        autoUpdate = "registry";
+        environment = {
+          TZ = "Europe/Madrid";
+        };
         network = "host";
-        addCapabilities = [ "CAP_NET_RAW" "CAP_NET_BIND_SERVICE" ];
+        addCapabilities = [
+          "CAP_NET_RAW"
+          "CAP_NET_BIND_SERVICE"
+        ];
         volumes = [
           "/home/dog/projects/home-assistant-config/config:/config"
           "/run/dbus:/run/dbus:ro"

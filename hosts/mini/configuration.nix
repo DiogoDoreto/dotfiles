@@ -294,6 +294,13 @@
             };
           }
           {
+            "jellyfin" = rec {
+              icon = "jellyfin.png";
+              href = "http://jellyfin.dogdot.home";
+              ping = href;
+            };
+          }
+          {
             "NextCloud" = rec {
               icon = "nextcloud.png";
               href = "http://nextcloud.dogdot.home";
@@ -311,13 +318,6 @@
       }
       {
         Media = [
-          {
-            "jellyfin" = rec {
-              icon = "jellyfin.png";
-              href = "http://jellyfin.dogdot.home";
-              ping = href;
-            };
-          }
           {
             "qBittorrent" = rec {
               icon = "qbittorrent.png";
