@@ -20,12 +20,8 @@
       url = "github:doomemacs/doomemacs";
       flake = false;
     };
-    niri = {
-      url = "github:sodiboo/niri-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    dankMaterialShell = {
-      url = "github:AvengeMedia/DankMaterialShell";
+    my-niri = {
+      url = "../../modules/flakes/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -35,18 +31,19 @@
       nixpkgs,
       home-manager,
       nixos-hardware,
+      my-niri,
       ...
     }@inputs:
     let
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
-        inputs.niri.overlays.niri
         inputs.plasma-toggle-tablet-mode.overlays.${system}.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
         })
-      ];
+      ]
+      ++ my-niri.outputs.overlays;
       pkgs-config = {
         inherit system overlays;
         config = {
@@ -60,20 +57,19 @@
         pkgs-unstable = pkgs;
       };
       home-manager-modules = [
-        inputs.dankMaterialShell.homeModules.dankMaterialShell.default
-        inputs.dankMaterialShell.homeModules.dankMaterialShell.niri
         ../../modules/home-manager
-      ];
+      ]
+      ++ my-niri.outputs.homeModules;
       nixos-modules = [
         (import ../../nix-config.nix nixpkgs)
-        inputs.niri.nixosModules.niri
         home-manager.nixosModules.home-manager
         {
           home-manager.extraSpecialArgs = specialArgs;
           home-manager.sharedModules = home-manager-modules;
           nixpkgs = { inherit overlays; };
         }
-      ];
+      ]
+      ++ my-niri.outputs.nixosModules;
       buildHomeFromNixos =
         user: entryModule:
         home-manager.lib.homeManagerConfiguration {

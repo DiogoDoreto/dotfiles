@@ -12,7 +12,6 @@
     ./ghostty.nix
     ./gromit-mpx.nix
     ./i3.nix
-    ./niri.nix
     ./plasma-toggle-tablet-mode.nix
     ./podman.nix
     ./polybar.nix

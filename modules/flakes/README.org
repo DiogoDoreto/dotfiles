@@ -1,0 +1,15 @@
+#+TITLE: Flakes Modules
+
+This folder contains modular Nix flakes that encapsulate configuration,
+overlays, and modules which depend on external inputs or packages. The goal is
+to keep host and shared configuration clean and decoupled from modules that
+require specific upstream dependencies.
+
+Each subfolder here should provide its own =flake.nix=, defining the necessary
+inputs and exposing overlays, NixOS modules, and Home Manager modules as
+outputs. Hosts can then selectively include these flakes as inputs, ensuring
+that host-specific dependencies do not leak into global/shared configuration.
+
+Use this structure for any configuration that is not universally applicable to
+all hosts, but instead relies on particular external packages, overlays, or
+modules.
