@@ -10,6 +10,7 @@
     packages =
       (with pkgs; [
         calibre
+        jellyfin-media-player
         keepassxc
         nodejs_24
         pods # podman GUI
