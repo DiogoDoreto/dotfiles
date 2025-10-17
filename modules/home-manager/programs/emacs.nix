@@ -265,7 +265,24 @@ in
       sqlite # for org-roam
       ffmpeg # for whisper package
       ripgrep
+
+      # spell checking
       wordnet
+      (enchant.overrideAttrs (old: rec {
+        # jinx needs enchant.h to compile itself
+        # nixpkgs version 2.6.9 does not include it in the tarball
+        # latest version 2.8.12 fails to build
+        # version 2.7.3 has the header but it is not being placed on the /nix/store output (FIXME)
+        version = "2.7.3";
+        src = fetchurl {
+          url = "https://github.com/rrthomas/${old.pname}/releases/download/v${version}/${old.pname}-${version}.tar.gz";
+          hash = "sha256-/mrUy+jHG5OE/975Yr5S1NK9Xr+2NRQ1uzkFQ9T3ix4=";
+        };
+      }))
+      hunspellDicts.pt_BR
+      hunspellDicts.es_ES
+      hunspellDicts.en_US
+      aspellDicts.en-computers
     ];
 
     home.sessionPath = [

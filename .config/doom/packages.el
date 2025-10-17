@@ -35,6 +35,8 @@
 
 (package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")
 
+(package! jinx :pin "e0ad6ea90e25c363a419eb5dbc378ae82252ed0a")
+
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or
 ;; use 'M-x doom/reload'.

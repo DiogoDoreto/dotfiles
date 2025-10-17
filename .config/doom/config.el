@@ -319,6 +319,10 @@ and return to the original position."
   :defer t
   :hook 'Info-selection-hook)
 
+;; TODO fix jinx compilation when toggling jinx-mode
+;; (use-package! jinx)
+;; (add-hook 'emacs-startup-hook #'global-jinx-mode)
+
 (use-package! ct :defer t)
 
 (use-package! groovy-mode :defer t)
