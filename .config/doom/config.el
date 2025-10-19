@@ -186,7 +186,7 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 Based on the code of `doom/bump-package-at-point'"
   (interactive "P")
   (doom-initialize-packages)
-  (cl-destructuring-bind (&key package plist)
+  (cl-destructuring-bind (&key package plist beg end)
       (or (doom--package-at-point)
           (user-error "Not on a `package!' call"))
     (let* ((recipe (doom--package-merge-recipes package plist))
@@ -194,7 +194,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
+                  (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (cdr (doom-call-process
                            "git" "ls-remote" url
