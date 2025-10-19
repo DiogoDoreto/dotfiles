@@ -5,11 +5,10 @@
 { config, pkgs, ... }:
 
 {
-  imports =
-    [
-      ./hardware.nix # Include the results of the hardware scan.
-      ./media.nix
-    ];
+  imports = [
+    ./hardware.nix # Include the results of the hardware scan.
+    ./media.nix
+  ];
 
   # TODO update kernel to use this:
   # hardware.intelgpu.driver = "xe";
@@ -29,8 +28,17 @@
     networkmanager.enable = true;
     firewall = {
       enable = true;
-      allowedTCPPorts = [ 53 80 443 21064 21065 ];
-      allowedUDPPorts = [ 53 5353 ];
+      allowedTCPPorts = [
+        53
+        80
+        443
+        21064
+        21065
+      ];
+      allowedUDPPorts = [
+        53
+        5353
+      ];
     };
   };
 
@@ -68,6 +76,11 @@
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
+  # services.pulseaudio.daemon.config = {
+  #   default-sample-channels = 6;
+  #   default-channel-map = "front-left,front-right,lfe,front-center,rear-left,rear-right";
+  #   enable-lfe-remixing = "yes";
+  # };
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -139,8 +152,8 @@
   environment.systemPackages = with pkgs; [
     home-manager
     openvpn
-  #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #  wget
+    #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    #  wget
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -158,7 +171,10 @@
     package = pkgs.nextcloud31;
     hostName = "localhost";
     settings = {
-      trusted_domains = [ "nextcloud.dogdot.home" "nextcloud.local.doreto.com.br" ];
+      trusted_domains = [
+        "nextcloud.dogdot.home"
+        "nextcloud.local.doreto.com.br"
+      ];
     };
     config = {
       adminpassFile = "/var/lib/nextcloud-pass.txt";
@@ -166,8 +182,23 @@
     };
   };
   services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
-    { addr = "127.0.0.1"; port = 5387; }
+    {
+      addr = "127.0.0.1";
+      port = 5387;
+    }
   ];
+
+  services.freshrss = {
+    enable = true;
+    extensions = with pkgs.freshrss-extensions; [
+      youtube
+      reading-time
+    ];
+    webserver = "caddy";
+    virtualHost = "freshrss.dogdot.home:80";
+    baseUrl = "http://freshrss.dogdot.home";
+    passwordFile = "/var/lib/freshrss-pass.txt";
+  };
 
   # Enable the OpenSSH daemon.
   services.openssh = {
@@ -194,76 +225,101 @@
   services.dnsmasq = {
     enable = true;
     alwaysKeepRunning = true;
-    settings = let
-      static-ip = "192.168.0.2"; # needs to be set manually in networkmanager
-    in {
-      # interface = "wlo1";
-      # bind-interfaces = true;
-      listen-address="::1,127.0.0.1,${static-ip}";
-      address = [
-        "/${config.networking.hostName}.home/${static-ip}"
-        "/.local.doreto.com.br/${static-ip}"
-        "/chungus.home/192.168.0.3"
-      ];
+    settings =
+      let
+        static-ip = "192.168.0.2"; # needs to be set manually in networkmanager
+      in
+      {
+        # interface = "wlo1";
+        # bind-interfaces = true;
+        listen-address = "::1,127.0.0.1,${static-ip}";
+        address = [
+          "/${config.networking.hostName}.home/${static-ip}"
+          "/.local.doreto.com.br/${static-ip}"
+          "/chungus.home/192.168.0.3"
+        ];
 
-      # Accept DNS queries only from hosts whose address is on a local subnet
-      # local-service = true;
-      # Do not read system files
-      no-hosts = true;
-      no-resolv = true;
-      # Do not send private addresses to upstream servers
-      bogus-priv = true;
-      # Do not send addresses without dot to upstream servers
-      domain-needed = true;
-      # Upstream DNS servers
-      server = [ "1.1.1.1" "1.0.0.1" ];
-      # Log DNS queries
-      log-queries = true;
+        # Accept DNS queries only from hosts whose address is on a local subnet
+        # local-service = true;
+        # Do not read system files
+        no-hosts = true;
+        no-resolv = true;
+        # Do not send private addresses to upstream servers
+        bogus-priv = true;
+        # Do not send addresses without dot to upstream servers
+        domain-needed = true;
+        # Upstream DNS servers
+        server = [
+          "1.1.1.1"
+          "1.0.0.1"
+        ];
+        # Log DNS queries
+        log-queries = true;
 
-      # Enable DNSSEC
-      # dnssec = true;
-      # DNSSEC trust anchor. Source: https://data.iana.org/root-anchors/root-anchors.xml
-      # trust-anchor = ".,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D";
-    };
+        # Enable DNSSEC
+        # dnssec = true;
+        # DNSSEC trust anchor. Source: https://data.iana.org/root-anchors/root-anchors.xml
+        # trust-anchor = ".,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D";
+      };
   };
 
   services.caddy = {
     enable = true;
-    settings = let
-      hostname = "${config.networking.hostName}.home";
-      rproxies = [
-        { name = "nextcloud"; port = "5387"; }
-        { name = "lidarr";    port = "8686"; }
-        { name = "radarr";    port = "7878"; }
-        { name = "sonarr";    port = "8989"; }
-        { name = "prowlarr";  port = "9696"; }
-        { name = "qbit";      port = "8079"; }
-        { name = "jellyfin";  port = "8096"; }
-        { name = "ha";        host = "192.168.0.2"; port = "8123"; }
-        { name = "home";      port = "8082"; }
-        { name = "vite";      port = "5173"; }
-      ];
-      make-rproxy = {name, host ? "localhost", port}: {
-        match = [{
-          host = [ "${name}.${hostname}" "${name}.local.doreto.com.br" ];
-        }];
-        handle = [{
-          handler = "reverse_proxy";
-          upstreams = [{
-            dial = "${host}:${port}";
-          }];
-        }];
+    virtualHosts = {
+      "nextcloud.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:5387
+        '';
       };
-    in {
-      apps.http.servers.dogdot = {
-        listen = [ ":80" ":443" ];
-        routes = (map make-rproxy rproxies);
+      "lidarr.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:8686
+        '';
       };
-      apps.tls.certificates.load_files = [{
-        certificate = "/var/lib/caddy/certs/fullchain1.pem";
-        key = "/var/lib/caddy/certs/privkey1.pem";
-      }];
+      "radarr.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:7878
+        '';
+      };
+      "sonarr.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:8989
+        '';
+      };
+      "prowlarr.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:9696
+        '';
+      };
+      "qbit.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:8079
+        '';
+      };
+      "jellyfin.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:8096
+        '';
+      };
+      "ha.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy 192.168.0.2:8123
+        '';
+      };
+      "home.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:8082
+        '';
+      };
+      "vite.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:5173
+        '';
+      };
     };
+    # globalConfig = ''
+    #   tls /var/lib/caddy/certs/fullchain1.pem /var/lib/caddy/certs/privkey1.pem
+    # '';
   };
 
   services.homepage-dashboard = {
@@ -289,6 +345,13 @@
       # search for icons in https://dashboardicons.com
       {
         Apps = [
+          {
+            "FreshRSS" = rec {
+              icon = "freshrss.png";
+              href = "http://freshrss.dogdot.home";
+              ping = href;
+            };
+          }
           {
             "HomeAssistant" = rec {
               icon = "home-assistant.png";
