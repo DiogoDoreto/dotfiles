@@ -215,6 +215,9 @@ in
             };
             yaml.enable = true;
           };
+          app = {
+            rss.enable = true;
+          };
           config = {
             default = {
               enable = true;

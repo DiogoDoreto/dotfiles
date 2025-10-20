@@ -194,7 +194,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                  (straight-vc-git--encode-url upstream-repo upstream-host)))
+                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (cdr (doom-call-process
                            "git" "ls-remote" url
@@ -272,6 +272,15 @@ and return to the original position."
       :desc "Highline cursor line" :n "L" #'hl-line-mode)
 
 (map! :map dired-mode-map :n "<backspace>" #'dired-up-directory)
+
+(map! :localleader :map elfeed-search-mode-map
+      :desc "Update feeds" "m" #'elfeed-search-update--force
+      :desc "Mark read"    "r" #'elfeed-search-untag-all-unread
+      :desc "Mark unread"  "u" #'elfeed-search-tag-all-unread)
+
+(map! :localleader :map elfeed-show-mode-map
+      :desc "Mark read"   "r" (cmd! (elfeed-show-untag 'unread))
+      :desc "Mark unread" "u" (cmd! (elfeed-show-tag 'unread)))
 
 ;;; After packages
 
@@ -357,13 +366,28 @@ and return to the original position."
     :quit nil
     :ttl nil))
 
-(add-to-list '+doom-dashboard-menu-sections
-             '("Read HackerNews"
-               :icon (nerd-icons-faicon "nf-fa-hacker_news" :face 'doom-dashboard-menu-title)
-               :action hnreader-news)
-             t)
+(use-package! elfeed-protocol
+  :after elfeed
+  :config
+  (setq elfeed-search-filter "@2-weeks-ago +unread")
+  (setq elfeed-protocol-enabled-protocols '(fever))
+  (setq elfeed-protocol-fever-update-unread-only nil)
+  (setq elfeed-protocol-fever-fetch-category-as-tag t)
+  (setq elfeed-protocol-feeds '(("fever+http://admin@freshrss.dogdot.home"
+                                 :api-url "http://freshrss.dogdot.home/api/fever.php"
+                                 :password "freshrss")))
+  (elfeed-protocol-enable))
 
 ;;; Random stuff...
+
+(setq +doom-dashboard-menu-sections
+      `(,@(seq-take +doom-dashboard-menu-sections 5)
+        ("Read Feeds"
+         :icon (nerd-icons-mdicon "nf-md-rss_box" :face 'doom-dashboard-menu-title)
+         :action elfeed)
+        ("Read HackerNews"
+         :icon (nerd-icons-faicon "nf-fa-hacker_news" :face 'doom-dashboard-menu-title)
+         :action hnreader-news)))
 
 ;; https://www.reddit.com/r/emacs/comments/idz35e/emacs_27_can_take_svg_screenshots_of_itself/
 (defun dd/screenshot-emacs ()
