@@ -201,6 +201,10 @@ in
               flags = [ "+roam2" ];
             };
             qt.enable = true;
+            rest = {
+              enable = true;
+              flags = [ "+jq" ];
+            };
             scheme = {
               enable = true;
               flags = [ "+guile" ];
