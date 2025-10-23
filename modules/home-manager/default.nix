@@ -1,4 +1,4 @@
-{ config, pkgs-unstable, ... }:
+{ config, pkgs-unstable, inputs, ... }:
 
 {
   imports = [
@@ -24,6 +24,9 @@
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
+
+  # Ensure shell usage of nixpkgs is the same version of the current build
+  nix.registry.nixpkgs.flake = inputs.nixpkgs;
 
   services.ssh-agent.enable = true;
 }
