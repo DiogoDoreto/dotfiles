@@ -1,10 +1,10 @@
 .PHONY: remote-mini-switch
 remote-mini-switch:
-	nh os switch -a --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/
+	nh os switch --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/
 
 .PHONY: remote-mini-boot
 remote-mini-boot:
-	nh os boot -a --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/ && ssh dogdot reboot
+	nh os boot --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/ && ssh dogdot reboot
 
 .PHONY: hm-dog-chungus-switch
 hm-dog-chungus-switch:
@@ -17,18 +17,6 @@ nixos-chungus-boot:
 .PHONY: nixos-chungus-switch
 nixos-chungus-switch:
 	sudo -A nixos-rebuild --flake .#chungus switch
-
-.PHONY: hm-dog-mini-switch
-hm-dog-mini-switch:
-	home-manager --flake .#dog@mini switch
-
-.PHONY: nixos-mini-boot
-nixos-mini-boot:
-	sudo -A nixos-rebuild --flake .#mini boot
-
-.PHONY: nixos-mini-switch
-nixos-mini-switch:
-	sudo -A nixos-rebuild --flake .#mini switch
 
 .PHONY: gc
 gc:

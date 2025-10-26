@@ -200,6 +200,11 @@
     passwordFile = "/var/lib/freshrss-pass.txt";
   };
 
+  services.open-webui = {
+    enable = true;
+    port = 11111;
+  };
+
   # Enable the OpenSSH daemon.
   services.openssh = {
     enable = true;
@@ -301,6 +306,16 @@
           reverse_proxy localhost:8096
         '';
       };
+      "calibre.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:18083
+        '';
+      };
+      "ai.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:11111
+        '';
+      };
       "ha.dogdot.home:80" = {
         extraConfig = ''
           reverse_proxy 192.168.0.2:8123
@@ -344,7 +359,7 @@
     services = [
       # search for icons in https://dashboardicons.com
       {
-        Apps = [
+        Media = [
           {
             "FreshRSS" = rec {
               icon = "freshrss.png";
@@ -353,14 +368,7 @@
             };
           }
           {
-            "HomeAssistant" = rec {
-              icon = "home-assistant.png";
-              href = "http://ha.dogdot.home";
-              ping = href;
-            };
-          }
-          {
-            "jellyfin" = rec {
+            "Jellyfin" = rec {
               icon = "jellyfin.png";
               href = "http://jellyfin.dogdot.home";
               ping = href;
@@ -374,16 +382,34 @@
             };
           }
           {
-            "Open WebUI" = rec {
-              icon = "open-webui.png";
-              href = "http://chungus.home:8080";
+            "Calibre" = rec {
+              icon = "calibre.png";
+              href = "http://calibre.dogdot.home";
               ping = href;
             };
           }
         ];
       }
       {
-        Media = [
+        Apps = [
+          {
+            "HomeAssistant" = rec {
+              icon = "home-assistant.png";
+              href = "http://ha.dogdot.home";
+              ping = href;
+            };
+          }
+          {
+            "Open WebUI" = rec {
+              icon = "open-webui.png";
+              href = "http://ai.dogdot.home";
+              ping = href;
+            };
+          }
+        ];
+      }
+      {
+        Downloads = [
           {
             "qBittorrent" = rec {
               icon = "qbittorrent.png";

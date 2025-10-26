@@ -5,6 +5,7 @@
     groups.media = {
       members = [
         "dog"
+        "calibre-web"
         "jellyfin"
         "lidarr"
         "sonarr"
@@ -41,6 +42,18 @@
 
   services.jellyfin.enable = true;
 
+  services.calibre-web = {
+    enable = true;
+    listen.port = 18083;
+    group = "media";
+    options = {
+      calibreLibrary = "/var/lib/dog/media/Books";
+      enableBookConversion = true;
+      enableKepubify = true;
+      enableBookUploading = true;
+    };
+  };
+
   systemd.tmpfiles.settings.mediaDirs = {
     "/var/lib/qbittorrent".d = {
       mode = "700";
@@ -55,6 +68,16 @@
     "/var/lib/dog/media/downloads".d = {
       mode = "2770";
       user = "root";
+      group = "media";
+    };
+    "/var/lib/dog/media/Media".d = {
+      mode = "2770";
+      user = "root";
+      group = "media";
+    };
+    "/var/lib/dog/media/Books".d = {
+      mode = "750";
+      user = "calibre-web";
       group = "media";
     };
     "/var/lib/dog/media/Movies".d = {
