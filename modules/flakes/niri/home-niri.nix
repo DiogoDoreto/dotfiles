@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -43,7 +48,11 @@ in
           let
             # sh = spawn "sh" "-c";
             binds =
-              { suffixes, prefixes, substitutions ? { } }:
+              {
+                suffixes,
+                prefixes,
+                substitutions ? { },
+              }:
               let
                 replacer = replaceStrings (attrNames substitutions) (attrValues substitutions);
                 format =
@@ -129,9 +138,9 @@ in
               "Mod+E".action = spawn "emacs";
               "Mod+T".action = spawn "wezterm";
 
-              "Mod+Shift+S".action = screenshot;
-              "Print".action.screenshot-screen = [ ];
-              "Mod+Print".action = screenshot-window;
+              # "Mod+Shift+S".action = screenshot;
+              # "Print".action.screenshot-screen = [ ];
+              # "Mod+Print".action = screenshot-window;
 
               # ?
               "Mod+Insert".action = set-dynamic-cast-window;
