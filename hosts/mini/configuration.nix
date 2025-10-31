@@ -10,6 +10,11 @@
     ./media.nix
   ];
 
+  # for jellyfin-media-player
+  # nixpkgs.config.permittedInsecurePackages = [
+  #   "qtwebengine-5.15.19"
+  # ];
+
   # TODO update kernel to use this:
   # hardware.intelgpu.driver = "xe";
 

@@ -2,33 +2,30 @@
   description = "Mini host";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nur = {
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     doomemacs = {
       url = "github:doomemacs/doomemacs";
       flake = false;
     };
-    plasma-manager = {
-      url = "github:nix-community/plasma-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-    };
+    # plasma-manager = {
+    #   url = "github:nix-community/plasma-manager";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    #   inputs.home-manager.follows = "home-manager";
+    # };
   };
 
   outputs =
     {
       nixpkgs,
-      nixpkgs-unstable,
       home-manager,
       nixos-hardware,
       ...
@@ -41,20 +38,19 @@
           inherit (inputs.home-manager.packages.${system}) home-manager;
         })
       ];
-      pkgs-config = {
+      pkgs = import nixpkgs {
         inherit system overlays;
         config = {
           allowUnfree = true;
           allowUnfreePredicate = _: true;
         };
       };
-      pkgs = import nixpkgs pkgs-config;
-      pkgs-unstable = import nixpkgs-unstable pkgs-config;
       specialArgs = {
-        inherit inputs pkgs-unstable;
+        inherit inputs;
+        pkgs-unstable = pkgs;
       };
       home-manager-modules = [
-        inputs.plasma-manager.homeModules.plasma-manager
+        # inputs.plasma-manager.homeModules.plasma-manager
         ../../modules/home-manager
       ];
       nixos-modules = [

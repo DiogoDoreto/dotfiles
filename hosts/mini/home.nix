@@ -1,24 +1,18 @@
-{ pkgs, pkgs-unstable, ... }:
+{ pkgs, config, ... }:
 
 {
-  imports = [
-    ../../modules/home-manager
-    ./plasma.nix
-  ];
+  # imports = [ ./plasma.nix ];
 
   home = {
-    packages =
-      (with pkgs; [
-        calibre
-        jellyfin-media-player
-        keepassxc
-        nodejs_24
-        pods # podman GUI
-        ungoogled-chromium
-      ])
-      ++ (with pkgs-unstable; [
-        onedrivegui
-      ]);
+    packages = with pkgs; [
+      calibre
+      # jellyfin-media-player
+      keepassxc
+      nodejs_24
+      onedrivegui
+      pods # podman GUI
+      ungoogled-chromium
+    ];
 
     # I remember this fixed something, but I don't recall what. So I'm leaving
     # it commented until it breaks again :D
@@ -46,6 +40,11 @@
         quality-menu
         youtube-upnext
       ];
+    };
+
+    nh = {
+      enable = true;
+      flake = config.dog.dotfilesPath + "/hosts/mini";
     };
 
     neovim.enable = true;
