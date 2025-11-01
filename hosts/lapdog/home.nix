@@ -134,4 +134,9 @@
     enable = true;
     indicator = true;
   };
+
+  services.nextcloud-client = {
+    enable = true;
+    startInBackground = true;
+  };
 }

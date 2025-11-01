@@ -146,7 +146,9 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 ;;; Org-mode
 
-(setq org-directory "~/org/")
+(setq org-directory (if (string= "lapdog" (system-name))
+                        "~/Nextcloud/Notes/"
+                      "~/org/"))
 
 (map! :map evil-org-mode-map :n "z g" #'+org/play-gif-at-point)
 
