@@ -291,8 +291,19 @@ and return to the original position."
 
 (map! :map dired-mode-map :n "<backspace>" #'dired-up-directory)
 
+(defun dd/elfeed-search-sync ()
+  "Update feeds and re-sync unread status.
+Based on https://github.com/fasheng/elfeed-protocol/issues/28"
+  (interactive)
+  (mark-whole-buffer)
+  (cl-loop for entry in (elfeed-search-selected)
+           do (elfeed-untag-1 entry 'unread)) ; local operation, won't sync
+  (elfeed-search-update--force)
+  (let ((host (cadr (string-split (car (elfeed-protocol-feed-list)) "+"))))
+    (elfeed-protocol-fever-reinit host)))
+
 (map! :localleader :map elfeed-search-mode-map
-      :desc "Update feeds" "m" #'elfeed-search-update--force
+      :desc "Update feeds" "m" #'dd/elfeed-search-sync
       :desc "Mark read"    "r" #'elfeed-search-untag-all-unread
       :desc "Mark unread"  "u" #'elfeed-search-tag-all-unread)
 
