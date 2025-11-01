@@ -12,6 +12,7 @@
       krita
       nodejs_24
       obs-studio
+      pinentry-emacs
       pods # podman GUI
       ungoogled-chromium
       onedrivegui
@@ -117,6 +118,15 @@
         "ThinkPad Extra Buttons"
         "evremap Virtual input for /dev/input/event0"
       ];
+    };
+  };
+
+  programs.gpg.enable = true;
+  services.gpg-agent = {
+    enable = true;
+    pinentry = {
+      package = pkgs.pinentry-emacs;
+      program = "pinentry";
     };
   };
 
