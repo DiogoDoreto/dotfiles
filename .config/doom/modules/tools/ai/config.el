@@ -63,11 +63,17 @@
   (load! "gptel-prompts.el")
   (load! "my-gptel-tools.el")
 
-  (when (s-equals? "dogdot" (system-name))
-    (gptel-make-ollama "Ollama"
-      :host "chungus.home:11434"
-      :stream t
-      :models '(qwen2.5-coder:32b deepseek-r1:32b qwq)))
+  (when (s-equals? "lapdog" (system-name))
+    (gptel-make-openai "Cerebras"
+      :host "api.cerebras.ai"
+      :endpoint "/v1/chat/completions"
+      :stream nil
+      :key (lambda ()
+             (and-let* ((auth (car (auth-source-search :host "cerebras")))
+                        (secret-fn (plist-get auth :secret)))
+               (funcall secret-fn)))
+      :models '(qwen-3-235b-a22b-thinking-2507
+                qwen-3-coder-480b)))
 
   (setq gptel--system-message (alist-get 'assistant gptel-directives)
         gptel-model 'grok-code-fast-1
