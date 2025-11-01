@@ -29,30 +29,47 @@
 (setq doom-font (font-spec
                  :family "VictorMono Nerd Font Mono"
                  :weight 'light
-                 :size (if (s-equals? "lapdog" (system-name)) 24 17)))
+                 :size (if (string= "lapdog" (system-name)) 24 17)))
 
 (defun dd--night? ()
   "Return t if current time is after 8pm or before 8am, else nil."
   (let ((hour (string-to-number (format-time-string "%H"))))
     (or (>= hour 20) (< hour 8))))
 
-(setq doom-theme (if (s-equals? "lapdog" (system-name))
-                     'modus-vivendi-deuteranopia
-                   (if (dd--night?) 'ef-maris-dark 'ef-day)))
+;; for me, modus themes look great on OLED screens
+(setq modus-themes-to-toggle (if (string= "lapdog" (system-name))
+                                 '(modus-vivendi-deuteranopia modus-operandi)
+                               '(ef-maris-dark ef-day)))
 
-(setq ef-themes-to-toggle '(ef-maris-dark ef-day))
-(map! :leader :desc "Theme" :n "t t" #'ef-themes-toggle)
+(map! :leader :desc "Theme" :n "t t" #'modus-themes-toggle)
+
+(setq doom-theme (if (or (string= "lapdog" (system-name))
+                         (dd--night?))
+                     (car modus-themes-to-toggle)
+                   (cadr modus-themes-to-toggle)))
+
+(setq modus-themes-mixed-fonts t
+      modus-themes-variable-pitch-ui nil
+      modus-themes-bold-constructs nil
+      modus-themes-italic-constructs t
+      modus-themes-completions '((t . (bold)))
+      modus-themes-prompts '(bold)
+      modus-themes-headings
+      '((agenda-structure . (light 2.0))
+        (agenda-date . (regular 1.3))
+        (0 . (light 2.0))
+        (t . (regular 1.15))))
 
 (after! tree-sitter
   (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
   (set-face-attribute 'tree-sitter-hl-face:comment nil :slant 'italic))
 
 (remove-hook 'doom-modeline-mode-hook #'size-indication-mode)
-(setq doom-modeline-lsp-icon nil)
-(setq doom-modeline-modal nil)
-(setq doom-modeline-major-mode-icon t)
-(setq doom-modeline-vcs-max-length 20)
-(setq doom-modeline-buffer-file-name-style 'truncate-with-project)
+(setq doom-modeline-lsp-icon nil
+      doom-modeline-modal nil
+      doom-modeline-major-mode-icon t
+      doom-modeline-vcs-max-length 20
+      doom-modeline-buffer-file-name-style 'truncate-with-project)
 
 (setq display-line-numbers-type 'relative)
 
@@ -186,7 +203,7 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 Based on the code of `doom/bump-package-at-point'"
   (interactive "P")
   (doom-initialize-packages)
-  (cl-destructuring-bind (&key package plist beg end)
+  (cl-destructuring-bind (&key package plist _beg _end)
       (or (doom--package-at-point)
           (user-error "Not on a `package!' call"))
     (let* ((recipe (doom--package-merge-recipes package plist))
@@ -194,7 +211,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                  (straight-vc-git--encode-url upstream-repo upstream-host)))
+                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (message "Checking last commit...")
                      (cdr (doom-call-process
@@ -316,6 +333,11 @@ and return to the original position."
   (add-hook 'qml-mode-hook #'lsp-deferred))
 
 ;;; Use packages
+
+(use-package! ef-themes
+  :after modus-themes
+  :init
+  (modus-themes-include-derivatives-mode 1))
 
 (use-package! tts
   :defer t
