@@ -18,21 +18,27 @@ in
   config = mkIf cfg.enable {
     programs.git = {
       enable = true;
-      userName = "Diogo Doreto";
+      settings = {
+        user.name = "Diogo Doreto";
+        alias = {
+          co = "checkout";
+          st = "status -sb";
+          lg = "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit";
+          fm = "fetch origin master:master";
+          pf = "push --force-with-lease";
+          undo = "reset --soft HEAD~1";
+          ri = "rebase -i";
+          rc = "rebase --continue";
+          ra = "rebase --abort";
+        };
+        core.autocrlf = false;
+        init.defaultBranch = "main";
+        pull.ff = "only";
+        rebase.autoSquash = true;
+      };
       includes = [
         { path = "~/.config/git/config.private"; } # set user.email here
       ];
-      aliases = {
-        co = "checkout";
-        st = "status -sb";
-        lg = "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit";
-        fm = "fetch origin master:master";
-        pf = "push --force-with-lease";
-        undo = "reset --soft HEAD~1";
-        ri = "rebase -i";
-        rc = "rebase --continue";
-        ra = "rebase --abort";
-      };
       ignores = [
         ".private/"
         # emacs
@@ -49,12 +55,6 @@ in
         # aider
         ".aider*"
       ];
-      extraConfig = {
-        core.autocrlf = false;
-        init.defaultBranch = "main";
-        pull.ff = "only";
-        rebase.autoSquash = true;
-      };
     };
   };
 }
