@@ -204,6 +204,19 @@
     port = 11111;
   };
 
+  services.searx = {
+    enable = true;
+    settings = {
+      server.bind_address = "127.0.0.1";
+      server.port = 8888;
+      server.secret_key = "searx";
+      search.formats = [
+        "html"
+        "json"
+      ];
+    };
+  };
+
   # Enable the OpenSSH daemon.
   services.openssh = {
     enable = true;
@@ -330,6 +343,11 @@
           reverse_proxy localhost:5173
         '';
       };
+      "search.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:8888
+        '';
+      };
     };
     # globalConfig = ''
     #   tls /var/lib/caddy/certs/fullchain1.pem /var/lib/caddy/certs/privkey1.pem
@@ -402,6 +420,13 @@
             "Open WebUI" = rec {
               icon = "open-webui.png";
               href = "http://ai.dogdot.home";
+              ping = href;
+            };
+          }
+          {
+            "Searx" = rec {
+              icon = "searxng.png";
+              href = "http://search.dogdot.home";
               ping = href;
             };
           }
