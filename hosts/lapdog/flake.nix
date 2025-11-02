@@ -2,7 +2,7 @@
   description = "Lapdog host";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nur = {
       url = "github:nix-community/NUR";
@@ -24,6 +24,7 @@
       url = "../../modules/flakes/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-ai-tools.url = "github:numtide/nix-ai-tools";
   };
 
   outputs =
@@ -41,6 +42,7 @@
         inputs.plasma-toggle-tablet-mode.overlays.${system}.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
+          inherit (inputs.nix-ai-tools.packages.${system}) copilot-cli crush;
         })
       ]
       ++ my-niri.outputs.overlays;

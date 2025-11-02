@@ -3,6 +3,28 @@
 {
   home = {
     packages = with pkgs; [
+      (callPackage ./bubblewrap-ai.nix {
+        package = copilot-cli;
+        extraWritablePaths = [
+          "~/.copilot/"
+          "~/projects/"
+        ];
+        extraCommandFlags = [
+          "--allow-all-tools"
+          "--allow-all-paths"
+        ];
+      })
+      (callPackage ./bubblewrap-ai.nix {
+        package = crush;
+        extraWritablePaths = [
+          "~/.config/crush/"
+          "~/.local/share/crush/"
+          "~/projects/"
+        ];
+        extraCommandFlags = [
+          "--yolo"
+        ];
+      })
       aider-chat
       blender
       calibre

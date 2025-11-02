@@ -50,9 +50,9 @@ in
         "npm-debug.log*"
         "yarn-debug.log*"
         "yarn-error.log*"
-        # opencode
+        # AI tools
         "AGENTS.md"
-        # aider
+        "CRUSH.md"
         ".aider*"
       ];
     };
