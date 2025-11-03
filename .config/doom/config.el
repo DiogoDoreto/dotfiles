@@ -416,6 +416,9 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
                                  :password "freshrss")))
   (elfeed-protocol-enable))
 
+(use-package! combobulate
+  :hook prog-mode)
+
 ;;; Random stuff...
 
 (setq +doom-dashboard-menu-sections
