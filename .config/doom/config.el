@@ -58,6 +58,8 @@
       '((agenda-structure . (light 2.0))
         (agenda-date . (regular 1.3))
         (0 . (light 2.0))
+        (1 . (light 1.4))
+        (2 . (light 1.3))
         (t . (regular 1.15))))
 
 (after! tree-sitter
