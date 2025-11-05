@@ -80,9 +80,12 @@
 (setq flymake-show-diagnostics-at-end-of-line t)
 
 (after! flycheck
-  (map! :leader
-        :desc "Explain error"  :n "c ," #'flycheck-explain-error-at-point
-        :desc "List errors"    :n "c x" #'flycheck-list-errors))
+  (map! (:map flycheck-mode-map
+         :n "[e" #'flycheck-previous-error
+         :n "]e" #'flycheck-next-error)
+        (:leader
+         :desc "Explain error"  :n "c ," #'flycheck-explain-error-at-point
+         :desc "List errors"    :n "c x" #'flycheck-list-errors)))
 
 ;;; Jumping / Repeating
 
