@@ -18,15 +18,15 @@ let
   makeDoomMacroModules =
     moduleName: moduleCfg:
     let
-      flags = concatStringsSep " " moduleCfg.flags;
+      flags = concatStringsSep " " (moduleCfg.flags or [ ]);
       formattedModule = if flags == "" then moduleName else "(${moduleName} ${flags})";
     in
     if moduleCfg.enable then formattedModule else "";
 
   makeDoomMacroCategories =
-    category:
+    doomInit: category:
     let
-      moduleAttrs = attrsets.attrByPath [ category ] { } cfg.doom.init;
+      moduleAttrs = attrsets.attrByPath [ category ] { } doomInit;
       modules = filter (m: m != "") (attrsets.mapAttrsToList makeDoomMacroModules moduleAttrs);
     in
     ''
@@ -34,10 +34,10 @@ let
         ${concatStringsSep "\n  " modules}
     '';
 
-  doomInitMacroFile = ''
+  doomInitMacroFile = doomInit: ''
     ;;; init.el -*- lexical-binding: t; -*-
     (doom!
-    ${concatStringsSep "\n" (map makeDoomMacroCategories cfg.doom.initOrder)}
+    ${concatStringsSep "\n" (map (makeDoomMacroCategories doomInit) cfg.doom.initOrder)}
     )
 
     ;; Ensure local packages are git repositories
@@ -45,6 +45,171 @@ let
     (after! doom-straight
       (setq straight-vc-use-snapshot-installation nil))
   '';
+
+  defaultDoomInit = {
+    completion = {
+      corfu = {
+        enable = true;
+        flags = [
+          "+orderless"
+          "+dabbrev"
+          "+icons"
+        ];
+      };
+      vertico = {
+        enable = true;
+        flags = [ "+icons" ];
+      };
+    };
+    ui = {
+      doom.enable = true;
+      doom-dashboard.enable = true;
+      hl-todo.enable = true;
+      modeline.enable = true;
+      ophints.enable = true;
+      popup = {
+        enable = true;
+        flags = [ "+defaults" ];
+      };
+      smooth-scroll = {
+        enable = true;
+        flags = [ "+interpolate" ];
+      };
+      treemacs = {
+        enable = true;
+        flags = [ "+lsp" ];
+      };
+      vc-gutter = {
+        enable = true;
+        flags = [ "+pretty" ];
+      };
+      vi-tilde-fringe.enable = true;
+      window-select.enable = true;
+      workspaces.enable = true;
+    };
+    editor = {
+      evil = {
+        enable = true;
+        flags = [ "+everywhere" ];
+      };
+      file-templates.enable = true;
+      fold.enable = true;
+      format = {
+        enable = true;
+        flags = [
+          "+onsave"
+          "+lsp"
+        ];
+      };
+      parinfer.enable = true;
+      snippets.enable = true;
+      whitespace = {
+        enable = true;
+        flags = [
+          "+guess"
+          "+trim"
+        ];
+      };
+    };
+    emacs = {
+      dired.enable = true;
+      electric.enable = true;
+      eww.enable = true;
+      ibuffer = {
+        enable = true;
+        flags = [ "+icons" ];
+      };
+      undo.enable = true;
+      vc.enable = true;
+    };
+    term = {
+      eshell.enable = true;
+      vterm.enable = true;
+    };
+    checkers = {
+      syntax.enable = true;
+    };
+    tools = {
+      debugger.enable = true;
+      direnv.enable = true;
+      editorconfig.enable = true;
+      eval = {
+        enable = true;
+        flags = [ "+overlay" ];
+      };
+      lookup = {
+        enable = true;
+        flags = [ "+dictionary" ];
+      };
+      lsp.enable = true;
+      magit.enable = true;
+      make.enable = true;
+      tree-sitter.enable = true;
+      lsp-extra.enable = true;
+      ai.enable = true;
+    };
+    lang = {
+      emacs-lisp.enable = true;
+      json = {
+        enable = true;
+        flags = [
+          "+lsp"
+          "+tree-sitter"
+        ];
+      };
+      javascript = {
+        enable = true;
+        flags = [
+          "+lsp"
+          "+tree-sitter"
+        ];
+      };
+      markdown.enable = true;
+      nix = {
+        enable = true;
+        flags = [
+          "+lsp"
+          "+tree-sitter"
+        ];
+      };
+      nix-extras.enable = true;
+      org = {
+        enable = true;
+        flags = [ "+roam2" ];
+      };
+      qt.enable = true;
+      rest = {
+        enable = true;
+        flags = [ "+jq" ];
+      };
+      scheme = {
+        enable = true;
+        flags = [ "+guile" ];
+      };
+      sh.enable = true;
+      web = {
+        enable = true;
+        flags = [
+          "+lsp"
+          "+tree-sitter"
+        ];
+      };
+      yaml.enable = true;
+    };
+    app = {
+      rss.enable = true;
+    };
+    config = {
+      default = {
+        enable = true;
+        flags = [
+          "+bindings"
+          "+smartparens"
+          "+gnupg"
+        ];
+      };
+    };
+  };
 in
 {
   options.dog.programs.emacs = {
@@ -69,170 +234,7 @@ in
       in
       mkOption {
         type = types.attrsOf (types.attrsOf doomModuleType);
-        default = {
-          completion = {
-            corfu = {
-              enable = true;
-              flags = [
-                "+orderless"
-                "+dabbrev"
-                "+icons"
-              ];
-            };
-            vertico = {
-              enable = true;
-              flags = [ "+icons" ];
-            };
-          };
-          ui = {
-            doom.enable = true;
-            doom-dashboard.enable = true;
-            hl-todo.enable = true;
-            modeline.enable = true;
-            ophints.enable = true;
-            popup = {
-              enable = true;
-              flags = [ "+defaults" ];
-            };
-            smooth-scroll = {
-              enable = true;
-              flags = [ "+interpolate" ];
-            };
-            treemacs = {
-              enable = true;
-              flags = [ "+lsp" ];
-            };
-            vc-gutter = {
-              enable = true;
-              flags = [ "+pretty" ];
-            };
-            vi-tilde-fringe.enable = true;
-            window-select.enable = true;
-            workspaces.enable = true;
-          };
-          editor = {
-            evil = {
-              enable = true;
-              flags = [ "+everywhere" ];
-            };
-            file-templates.enable = true;
-            fold.enable = true;
-            format = {
-              enable = true;
-              flags = [
-                "+onsave"
-                "+lsp"
-              ];
-            };
-            parinfer.enable = true;
-            snippets.enable = true;
-            whitespace = {
-              enable = true;
-              flags = [
-                "+guess"
-                "+trim"
-              ];
-            };
-          };
-          emacs = {
-            dired.enable = true;
-            electric.enable = true;
-            eww.enable = true;
-            ibuffer = {
-              enable = true;
-              flags = [ "+icons" ];
-            };
-            undo.enable = true;
-            vc.enable = true;
-          };
-          term = {
-            eshell.enable = true;
-            vterm.enable = true;
-          };
-          checkers = {
-            syntax.enable = true;
-          };
-          tools = {
-            debugger.enable = true;
-            direnv.enable = true;
-            editorconfig.enable = true;
-            eval = {
-              enable = true;
-              flags = [ "+overlay" ];
-            };
-            lookup = {
-              enable = true;
-              flags = [ "+dictionary" ];
-            };
-            lsp.enable = true;
-            magit.enable = true;
-            make.enable = true;
-            tree-sitter.enable = true;
-            lsp-extra.enable = true;
-            ai.enable = true;
-          };
-          lang = {
-            emacs-lisp.enable = true;
-            json = {
-              enable = true;
-              flags = [
-                "+lsp"
-                "+tree-sitter"
-              ];
-            };
-            javascript = {
-              enable = true;
-              flags = [
-                "+lsp"
-                "+tree-sitter"
-              ];
-            };
-            markdown.enable = true;
-            nix = {
-              enable = true;
-              flags = [
-                "+lsp"
-                "+tree-sitter"
-              ];
-            };
-            nix-extras.enable = true;
-            org = {
-              enable = true;
-              flags = [ "+roam2" ];
-            };
-            qt.enable = true;
-            rest = {
-              enable = true;
-              flags = [ "+jq" ];
-            };
-            scheme = {
-              enable = true;
-              flags = [ "+guile" ];
-            };
-            sh.enable = true;
-            web = {
-              enable = true;
-              flags = [
-                "+lsp"
-                "+tree-sitter"
-              ];
-            };
-            yaml.enable = true;
-          };
-          app = {
-            rss.enable = true;
-          };
-          config = {
-            default = {
-              enable = true;
-              flags = [
-                "+bindings"
-                "+smartparens"
-                "+gnupg"
-              ];
-            };
-          };
-        };
+        default = defaultDoomInit;
       };
 
     doom.initOrder = mkOption {
@@ -304,7 +306,7 @@ in
     xdg.configFile = {
       emacs.source = inputs.doomemacs;
 
-      "doom/init.el".text = doomInitMacroFile;
+      "doom/init.el".text = doomInitMacroFile (attrsets.recursiveUpdate defaultDoomInit cfg.doom.init);
       "doom/config.el".source = dotfilesSymlink ".config/doom/config.el";
       "doom/packages.el".source = dotfilesSymlink ".config/doom/packages.el";
 
