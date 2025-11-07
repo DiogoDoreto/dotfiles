@@ -93,6 +93,7 @@
     extraGroups = [
       "networkmanager"
       "wheel"
+      "audio"
     ];
   };
 

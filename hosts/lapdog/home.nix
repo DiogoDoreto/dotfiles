@@ -1,6 +1,10 @@
 { pkgs, config, ... }:
 
 {
+  imports = [
+    ./music.nix
+  ];
+
   home = {
     packages = with pkgs; [
       (callPackage ./bubblewrap-ai.nix {
@@ -28,7 +32,6 @@
       aider-chat
       blender
       calibre
-      hydrogen
       kdePackages.kdenlive
       keepassxc
       krita
