@@ -89,6 +89,12 @@
           addKeysToAgent = "yes";
           identityFile = "~/.ssh/id_ed25519_dogdot";
         };
+        "chungus" = {
+          hostname = "192.168.0.3";
+          user = "dog";
+          addKeysToAgent = "yes";
+          identityFile = "~/.ssh/id_ed25519_dogdot";
+        };
       };
     };
   };
