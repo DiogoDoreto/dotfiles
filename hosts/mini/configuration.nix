@@ -323,6 +323,11 @@
           reverse_proxy localhost:18083
         '';
       };
+      "audiobook.dogdot.home:80" = {
+        extraConfig = ''
+          reverse_proxy localhost:18090
+        '';
+      };
       "ai.dogdot.home:80" = {
         extraConfig = ''
           reverse_proxy localhost:11111
@@ -402,6 +407,13 @@
             "Calibre" = rec {
               icon = "calibre.png";
               href = "http://calibre.dogdot.home";
+              ping = href;
+            };
+          }
+          {
+            "Audiobooks" = rec {
+              icon = "audiobookshelf.png";
+              href = "http://audiobook.dogdot.home";
               ping = href;
             };
           }

@@ -5,6 +5,7 @@
     groups.media = {
       members = [
         "dog"
+        "audiobookshelf"
         "calibre-web"
         "jellyfin"
         "lidarr"
@@ -54,6 +55,11 @@
     };
   };
 
+  services.audiobookshelf = {
+    enable = true;
+    port = 18090;
+  };
+
   systemd.tmpfiles.settings.mediaDirs = {
     "/var/lib/qbittorrent".d = {
       mode = "700";
@@ -73,6 +79,11 @@
     "/var/lib/dog/media/Media".d = {
       mode = "2770";
       user = "root";
+      group = "media";
+    };
+    "/var/lib/dog/media/AudioBooks".d = {
+      mode = "750";
+      user = "audiobookshelf";
       group = "media";
     };
     "/var/lib/dog/media/Books".d = {
