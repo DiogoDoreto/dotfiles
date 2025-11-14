@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   home.packages = with pkgs; [
@@ -18,7 +18,7 @@
   };
 
   # needed for yabridgectl
-  home.sessionVariablesExtra = ''
+  home.sessionVariablesExtra = lib.mkAfter ''
     export NIX_PROFILES="$NIX_PROFILES /etc/profiles/per-user/$USER"
   '';
 }
