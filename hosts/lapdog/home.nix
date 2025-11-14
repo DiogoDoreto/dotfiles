@@ -30,6 +30,7 @@
         ];
       })
       blender
+      clonehero
       kdePackages.kdenlive
       keepassxc
       krita
