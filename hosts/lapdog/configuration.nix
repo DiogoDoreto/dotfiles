@@ -199,6 +199,17 @@
     };
   };
 
+  services.openvpn.servers = {
+    vpn-es = {
+      config = "config /home/dog/.vpn/es-mad.prod.surfshark.comsurfshark_openvpn_udp.ovpn";
+      autoStart = false;
+    };
+    vpn-br = {
+      config = "config /home/dog/.vpn/br-sao.prod.surfshark.comsurfshark_openvpn_udp.ovpn";
+      autoStart = false;
+    };
+  };
+
   virtualisation.podman.enable = true;
 
   # This value determines the NixOS release from which the default
