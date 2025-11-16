@@ -1,4 +1,9 @@
-{ config, lib, pkgs, pkgs-unstable, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -15,6 +20,7 @@ in
       delta # A syntax-highlighting pager for git
       eza # ls replacement
       htop
+      libnotify
       nil # nix lsp server
       tldr
       unzip
@@ -34,10 +40,7 @@ in
 
       bash.enable = true;
 
-      bottom = {
-        enable = true;
-        package = pkgs-unstable.bottom;
-      };
+      bottom.enable = true;
 
       direnv = {
         enable = true;
