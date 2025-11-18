@@ -22,6 +22,7 @@ in
       htop
       libnotify
       nil # nix lsp server
+      p7zip
       tldr
       unzip
 
