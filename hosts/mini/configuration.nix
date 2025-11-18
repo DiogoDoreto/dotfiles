@@ -191,7 +191,11 @@
       "+ /var/lib/freshrss/users/*/config.php"
       "+ /var/lib/freshrss/users/*/db.sqlite"
 
+      "- /var/lib/nextcloud/data/*/cache"
+      "- /var/lib/nextcloud/data/*/files"
       "- /var/lib/nextcloud/data/*/files_trashbin"
+      "- /var/lib/nextcloud/data/*/files_versions"
+      "- /var/lib/nextcloud/data/*/uploads"
       "+ /var/lib/nextcloud/data"
       "+ /var/lib/nextcloud/config"
 
