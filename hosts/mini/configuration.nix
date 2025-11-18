@@ -11,6 +11,7 @@
   ];
 
   # for jellyfin-media-player
+  # migration to qt6: https://github.com/jellyfin/jellyfin-media-player/issues/282
   # nixpkgs.config.permittedInsecurePackages = [
   #   "qtwebengine-5.15.19"
   # ];
@@ -93,10 +94,6 @@
     alsa.support32Bit = true;
     pulse.enable = true;
     jack.enable = true;
-
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
   };
 
   hardware.enableAllFirmware = true;
@@ -138,22 +135,18 @@
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = "dog";
 
-  # Install firefox.
-  programs.firefox.enable = true;
-
-  programs.kdeconnect.enable = true;
-
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
+  programs.firefox.enable = true;
+  programs.kdeconnect.enable = true;
+
+  # List packages installed in system profile.
   environment.systemPackages = with pkgs; [
     borgbackup
     home-manager
     openvpn
     vim
-    #  wget
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -177,7 +170,7 @@
     };
     # TODO use when setting up BorgBase remote
     # environment = {
-    #   BORG_RSH = "ssh -i /run/keys/id_ed25519_borgbase";
+    #   BORG_RSH = "ssh -i /root/.ssh/id_ed25519_borgbase";
     # };
     paths = [
       "/var/lib/"
