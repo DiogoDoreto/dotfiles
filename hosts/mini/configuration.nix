@@ -159,6 +159,8 @@
 
   # List services that you want to enable:
 
+  services.tailscale.enable = true;
+
   services.borgbackup.jobs.root = {
     repo = "/root/test-bkp";
     doInit = true;
@@ -220,8 +222,10 @@
     hostName = "localhost";
     settings = {
       trusted_domains = [
-        "nextcloud.dogdot.home"
         "nextcloud.local.doreto.com.br"
+      ];
+      trusted_proxies = [
+        "127.0.0.1"
       ];
     };
     config = {
@@ -243,8 +247,8 @@
       reading-time
     ];
     webserver = "caddy";
-    virtualHost = "freshrss.dogdot.home:80";
-    baseUrl = "http://freshrss.dogdot.home";
+    virtualHost = "freshrss.local.doreto.com.br";
+    baseUrl = "https://freshrss.local.doreto.com.br";
     passwordFile = "/var/lib/freshrss-pass.txt";
   };
 
@@ -294,14 +298,17 @@
     settings =
       let
         static-ip = "192.168.0.2"; # needs to be set manually in networkmanager
+        tailscale-ip = "100.117.142.110";
       in
       {
         # interface = "wlo1";
         # bind-interfaces = true;
-        listen-address = "::1,127.0.0.1,${static-ip}";
+        listen-address = "::1,127.0.0.1,${static-ip},${tailscale-ip}";
         address = [
           "/${config.networking.hostName}.home/${static-ip}"
+          "/${config.networking.hostName}.home/${tailscale-ip}"
           "/.local.doreto.com.br/${static-ip}"
+          "/.local.doreto.com.br/${tailscale-ip}"
           "/chungus.home/192.168.0.3"
         ];
 
@@ -332,86 +339,90 @@
   services.caddy = {
     enable = true;
     virtualHosts = {
-      "nextcloud.dogdot.home:80" = {
+      "*.local.doreto.com.br" = {
+        # 'tls internal' tells Caddy to self-sign this without ACME/Let's Encrypt
+        # Grab and trust /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
+        extraConfig = ''
+          tls internal
+        '';
+      };
+      "nextcloud.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:5387
         '';
       };
-      "lidarr.dogdot.home:80" = {
+      "lidarr.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:8686
         '';
       };
-      "radarr.dogdot.home:80" = {
+      "radarr.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:7878
         '';
       };
-      "sonarr.dogdot.home:80" = {
+      "sonarr.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:8989
         '';
       };
-      "prowlarr.dogdot.home:80" = {
+      "prowlarr.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:9696
         '';
       };
-      "qbit.dogdot.home:80" = {
+      "qbit.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:8079
         '';
       };
-      "jellyfin.dogdot.home:80" = {
+      "jellyfin.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:8096
         '';
       };
-      "calibre.dogdot.home:80" = {
+      "calibre.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:18083
         '';
       };
-      "audiobook.dogdot.home:80" = {
+      "audiobook.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:18090
         '';
       };
-      "ai.dogdot.home:80" = {
+      "ai.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:11111
         '';
       };
-      "ha.dogdot.home:80" = {
+      "ha.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy 192.168.0.2:8123
         '';
       };
-      "home.dogdot.home:80" = {
+      "home.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:8082
         '';
       };
-      "vite.dogdot.home:80" = {
+      "vite.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:5173
         '';
       };
-      "search.dogdot.home:80" = {
+      "search.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:8888
         '';
       };
     };
-    # globalConfig = ''
-    #   tls /var/lib/caddy/certs/fullchain1.pem /var/lib/caddy/certs/privkey1.pem
-    # '';
   };
 
   services.homepage-dashboard = {
     enable = true;
     listenPort = 8082;
-    allowedHosts = "home.dogdot.home";
+    allowedHosts = "home.local.doreto.com.br";
     widgets = [
       {
         resources = {
@@ -434,35 +445,35 @@
           {
             "FreshRSS" = rec {
               icon = "freshrss.png";
-              href = "http://freshrss.dogdot.home";
+              href = "https://freshrss.local.doreto.com.br";
               ping = href;
             };
           }
           {
             "Jellyfin" = rec {
               icon = "jellyfin.png";
-              href = "http://jellyfin.dogdot.home";
+              href = "https://jellyfin.local.doreto.com.br";
               ping = href;
             };
           }
           {
             "NextCloud" = rec {
               icon = "nextcloud.png";
-              href = "http://nextcloud.dogdot.home";
+              href = "https://nextcloud.local.doreto.com.br";
               ping = href;
             };
           }
           {
             "Calibre" = rec {
               icon = "calibre.png";
-              href = "http://calibre.dogdot.home";
+              href = "https://calibre.local.doreto.com.br";
               ping = href;
             };
           }
           {
             "Audiobooks" = rec {
               icon = "audiobookshelf.png";
-              href = "http://audiobook.dogdot.home";
+              href = "https://audiobook.local.doreto.com.br";
               ping = href;
             };
           }
@@ -473,21 +484,21 @@
           {
             "HomeAssistant" = rec {
               icon = "home-assistant.png";
-              href = "http://ha.dogdot.home";
+              href = "https://ha.local.doreto.com.br";
               ping = href;
             };
           }
           {
             "Open WebUI" = rec {
               icon = "open-webui.png";
-              href = "http://ai.dogdot.home";
+              href = "https://ai.local.doreto.com.br";
               ping = href;
             };
           }
           {
             "Searx" = rec {
               icon = "searxng.png";
-              href = "http://search.dogdot.home";
+              href = "https://search.local.doreto.com.br";
               ping = href;
             };
           }
@@ -498,7 +509,7 @@
           {
             "qBittorrent" = rec {
               icon = "qbittorrent.png";
-              href = "http://qbit.dogdot.home";
+              href = "https://qbit.local.doreto.com.br";
               ping = href;
               widget = {
                 type = "qbittorrent";
@@ -510,7 +521,7 @@
             "Radarr" = rec {
               icon = "radarr.png";
               description = "Movies downloader";
-              href = "http://radarr.dogdot.home";
+              href = "https://radarr.local.doreto.com.br";
               ping = href;
               widget = {
                 type = "radarr";
@@ -523,7 +534,7 @@
             "Sonarr" = rec {
               icon = "sonarr.png";
               description = "TV Shows downloader";
-              href = "http://sonarr.dogdot.home";
+              href = "https://sonarr.local.doreto.com.br";
               ping = href;
               widget = {
                 type = "sonarr";
@@ -536,7 +547,7 @@
             "Lidarr" = rec {
               icon = "lidarr.png";
               description = "Music downloader";
-              href = "http://lidarr.dogdot.home";
+              href = "https://lidarr.local.doreto.com.br";
               ping = href;
               widget = {
                 type = "lidarr";
@@ -549,7 +560,7 @@
             "Prowlarr " = rec {
               icon = "prowlarr.png";
               description = "Search torrents";
-              href = "http://prowlarr.dogdot.home";
+              href = "https://prowlarr.local.doreto.com.br";
               ping = href;
             };
           }

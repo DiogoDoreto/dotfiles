@@ -29,6 +29,8 @@
     };
   };
 
+  security.pki.certificateFiles = [ ../mini/home-caddy.crt ];
+
   # Set your time zone.
   time.timeZone = "Europe/Madrid";
 
@@ -138,6 +140,8 @@
   # };
 
   # List services that you want to enable:
+
+  services.tailscale.enable = true;
 
   # Keyboard remaping
   services.evremap = {

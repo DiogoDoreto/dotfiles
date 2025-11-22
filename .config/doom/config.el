@@ -411,8 +411,8 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
   (setq elfeed-protocol-enabled-protocols '(fever))
   (setq elfeed-protocol-fever-update-unread-only nil)
   (setq elfeed-protocol-fever-fetch-category-as-tag t)
-  (setq elfeed-protocol-feeds '(("fever+http://admin@freshrss.dogdot.home"
-                                 :api-url "http://freshrss.dogdot.home/api/fever.php"
+  (setq elfeed-protocol-feeds '(("fever+https://admin@freshrss.local.doreto.com.br"
+                                 :api-url "https://freshrss.local.doreto.com.br/api/fever.php"
                                  :password "freshrss")))
   (elfeed-protocol-enable))
 
