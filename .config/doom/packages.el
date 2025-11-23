@@ -43,6 +43,9 @@
 
 (package! combobulate :pin "17c71802eed2df1a6b25199784806da6763fb90c")
 
+;; remove when fixed: https://github.com/doomemacs/doomemacs/issues/8585
+(package! nixos-options :pin "053a2d5110ce05b7f99bcc2ac4804b70cbe87916")
+
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or
 ;; use 'M-x doom/reload'.

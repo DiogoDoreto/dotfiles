@@ -445,3 +445,8 @@ Saves to a temp file and puts the filename in the kill ring."
       (insert data))
     (kill-new filename)
     (message filename)))
+
+;; remove when fixed: https://github.com/doomemacs/doomemacs/issues/8585
+(advice-add #'+nix/lookup-option :before
+            (lambda (&rest _args)
+              (require 'nixos-options)))
