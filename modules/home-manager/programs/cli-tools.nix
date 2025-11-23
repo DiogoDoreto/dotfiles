@@ -21,7 +21,8 @@ in
       eza # ls replacement
       htop
       libnotify
-      nil # nix lsp server
+      nixd # nix lsp server
+      nixfmt
       p7zip
       tldr
       unzip
