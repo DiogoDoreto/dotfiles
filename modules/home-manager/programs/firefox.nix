@@ -1,10 +1,16 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
 let
   cfg = config.dog.programs.firefox;
-in {
+in
+{
   options.dog.programs.firefox = {
     enable = mkEnableOption "Firefox";
   };
@@ -23,8 +29,26 @@ in {
         id = 0;
         search = {
           force = true;
-          default = "ddg";
-          privateDefault = "ddg";
+          default = "searxng";
+          privateDefault = "searxng";
+          engines = {
+            searxng = {
+              name = "SearXNG";
+              definedAliases = [ "@s" ];
+              urls = [
+                {
+                  template = "https://search.local.doreto.com.br";
+                  method = "POST";
+                  params = [
+                    {
+                      name = "q";
+                      value = "{searchTerms}";
+                    }
+                  ];
+                }
+              ];
+            };
+          };
         };
         containersForce = true;
         containers = {
@@ -66,10 +90,13 @@ in {
           "browser.ctrlTab.sortByRecentlyUsed" = true;
           "browser.newtabpage.activity-stream.section.highlights.includePocket" = false;
           "browser.newtabpage.activity-stream.showSponsoredTopSites" = false;
-          "browser.newtabpage.blocked" = "{\"mZmevP23jfB3rScn/QCWnw==\":1,\"26UbzFJ7qT9/4DhodHKA1Q==\":1,\"4gPpjkxgZzXPVtuEoAL9Ig==\":1,\"eV8/WsSLxHadrTL1gAxhug==\":1,\"gLv0ja2RYVgxKdp0I5qwvA==\":1,\"T9nJot5PurhJSy8n038xGA==\":1}";
-          "browser.newtabpage.pinned" = "[]";
+          "browser.newtabpage.blocked" =
+            "{\"mZmevP23jfB3rScn/QCWnw==\":1,\"26UbzFJ7qT9/4DhodHKA1Q==\":1,\"4gPpjkxgZzXPVtuEoAL9Ig==\":1,\"eV8/WsSLxHadrTL1gAxhug==\":1,\"gLv0ja2RYVgxKdp0I5qwvA==\":1,\"T9nJot5PurhJSy8n038xGA==\":1}";
+          "browser.newtabpage.pinned" =
+            "[{\"url\":\"https://search.nixos.org/packages?channel=unstable&\",\"label\":\"Nix Packages\"}]";
           "browser.places.importBookmarksHTML" = false;
-          "browser.uiCustomization.state" = "{\"placements\":{\"widget-overflow-fixed-list\":[\"save-to-pocket-button\",\"fxa-toolbar-menu-button\"],\"unified-extensions-area\":[\"_testpilot-containers-browser-action\",\"_d7742d87-e61d-4b78-b8a1-b469842139fa_-browser-action\",\"ublock0_raymondhill_net-browser-action\",\"jid1-mnnxcxisbpnsxq_jetpack-browser-action\"],\"nav-bar\":[\"back-button\",\"forward-button\",\"stop-reload-button\",\"customizableui-special-spring1\",\"urlbar-container\",\"customizableui-special-spring2\",\"downloads-button\",\"unified-extensions-button\",\"jid0-adyhmvsp91nuo8prv0mn2vkeb84_jetpack-browser-action\"],\"toolbar-menubar\":[\"menubar-items\"],\"TabsToolbar\":[\"tabbrowser-tabs\",\"new-tab-button\",\"alltabs-button\"],\"vertical-tabs\":[],\"PersonalToolbar\":[\"personal-bookmarks\"]},\"seen\":[\"save-to-pocket-button\",\"developer-button\",\"_testpilot-containers-browser-action\",\"jid1-mnnxcxisbpnsxq_jetpack-browser-action\",\"jid0-adyhmvsp91nuo8prv0mn2vkeb84_jetpack-browser-action\",\"ublock0_raymondhill_net-browser-action\",\"_d7742d87-e61d-4b78-b8a1-b469842139fa_-browser-action\"],\"dirtyAreaCache\":[\"nav-bar\",\"PersonalToolbar\",\"unified-extensions-area\",\"toolbar-menubar\",\"TabsToolbar\",\"widget-overflow-fixed-list\",\"vertical-tabs\"],\"currentVersion\":20,\"newElementCount\":2}";
+          "browser.uiCustomization.state" =
+            "{\"placements\":{\"widget-overflow-fixed-list\":[\"save-to-pocket-button\",\"fxa-toolbar-menu-button\"],\"unified-extensions-area\":[\"_testpilot-containers-browser-action\",\"_d7742d87-e61d-4b78-b8a1-b469842139fa_-browser-action\",\"ublock0_raymondhill_net-browser-action\",\"jid1-mnnxcxisbpnsxq_jetpack-browser-action\"],\"nav-bar\":[\"back-button\",\"forward-button\",\"stop-reload-button\",\"customizableui-special-spring1\",\"urlbar-container\",\"customizableui-special-spring2\",\"downloads-button\",\"unified-extensions-button\",\"jid0-adyhmvsp91nuo8prv0mn2vkeb84_jetpack-browser-action\"],\"toolbar-menubar\":[\"menubar-items\"],\"TabsToolbar\":[\"tabbrowser-tabs\",\"new-tab-button\",\"alltabs-button\"],\"vertical-tabs\":[],\"PersonalToolbar\":[\"personal-bookmarks\"]},\"seen\":[\"save-to-pocket-button\",\"developer-button\",\"_testpilot-containers-browser-action\",\"jid1-mnnxcxisbpnsxq_jetpack-browser-action\",\"jid0-adyhmvsp91nuo8prv0mn2vkeb84_jetpack-browser-action\",\"ublock0_raymondhill_net-browser-action\",\"_d7742d87-e61d-4b78-b8a1-b469842139fa_-browser-action\"],\"dirtyAreaCache\":[\"nav-bar\",\"PersonalToolbar\",\"unified-extensions-area\",\"toolbar-menubar\",\"TabsToolbar\",\"widget-overflow-fixed-list\",\"vertical-tabs\"],\"currentVersion\":20,\"newElementCount\":2}";
           "browser.urlbar.showSearchSuggestionsFirst" = false;
           "datareporting.healthreport.uploadEnabled" = false;
           "extensions.formautofill.creditCards.enabled" = false;
