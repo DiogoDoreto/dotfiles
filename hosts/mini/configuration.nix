@@ -267,6 +267,8 @@
         "html"
         "json"
       ];
+      ui.query_in_title = true;
+      ui.infinite_scroll = true;
     };
   };
 
