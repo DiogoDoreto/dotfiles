@@ -109,6 +109,7 @@
     git.enable = true;
     firefox.enable = true;
     niri.enable = true;
+    plasma-fix-taskbar-icons.enable = true;
     wezterm.enable = true;
 
     emacs = {

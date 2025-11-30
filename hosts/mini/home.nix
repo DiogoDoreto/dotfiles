@@ -60,6 +60,7 @@
     firefox.enable = true;
     ghostty.enable = true;
     git.enable = true;
+    plasma-fix-taskbar-icons.enable = true;
   };
 
   services.podman = {
