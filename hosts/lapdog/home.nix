@@ -91,6 +91,13 @@
           addKeysToAgent = "yes";
           identityFile = "~/.ssh/id_ed25519_dogdot";
         };
+        "dogdot-ts" = {
+          hostname = "100.117.142.110";
+          port = 17098;
+          user = "root";
+          addKeysToAgent = "yes";
+          identityFile = "~/.ssh/id_ed25519_dogdot";
+        };
         "chungus" = {
           hostname = "192.168.0.3";
           user = "dog";
