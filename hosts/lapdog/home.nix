@@ -34,6 +34,7 @@
       kdePackages.kdenlive
       keepassxc
       krita
+      libreoffice
       nodejs_24
       obs-studio
       pinentry-emacs
