@@ -39,6 +39,7 @@
       obs-studio
       pinentry-emacs
       pods # podman GUI
+      pureref
       ungoogled-chromium
       onedrivegui
     ];

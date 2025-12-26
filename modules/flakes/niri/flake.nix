@@ -20,8 +20,8 @@
         niri.overlays.niri
       ];
       homeModules = [
-        dankMaterialShell.homeModules.dankMaterialShell.default
-        dankMaterialShell.homeModules.dankMaterialShell.niri
+        dankMaterialShell.homeModules.dank-material-shell
+        dankMaterialShell.homeModules.niri
         ./home-niri.nix
       ];
       nixosModules = [

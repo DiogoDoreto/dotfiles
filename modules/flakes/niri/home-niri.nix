@@ -17,7 +17,7 @@ in
 
   config = mkIf cfg.enable {
     programs = {
-      dankMaterialShell = {
+      dank-material-shell = {
         enable = true;
         niri.enableKeybinds = true;
         niri.enableSpawn = true;
