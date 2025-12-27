@@ -31,6 +31,7 @@
       })
       blender
       clonehero
+      freecad
       kdePackages.kdenlive
       keepassxc
       krita
