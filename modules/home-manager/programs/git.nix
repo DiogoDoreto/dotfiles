@@ -53,7 +53,6 @@ in
         # AI tools
         "AGENTS.md"
         "CRUSH.md"
-        ".aider*"
       ];
     };
   };

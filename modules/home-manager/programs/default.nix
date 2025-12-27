@@ -2,7 +2,6 @@
 
 {
   imports = [
-    ./aider.nix
     ./blueman.nix
     ./cli-tools.nix
     ./emacs.nix

@@ -6,8 +6,6 @@
 
 (package! copilot :pin "6a2ad80489b8a0d021df95293eb7ac370aea140b")
 
-(package! aidermacs :pin "c6cb54d58aa5434ee39db77fde3945e078559f00")
-
 (package! ai-code-interface
   :recipe (:host github :repo "tninja/ai-code-interface.el")
   :pin "133bcb5b9cbbbde402d69e90788dfcabbeaf5b3c")

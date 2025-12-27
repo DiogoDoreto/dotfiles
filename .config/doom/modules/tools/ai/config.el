@@ -114,11 +114,6 @@
                   (message "Github's enabled models: %S" (dd--gh-parse-enabled-models data)))))))
 
 
-(use-package! aidermacs
-  :defer t
-  :config
-  (setq aidermacs-backend 'vterm))
-
 (use-package! copilot
   ;; :hook (prog-mode . copilot-mode)
   :bind (:map copilot-completion-map
@@ -150,8 +145,6 @@
        :desc "model=gpt-4o"            "3" (cmd! (setq gptel-model 'gpt-4o))
        :desc "model=claude-sonnet-4.5" "4" (cmd! (setq gptel-model 'claude-sonnet-4.5))
        :desc "model=grok-code-fast-1"  "5" (cmd! (setq gptel-model 'grok-code-fast-1))
-
-       :desc "Aider" "d" #'aidermacs-transient-menu
 
        :desc "CLI Menu" "SPC" #'ai-code-menu
 
