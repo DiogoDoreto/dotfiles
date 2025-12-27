@@ -47,7 +47,11 @@
 
 (map! :map vterm-mode-map
       :ni "C-<escape>" #'vterm-send-escape
-      :desc "paste" :ni "C-v" (cmd! (vterm-send-string (current-kill 0) t)))
+      :desc "paste" :ni "C-v" (cmd! (vterm-send-string (current-kill 0) t))
+      :desc "shift-return" :ni "S-RET" (cmd! (vterm-send-key "\C-m" t))
+      :desc "shift-return" :ni "S-<return>" (cmd! (vterm-send-key "\C-m" t))
+      :desc "alt-return" :ni "M-RET" (cmd! (vterm-send-key "\C-m" nil t))
+      :desc "alt-return" :ni "M-<return>" (cmd! (vterm-send-key "\C-m" nil t)))
 
 ;;; Compilation
 

@@ -7,3 +7,12 @@
 (package! copilot :pin "6a2ad80489b8a0d021df95293eb7ac370aea140b")
 
 (package! aidermacs :pin "c6cb54d58aa5434ee39db77fde3945e078559f00")
+
+(package! ai-code-interface
+  :recipe (:host github :repo "tninja/ai-code-interface.el")
+  :pin "133bcb5b9cbbbde402d69e90788dfcabbeaf5b3c")
+
+;; ai-code-interface dependency:
+(package! claude-code
+  :recipe (:host github :repo "stevemolitor/claude-code.el")
+  :pin "4a9914bd4161eb43f489820f9174c62390e5adc8")

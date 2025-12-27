@@ -125,6 +125,13 @@
               ("C-i" . 'copilot-accept-completion)
               ("M-i" . 'copilot-accept-completion-by-word)))
 
+(use-package! ai-code-interface
+  :config
+  (advice-add #'ai-code-upgrade-backend :before (lambda () (user-error "Use nix to upgrade!")))
+
+  (ai-code-set-backend 'github-copilot-cli)
+  (setq claude-code-terminal-backend 'vterm)) ; Send newlines on M-Return
+
 (map! :leader
       (:prefix ("l" . "LLM")
        :desc "Open chat buffer"  "o" #'gptel
@@ -145,6 +152,8 @@
        :desc "model=grok-code-fast-1"  "5" (cmd! (setq gptel-model 'grok-code-fast-1))
 
        :desc "Aider" "d" #'aidermacs-transient-menu
+
+       :desc "CLI Menu" "SPC" #'ai-code-menu
 
        :desc "Whisper Run"       "w" #'whisper-run
        :desc "Whisper File"      "W" #'whisper-file))
