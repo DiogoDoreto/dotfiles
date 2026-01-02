@@ -1,14 +1,14 @@
 ;; -*- lexical-binding: t; no-byte-compile: t; -*-
 
-(package! gptel :pin "d14d8c12f33829ea1615ac5316d7534d4175fe23")
+(package! gptel :pin "93d58e4cce68c8f603562904f77a3e329eaf5a24")
 
-(package! mcp :pin "6132ffc05e8ba5ac188b7f6b54a0fd3192f110d1")
+(package! mcp :pin "125e0a4478ff1404880ea4e593f5e4ff0122cb83")
 
-(package! copilot :pin "6a2ad80489b8a0d021df95293eb7ac370aea140b")
+(package! copilot :pin "7ee4758bb748beac7d29e62de5d2e752ebafb858")
 
-(package! ai-code-interface
+(package! ai-code
   :recipe (:host github :repo "tninja/ai-code-interface.el")
-  :pin "133bcb5b9cbbbde402d69e90788dfcabbeaf5b3c")
+  :pin "332978dec4eae9211030eb6328616014d653225b")
 
 ;; ai-code-interface dependency:
 (package! claude-code

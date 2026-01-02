@@ -120,7 +120,7 @@
               ("C-i" . 'copilot-accept-completion)
               ("M-i" . 'copilot-accept-completion-by-word)))
 
-(use-package! ai-code-interface
+(use-package! ai-code
   :config
   (advice-add #'ai-code-upgrade-backend :before (lambda () (user-error "Use nix to upgrade!")))
 

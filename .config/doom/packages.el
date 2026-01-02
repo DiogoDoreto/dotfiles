@@ -7,9 +7,9 @@
 (package! tts
   :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
-(package! modus-themes :pin "16c2c667c4e65a242ca69bcd536b9a902dabae6f")
+(package! modus-themes :pin "3247c5d0f7f745f51aaf814fa6abcb621b3e7b02")
 
-(package! ef-themes :pin "91d80689e3befeb5bb9b38d7c75ee4c4756faff0")
+(package! ef-themes :pin "f92e321955a2c31feb89deaa91e9cb783c1573db")
 
 (package! dts-mode :pin "cd1847d0e7162c1ecab772c6ca7ef4f3c5d2214d")
 
@@ -17,17 +17,17 @@
 
 (package! magit-delta :pin "5fc7dbddcfacfe46d3fd876172ad02a9ab6ac616")
 
-(package! git-link :pin "e4cfed05d110a6af07543d069f12e1894f553c2e")
+(package! git-link :pin "12caebc0982d3401a0b74ccddc2d5a651122de8a")
 
-(package! fancy-compilation :pin "51f6945c84e6d0e09d45698f1b9056e73fd79fa9")
+(package! fancy-compilation :pin "502d36e0fb4c4daedc16ea5d732dcbc8285d6fb1")
 
 (package! info-rename-buffer :pin "87fb263b18717538fd04878e3358e1e720415db8")
 
 (package! ct :pin "e3d082136e06c0ec777ab032bec5a785239f412b") ;; Color Tools
 
-(package! devdocs-browser :pin "e6ccbaafc795e8be54762b2e930ada2967cec08b")
+(package! devdocs-browser :pin "f6c3b96748cb4e6d3022a2cece15d0d0fc437cd6")
 
-(package! daemons :pin "7b08ce315c0be901d88c1099483f9607c653712e")
+(package! daemons :pin "4900fe1ec64ab339da29082e8fd4545fc6e48ec4")
 
 (package! org-block-capf
   :recipe (:host github :repo "xenodium/org-block-capf")
@@ -44,7 +44,7 @@
 (package! combobulate :pin "17c71802eed2df1a6b25199784806da6763fb90c")
 
 ;; remove when fixed: https://github.com/doomemacs/doomemacs/issues/8585
-(package! nixos-options :pin "053a2d5110ce05b7f99bcc2ac4804b70cbe87916")
+;; (package! nixos-options :pin "053a2d5110ce05b7f99bcc2ac4804b70cbe87916")
 
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or

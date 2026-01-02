@@ -36,9 +36,8 @@
   (let ((hour (string-to-number (format-time-string "%H"))))
     (or (>= hour 20) (< hour 8))))
 
-;; for me, modus themes look great on OLED screens
 (setq modus-themes-to-toggle (if (string= "lapdog" (system-name))
-                                 '(modus-vivendi-deuteranopia modus-operandi)
+                                 '(ef-dark modus-operandi)
                                '(ef-maris-dark ef-day)))
 
 (map! :leader :desc "Theme" :n "t t" #'modus-themes-toggle)
@@ -61,6 +60,10 @@
         (1 . (light 1.4))
         (2 . (light 1.3))
         (t . (regular 1.15))))
+
+(when (string= "lapdog" (system-name))
+  (setq ef-dark-palette-overrides
+        '((bg-main "#000000")))) ; Make use of that deep OLED black
 
 (after! tree-sitter
   (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
