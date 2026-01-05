@@ -29,11 +29,10 @@ in
           harfbuzz_features = { 'calt=0', 'clig=0', 'liga=0' },
         }
         config.color_scheme = "Brewer (base16)"
-        config.font_size = 10
+        config.font_size = 12
         config.line_height = 1.1
         config.default_prog = { "${lib.getExe pkgs.fish}", "-l" }
-        config.window_background_opacity = 0.95
-        config.window_decorations = "NONE"
+        config.window_background_opacity = 0.9
         config.window_padding = {
           left = "1cell",
           right = "1cell",
