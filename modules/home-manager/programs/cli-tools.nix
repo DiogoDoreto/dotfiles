@@ -23,6 +23,7 @@ in
       libnotify
       nixd # nix lsp server
       nixfmt
+      nix-prefetch-git
       p7zip
       tldr
       unzip
