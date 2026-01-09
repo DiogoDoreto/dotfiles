@@ -4,6 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    musnix = {
+      url = "github:musnix/musnix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nur = {
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -31,7 +35,6 @@
     {
       nixpkgs,
       home-manager,
-      nixos-hardware,
       my-niri,
       ...
     }@inputs:
@@ -65,11 +68,14 @@
       nixos-modules = [
         (import ../../nix-config.nix nixpkgs)
         home-manager.nixosModules.home-manager
+        inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
+        inputs.musnix.nixosModules.musnix
         {
           home-manager.extraSpecialArgs = specialArgs;
           home-manager.sharedModules = home-manager-modules;
           nixpkgs = { inherit overlays; };
         }
+        ./configuration.nix
       ]
       ++ my-niri.outputs.nixosModules;
       buildHomeFromNixos =
@@ -96,10 +102,7 @@
       nixosConfigurations = {
         lapdog = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
-          modules = nixos-modules ++ [
-            nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
-            ./configuration.nix
-          ];
+          modules = nixos-modules;
         };
       };
     };
