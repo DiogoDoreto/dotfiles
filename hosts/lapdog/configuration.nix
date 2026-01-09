@@ -143,6 +143,8 @@
 
   # List services that you want to enable:
 
+  services.fwupd.enable = true;
+
   services.tailscale.enable = true;
 
   # Keyboard remaping
