@@ -158,6 +158,8 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
                         "~/Nextcloud/Notes/"
                       "~/org/"))
 
+(setq org-roam-directory (expand-file-name "roam/" org-directory))
+
 (map! :map evil-org-mode-map :n "z g" #'+org/play-gif-at-point)
 
 (defun dd/scan-org-agenda-files ()
