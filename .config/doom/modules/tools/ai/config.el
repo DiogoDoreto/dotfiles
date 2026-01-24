@@ -120,6 +120,18 @@
               ("C-i" . 'copilot-accept-completion)
               ("M-i" . 'copilot-accept-completion-by-word)))
 
+(use-package! agent-shell
+  :defer t
+  :after acp
+  :config
+  (setq agent-shell-preferred-agent-config (agent-shell-github-make-copilot-config))
+
+  ;; Evil state-specific RET behavior: insert mode = newline, normal mode = send
+  (evil-define-key 'insert agent-shell-mode-map (kbd "RET") #'newline)
+  (evil-define-key 'normal agent-shell-mode-map (kbd "RET") #'comint-send-input)
+  (map! :localleader :map agent-shell-mode-map
+        :desc "Set Model" "m" #'agent-shell-set-session-model))
+
 (use-package! ai-code
   :config
   (advice-add #'ai-code-upgrade-backend :before (lambda () (user-error "Use nix to upgrade!")))
@@ -136,6 +148,8 @@
        :desc "Abort"             "x" #'gptel-abort
        :desc "Rewrite region" :v "r" #'gptel-rewrite
        :desc "Setup File System MCP" "f" #'+mcp/prepare-filesystem
+
+       :desc "Agent shell" "s" #'agent-shell
 
        :desc "Buffer Copilot"    "i" #'copilot-mode
        :desc "Global Copilot"    "I" #'global-copilot-mode
