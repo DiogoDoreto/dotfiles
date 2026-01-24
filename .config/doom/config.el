@@ -254,6 +254,7 @@ Based on the code of `doom/bump-package-at-point'"
 ;;; Extra config files
 
 (load! "dd/common-lisp")
+(load! "dd/dired")
 (load! "dd/elisp")
 (load! "dd/javascript")
 (load! "dd/lsp")
