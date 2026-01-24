@@ -2,7 +2,12 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   imports = [
@@ -216,6 +221,41 @@
     ];
   };
 
+  users.groups.authentik = { };
+  users.users.authentik = {
+    isSystemUser = true;
+    group = "authentik";
+  };
+  systemd.services.authentik-secret-setup = {
+    description = "Generate secret key for Authentik";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "authentik-secret-setup" ''
+        if [ ! -f /etc/secrets/authentik/env ]; then
+          mkdir -p /etc/secrets/authentik
+          new_secret=$(${pkgs.openssl}/bin/openssl rand -base64 60)
+          echo "AUTHENTIK_SECRET_KEY=$new_secret" > /etc/secrets/authentik/env
+          chmod 600 /etc/secrets/authentik/env
+        fi
+      '';
+      User = "root";
+      Group = "root";
+    };
+    wantedBy = [ "authentik.service" ];
+  };
+  systemd.services.authentik = {
+    after = lib.mkAfter [ "authentik-secret-setup.service" ];
+    wants = lib.mkAfter [ "authentik-secret-setup.service" ];
+  };
+  services.authentik = {
+    enable = true;
+    environmentFile = "/etc/secrets/authentik/env";
+    settings = {
+      disable_startup_analytics = true;
+      avatars = "initials";
+    };
+  };
+
   services.nextcloud = {
     enable = true;
     package = pkgs.nextcloud31;
@@ -270,6 +310,15 @@
       ui.query_in_title = true;
       ui.infinite_scroll = true;
     };
+  };
+  systemd.services.searx-restarter = {
+    description = "Restarts searx every night";
+    serviceConfig = {
+      Type = "oneshot";
+      User = "root";
+    };
+    script = "${pkgs.systemd}/bin/systemctl try-restart searx.service";
+    startAt = "*-*-* 04:00:00";
   };
 
   # Enable the OpenSSH daemon.
@@ -346,6 +395,15 @@
         # Grab and trust /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
         extraConfig = ''
           tls internal
+        '';
+      };
+      "auth.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy https://localhost:9443 {
+            transport http {
+              tls_insecure_skip_verify
+            }
+          }
         '';
       };
       "nextcloud.local.doreto.com.br" = {

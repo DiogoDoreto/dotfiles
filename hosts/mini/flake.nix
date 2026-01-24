@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    authentik-nix.url = "github:nix-community/authentik-nix";
     nur = {
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -88,6 +89,7 @@
           inherit system specialArgs;
           modules = nixos-modules ++ [
             nixos-hardware.nixosModules.common-cpu-intel
+            inputs.authentik-nix.nixosModules.default
             ./configuration.nix
           ];
         };
