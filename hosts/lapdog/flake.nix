@@ -28,16 +28,15 @@
       url = "../../modules/flakes/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    my-handy = {
+      url = "../../modules/flakes/handy";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-ai-tools.url = "github:numtide/nix-ai-tools";
   };
 
   outputs =
-    {
-      nixpkgs,
-      home-manager,
-      my-niri,
-      ...
-    }@inputs:
+    { nixpkgs, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
       overlays = [
@@ -46,9 +45,10 @@
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
           inherit (inputs.nix-ai-tools.packages.${system}) copilot-cli crush;
+          inherit (inputs.my-handy.packages.${system}) handy;
         })
       ]
-      ++ my-niri.outputs.overlays;
+      ++ inputs.my-niri.outputs.overlays;
       pkgs-config = {
         inherit system overlays;
         config = {
@@ -64,7 +64,7 @@
       home-manager-modules = [
         ../../modules/home-manager
       ]
-      ++ my-niri.outputs.homeModules;
+      ++ inputs.my-niri.outputs.homeModules;
       nixos-modules = [
         (import ../../nix-config.nix nixpkgs)
         home-manager.nixosModules.home-manager
@@ -77,7 +77,7 @@
         }
         ./configuration.nix
       ]
-      ++ my-niri.outputs.nixosModules;
+      ++ inputs.my-niri.outputs.nixosModules;
       buildHomeFromNixos =
         user: entryModule:
         home-manager.lib.homeManagerConfiguration {
