@@ -72,3 +72,7 @@ popup menu will list all available actions for selection."
 (after! (lsp-mode vertico vertico-posframe)
   (add-to-list 'vertico-multiform-commands '(consult-lsp-file-symbols buffer (:not posframe)))
   (add-to-list 'vertico-multiform-commands '(consult-lsp-symbols buffer (:not posframe))))
+
+(after! lsp-json
+  (map-put! lsp-json--schema-associations :/.prettierrc ["https://www.schemastore.org/prettierrc.json"])
+  (map-put! lsp-json--schema-associations :/.prettierrc.json ["https://www.schemastore.org/prettierrc.json"]))
