@@ -1,0 +1,23 @@
+# -*- mode: snippet -*-
+# name: Nix Module
+# key: __nix-module
+# condition: t
+# --
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  cfg = config.$1;
+in
+{
+  options.$1 = {
+    enable = lib.mkEnableOption "${1:$(capitalize (car (reverse (split-string yas-text "\\\\."))))}";
+  };
+
+  config = lib.mkIf cfg.enable {
+    $0
+  };
+}
