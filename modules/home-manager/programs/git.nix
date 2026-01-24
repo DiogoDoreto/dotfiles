@@ -51,6 +51,7 @@ in
         "yarn-debug.log*"
         "yarn-error.log*"
         # AI tools
+        ".agent-shell/"
         "AGENTS.md"
         "CRUSH.md"
       ];
