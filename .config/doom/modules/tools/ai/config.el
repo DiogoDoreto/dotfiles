@@ -76,7 +76,7 @@
                 qwen-3-coder-480b)))
 
   (setq gptel--system-message (alist-get 'assistant gptel-directives)
-        gptel-model 'grok-code-fast-1
+        gptel-model 'gpt-5-mini
         gptel-backend (gptel-make-gh-copilot "Copilot")
         gptel-default-mode 'org-mode
         gptel-confirm-tool-calls nil)
@@ -154,11 +154,10 @@
        :desc "Buffer Copilot"    "i" #'copilot-mode
        :desc "Global Copilot"    "I" #'global-copilot-mode
 
-       :desc "model=gpt-4.1"           "1" (cmd! (setq gptel-model 'gpt-4.1))
-       :desc "model=gpt-5"             "2" (cmd! (setq gptel-model 'gpt-5))
-       :desc "model=gpt-4o"            "3" (cmd! (setq gptel-model 'gpt-4o))
+       :desc "model=gpt-5-mini"        "1" (cmd! (setq gptel-model 'gpt-5-mini))
+       :desc "model=gpt-5.2"           "2" (cmd! (setq gptel-model 'gpt-5.2))
+       :desc "model=gpt-5.1-codex"     "3" (cmd! (setq gptel-model 'gpt-5.1-codex))
        :desc "model=claude-sonnet-4.5" "4" (cmd! (setq gptel-model 'claude-sonnet-4.5))
-       :desc "model=grok-code-fast-1"  "5" (cmd! (setq gptel-model 'grok-code-fast-1))
 
        :desc "CLI Menu" "SPC" #'ai-code-menu
 
