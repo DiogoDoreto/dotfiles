@@ -263,7 +263,8 @@ Based on the code of `doom/bump-package-at-point'"
 
 (pcase (system-name)
   ("dogdot" (load! "dd/host-dogdot"))
-  ("lapdog" (load! "dd/host-lapdog")))
+  ("lapdog" (load! "dd/host-lapdog"))
+  ("DT-5RHWB24" (load! "dd/dunst")))
 
 ;;; General mappings
 
