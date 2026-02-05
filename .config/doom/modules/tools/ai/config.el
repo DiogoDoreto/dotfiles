@@ -133,13 +133,6 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
   (map! :localleader :map agent-shell-mode-map
         :desc "Set Model" "m" #'agent-shell-set-session-model))
 
-(use-package! ai-code
-  :config
-  (advice-add #'ai-code-upgrade-backend :before (lambda () (user-error "Use nix to upgrade!")))
-
-  (ai-code-set-backend 'github-copilot-cli)
-  (setq claude-code-terminal-backend 'vterm)) ; Send newlines on M-Return
-
 (map! :leader
       (:prefix ("l" . "LLM")
        :desc "Open chat buffer"  "o" #'gptel
@@ -159,8 +152,6 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
        :desc "model=gpt-5.2"           "2" (cmd! (setq gptel-model 'gpt-5.2))
        :desc "model=gpt-5.1-codex"     "3" (cmd! (setq gptel-model 'gpt-5.1-codex))
        :desc "model=claude-sonnet-4.5" "4" (cmd! (setq gptel-model 'claude-sonnet-4.5))
-
-       :desc "CLI Menu" "SPC" #'ai-code-menu
 
        :desc "Whisper Run"       "w" #'whisper-run
        :desc "Whisper File"      "W" #'whisper-file))
