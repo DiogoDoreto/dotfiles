@@ -8,7 +8,7 @@
   home = {
     packages = with pkgs; [
       (callPackage ./bubblewrap-ai.nix {
-        package = copilot-cli;
+        package = llm-agents.copilot-cli;
         extraWritablePaths = [
           "~/.copilot/"
           "~/projects/"
@@ -19,14 +19,11 @@
         ];
       })
       (callPackage ./bubblewrap-ai.nix {
-        package = crush;
+        package = llm-agents.opencode;
         extraWritablePaths = [
-          "~/.config/crush/"
-          "~/.local/share/crush/"
+          "~/.config/opencode/"
+          "~/.local/share/opencode/"
           "~/projects/"
-        ];
-        extraCommandFlags = [
-          "--yolo"
         ];
       })
       blender

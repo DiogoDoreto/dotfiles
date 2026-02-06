@@ -32,7 +32,7 @@
       url = "../../modules/flakes/handy";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nix-ai-tools.url = "github:numtide/nix-ai-tools";
+    llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
   outputs =
@@ -40,11 +40,11 @@
     let
       system = "x86_64-linux";
       overlays = [
+        inputs.llm-agents.overlays.default
         inputs.nur.overlays.default
         inputs.plasma-toggle-tablet-mode.overlays.${system}.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
-          inherit (inputs.nix-ai-tools.packages.${system}) copilot-cli crush;
           inherit (inputs.my-handy.packages.${system}) handy;
         })
       ]

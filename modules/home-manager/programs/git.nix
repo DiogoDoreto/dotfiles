@@ -53,7 +53,6 @@ in
         # AI tools
         ".agent-shell/"
         "AGENTS.md"
-        "CRUSH.md"
       ];
     };
   };
