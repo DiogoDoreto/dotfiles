@@ -317,6 +317,9 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
   (let ((host (cadr (string-split (car (elfeed-protocol-feed-list)) "+"))))
     (elfeed-protocol-fever-reinit host)))
 
+(map! :map elfeed-search-mode-map
+      :desc "Toggle read tag" "<tab>" (cmd! (elfeed-search-toggle-all 'unread)))
+
 (map! :localleader :map elfeed-search-mode-map
       :desc "Update feeds" "m" #'dd/elfeed-search-sync
       :desc "Mark read"    "r" #'elfeed-search-untag-all-unread
