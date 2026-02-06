@@ -28,10 +28,6 @@
       url = "../../modules/flakes/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    my-handy = {
-      url = "../../modules/flakes/handy";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
@@ -45,7 +41,6 @@
         inputs.plasma-toggle-tablet-mode.overlays.${system}.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
-          inherit (inputs.my-handy.packages.${system}) handy;
         })
       ]
       ++ inputs.my-niri.outputs.overlays;

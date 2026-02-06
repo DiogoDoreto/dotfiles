@@ -29,7 +29,7 @@
       blender
       clonehero
       freecad
-      handy
+      llm-agents.handy
       kdePackages.kdenlive
       keepassxc
       krita

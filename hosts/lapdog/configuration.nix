@@ -121,6 +121,8 @@
 
   programs.steam.enable = true;
 
+  programs.ydotool.enable = true;
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
