@@ -28,6 +28,10 @@
       url = "../../modules/flakes/niri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    my-kwtype = {
+      url = "../../modules/flakes/kwtype";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
@@ -37,6 +41,7 @@
       system = "x86_64-linux";
       overlays = [
         inputs.llm-agents.overlays.default
+        inputs.my-kwtype.overlays.default
         inputs.nur.overlays.default
         inputs.plasma-toggle-tablet-mode.overlays.${system}.default
         (final: prev: {

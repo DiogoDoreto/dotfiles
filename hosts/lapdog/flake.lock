@@ -142,6 +142,22 @@
         "type": "github"
       }
     },
+    "my-kwtype": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "../../modules/flakes/kwtype",
+        "type": "path"
+      },
+      "original": {
+        "path": "../../modules/flakes/kwtype",
+        "type": "path"
+      },
+      "parent": []
+    },
     "my-niri": {
       "inputs": {
         "dankMaterialShell": "dankMaterialShell",
@@ -350,6 +366,7 @@
         "home-manager": "home-manager",
         "llm-agents": "llm-agents",
         "musnix": "musnix",
+        "my-kwtype": "my-kwtype",
         "my-niri": "my-niri",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",

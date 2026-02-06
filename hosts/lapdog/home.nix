@@ -33,6 +33,7 @@
       kdePackages.kdenlive
       keepassxc
       krita
+      kwtype
       libreoffice
       nodejs_24
       obs-studio
