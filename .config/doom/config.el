@@ -321,9 +321,10 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
       :desc "Toggle read tag" "<tab>" (cmd! (elfeed-search-toggle-all 'unread)))
 
 (map! :localleader :map elfeed-search-mode-map
-      :desc "Update feeds" "m" #'dd/elfeed-search-sync
-      :desc "Mark read"    "r" #'elfeed-search-untag-all-unread
-      :desc "Mark unread"  "u" #'elfeed-search-tag-all-unread)
+      :desc "Update feeds"    "m" #'dd/elfeed-search-sync
+      :desc "Mark read"       "r" #'elfeed-search-untag-all-unread
+      :desc "Mark unread"     "u" #'elfeed-search-tag-all-unread
+      :desc "Open in browser" "o" #'elfeed-search-browse-url)
 
 (map! :localleader :map elfeed-show-mode-map
       :desc "Mark read"   "r" (cmd! (elfeed-show-untag 'unread))
