@@ -29,6 +29,7 @@
       blender
       clonehero
       freecad
+      imagemagick
       llm-agents.handy
       kdePackages.kdenlive
       keepassxc
