@@ -5,21 +5,22 @@
 # --
 {
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     utils.url = "github:numtide/flake-utils";
   };
-  outputs = { self, nixpkgs, utils }: utils.lib.eachDefaultSystem (system:
-    let
-      pkgs = nixpkgs.legacyPackages.\${system};
-    in
-    {
-      devShell = pkgs.mkShell {
-         buildInputs = with pkgs; [
-           $0
-         ];
-         shellHook = ''
-           echo "Hello, world!"
-         '';
-      };
-    }
-  );
+  outputs =
+    { nixpkgs, utils, ... }:
+    utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+      in
+      {
+        devShell = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            $0
+          ];
+        };
+      }
+    );
 }
