@@ -97,7 +97,8 @@
                     data))))
 
   (defun dd/gh-request-enabled-models ()
-    "Call Github's models API and print the model-ids that are currently enabled"
+    "Call Github's models API and print the model-ids that are currently enabled.
+Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/ai-models/supported-models#model-multipliers"
     (interactive)
     (require 'request)
     (gptel--gh-auth)
