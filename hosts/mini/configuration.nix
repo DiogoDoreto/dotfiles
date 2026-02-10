@@ -13,6 +13,7 @@
   imports = [
     ./hardware.nix # Include the results of the hardware scan.
     ./media.nix
+    ./mail-me.nix
   ];
 
   # for jellyfin-media-player
