@@ -127,10 +127,15 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
   :config
   (setq agent-shell-preferred-agent-config (agent-shell-github-make-copilot-config))
 
+  ;; from https://github.com/xenodium/agent-shell/issues/259
+  (add-hook 'agent-shell-mode-hook (lambda () (setq-local doom-real-buffer-p t)))
+
   ;; Evil state-specific RET behavior: insert mode = newline, normal mode = send
   (evil-define-key 'insert agent-shell-mode-map (kbd "RET") #'newline)
   (evil-define-key 'normal agent-shell-mode-map (kbd "RET") #'comint-send-input)
   (map! :localleader :map agent-shell-mode-map
+        :desc "Clear buffer" "c" #'agent-shell-clear-buffer
+        :desc "Set Mode" "TAB" #'agent-shell-set-session-mode
         :desc "Set Model" "m" #'agent-shell-set-session-model))
 
 (map! :leader
