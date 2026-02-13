@@ -1,5 +1,6 @@
 {
-  package ? null,
+  package,
+  wrappedBinName ? "",
   extraReadOnlyPaths ? [ ],
   extraWritablePaths ? [ ],
   extraCommandFlags ? [ ],
@@ -13,7 +14,7 @@
 assert lib.asserts.assertMsg (package != null) "The 'package' parameter must not be null";
 
 stdenv.mkDerivation (finalAttrs: {
-  pname = package.pname + "-wrapped";
+  pname = package.pname + "-bubblewrapped";
   version = package.version;
   meta = package.meta;
 
@@ -22,9 +23,24 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase =
     let
       mainProgram = package.meta.mainProgram;
+      finalBinName = if wrappedBinName != "" then wrappedBinName else mainProgram;
       bwrap = lib.getExe bubblewrap;
+      defaultReadOnlyPaths = [
+        "/usr"
+        "/bin"
+        "/lib64"
+        "/etc"
+        "/nix"
+        "/run"
+        "~/.config/git"
+      ];
+      defaultWritablePaths = [
+        # "/nix/var/nix/daemon-socket" # For package installs
+      ];
+      readOnlyPaths = defaultReadOnlyPaths ++ extraReadOnlyPaths;
+      writablePaths = defaultWritablePaths ++ extraWritablePaths;
       # based on https://github.com/numtide/nix-ai-tools/blob/main/packages/claudebox/claudebox.sh
-      wrapperScript = writeShellScript "${mainProgram}-wrapper.sh" ''
+      wrapperScript = writeShellScript "${mainProgram}-bubblewrapped.sh" ''
         # Create isolated home directory (protects real home from YOLO mode)
         fake_home=$(mktemp -d)
         at_exit() {
@@ -35,19 +51,12 @@ stdenv.mkDerivation (finalAttrs: {
         bwrap_args=(
           --dev /dev
           --proc /proc
-          --ro-bind /usr /usr
-          --ro-bind /bin /bin
-          --ro-bind /lib64 /lib64
-          --ro-bind /etc /etc
-          --ro-bind /nix /nix
-          ${lib.concatMapStrings (path: "--ro-bind ${path} ${path}\n") extraReadOnlyPaths}
-          --bind /nix/var/nix/daemon-socket /nix/var/nix/daemon-socket # For package installs
           --tmpfs /tmp
-          --bind "$fake_home" "$HOME"           # Isolated home (YOLO safety)
-          ${lib.concatMapStrings (path: "--bind ${path} ${path}\n") extraWritablePaths}
+          --bind "$fake_home" "$HOME"
+          ${lib.concatMapStrings (path: "--ro-bind ${path} ${path}\n") readOnlyPaths}
+          ${lib.concatMapStrings (path: "--bind ${path} ${path}\n") writablePaths}
           --unshare-all
           --share-net
-          --ro-bind /run /run
           --setenv HOME "$HOME"
           --setenv USER "$USER"
           --setenv PATH "$PATH"
@@ -64,6 +73,6 @@ stdenv.mkDerivation (finalAttrs: {
     in
     ''
       mkdir -p $out/bin
-      cp ${wrapperScript} $out/bin/${mainProgram}
+      cp ${wrapperScript} $out/bin/${finalBinName}
     '';
 })

@@ -8,6 +8,11 @@
   home = {
     packages = with pkgs; [
       (callPackage ./bubblewrap-ai.nix {
+        # useful to verify bwrap script
+        package = fish;
+        wrappedBinName = "ai-shell";
+      })
+      (callPackage ./bubblewrap-ai.nix {
         package = llm-agents.copilot-cli;
         extraWritablePaths = [
           "~/.copilot/"
