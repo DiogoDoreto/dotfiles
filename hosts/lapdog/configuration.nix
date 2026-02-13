@@ -80,6 +80,13 @@
     #media-session.enable = true;
   };
 
+  hardware.ipu7 = {
+    enable = true;
+    platform = "ipu7x";
+  };
+
+  hardware.enableAllFirmware = true;
+
   # Bluetooth
   hardware.bluetooth = {
     enable = true;
@@ -98,6 +105,7 @@
       "networkmanager"
       "wheel"
       "audio"
+      "video"
     ];
   };
 

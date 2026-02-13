@@ -142,6 +142,22 @@
         "type": "github"
       }
     },
+    "my-ipu7": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "../../modules/flakes/ipu7",
+        "type": "path"
+      },
+      "original": {
+        "path": "../../modules/flakes/ipu7",
+        "type": "path"
+      },
+      "parent": []
+    },
     "my-kwtype": {
       "inputs": {
         "nixpkgs": [
@@ -366,6 +382,7 @@
         "home-manager": "home-manager",
         "llm-agents": "llm-agents",
         "musnix": "musnix",
+        "my-ipu7": "my-ipu7",
         "my-kwtype": "my-kwtype",
         "my-niri": "my-niri",
         "nixos-hardware": "nixos-hardware",

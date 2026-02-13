@@ -32,6 +32,10 @@
       url = "../../modules/flakes/kwtype";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    my-ipu7 = {
+      url = "../../modules/flakes/ipu7";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
@@ -48,6 +52,7 @@
           inherit (inputs.home-manager.packages.${system}) home-manager;
         })
       ]
+      ++ inputs.my-ipu7.outputs.overlays
       ++ inputs.my-niri.outputs.overlays;
       pkgs-config = {
         inherit system overlays;
@@ -77,6 +82,7 @@
         }
         ./configuration.nix
       ]
+      ++ inputs.my-ipu7.outputs.nixosModules
       ++ inputs.my-niri.outputs.nixosModules;
       buildHomeFromNixos =
         user: entryModule:
