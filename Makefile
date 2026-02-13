@@ -1,3 +1,21 @@
+.PHONY: lapdog-build
+lapdog-build:
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Lapdog build" -- \
+	nh os build ./hosts/lapdog/
+
+.PHONY: lapdog-boot
+lapdog-boot:
+	nh os boot ./hosts/lapdog/
+
+.PHONY: lapdog-switch
+lapdog-switch:
+	nh os switch ./hosts/lapdog/
+
+.PHONY: lapdog-flake-update
+lapdog-flake-update:
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Lapdog flake update" -- \
+	nix flake update --flake ./hosts/lapdog/
+
 .PHONY: remote-mini-switch
 remote-mini-switch:
 	nh os switch --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/
