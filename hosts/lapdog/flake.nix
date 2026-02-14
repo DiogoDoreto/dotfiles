@@ -16,10 +16,6 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    plasma-toggle-tablet-mode = {
-      url = "../../scripts/plasma-toggle-tablet-mode";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     doomemacs = {
       url = "github:doomemacs/doomemacs";
       flake = false;
@@ -47,7 +43,6 @@
         inputs.llm-agents.overlays.default
         inputs.my-kwtype.overlays.default
         inputs.nur.overlays.default
-        inputs.plasma-toggle-tablet-mode.overlays.${system}.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
         })

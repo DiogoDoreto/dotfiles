@@ -132,17 +132,6 @@
       enable = true;
       doom.init.lang.common-lisp.enable = true;
     };
-
-    plasma-toggle-tablet-mode = {
-      enable = true;
-      devices = [
-        "AT Translated Set 2 keyboard"
-        "ELAN06D5:00 04F3:32B7 Touchpad"
-        "TPPS/2 Elan TrackPoint"
-        "ThinkPad Extra Buttons"
-        "evremap Virtual input for /dev/input/event0"
-      ];
-    };
   };
 
   programs.gpg.enable = true;

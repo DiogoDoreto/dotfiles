@@ -12,7 +12,6 @@
     ./gromit-mpx.nix
     ./i3.nix
     ./plasma-fix-taskbar-icons.nix
-    ./plasma-toggle-tablet-mode.nix
     ./podman.nix
     ./polybar.nix
     ./rofi.nix
