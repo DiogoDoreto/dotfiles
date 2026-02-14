@@ -125,7 +125,10 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
   :defer t
   :after acp
   :config
-  (setq agent-shell-preferred-agent-config (agent-shell-github-make-copilot-config))
+  (setq agent-shell-preferred-agent-config
+        (if (string= (system-name) "DT-5RHWB24")
+            (agent-shell-github-make-copilot-config)
+          (agent-shell-opencode-make-agent-config)))
 
   ;; from https://github.com/xenodium/agent-shell/issues/259
   (add-hook 'agent-shell-mode-hook (lambda () (setq-local doom-real-buffer-p t)))
