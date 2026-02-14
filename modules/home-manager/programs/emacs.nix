@@ -149,6 +149,13 @@ let
       ai.enable = true;
     };
     lang = {
+      elixir = {
+        enable = true;
+        flags = [
+          "+lsp"
+          "+tree-sitter"
+        ];
+      };
       emacs-lisp.enable = true;
       json = {
         enable = true;
