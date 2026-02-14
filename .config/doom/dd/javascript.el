@@ -34,10 +34,10 @@
 
 ;;; After Packages
 
-(after! apheleia
+(with-eval-after-load 'apheleia
   (add-to-list 'apheleia-formatters '(eslint "apheleia-npx" "eslint_d" "--fix-to-stdout" "--stdin" "--stdin-filename" file)))
 
-(after! compile
+(with-eval-after-load 'compile
   ;; eslint errors parsing for compilation-mode
   ;; from https://github.com/Fuco1/compile-eslint/blob/master/compile-eslint.el
 
@@ -60,7 +60,7 @@
 
   (push 'eslint compilation-error-regexp-alist))
 
-(after! dape
+(with-eval-after-load 'dape
   ;; node can natively load ts files now
   (push 'typescript-ts-mode (plist-get (alist-get 'js-debug-node dape-configs) 'modes))
 
@@ -71,10 +71,10 @@
                 :args ["--test-timeout=0" "--no-file-parallelism" dape-buffer-default])
     (setf (alist-get 'js-debug-vitest dape-configs) vitest-config)))
 
-(after! lsp-eslint
+(with-eval-after-load 'lsp-eslint
   (setq lsp-eslint-run "onSave"))
 
-(after! nerd-icons
+(with-eval-after-load 'nerd-icons
   (defun dd/ensure-extension-icon (copy-from exts)
     (let ((icon (cdr (assoc-string copy-from nerd-icons-extension-icon-alist))))
       (dolist (ext exts)
@@ -84,7 +84,7 @@
   (dd/ensure-extension-icon "js" '("cjs" "mjs"))
   (dd/ensure-extension-icon "ts" '("cts" "mts")))
 
-(after! org
+(with-eval-after-load 'org
   (require 'ob-js)
 
   ;; adapted from `org-babel-execute:js'
@@ -127,6 +127,6 @@ This function is called by `org-babel-execute-src-block'."
                                      ("ts" . typescript-ts)
                                      ("typescript" . typescript-ts)))))
 
-(after! projectile
+(with-eval-after-load 'projectile
   (add-to-list 'projectile-other-file-alist '("ts" . ("spec.ts")))
   (add-to-list 'projectile-other-file-alist '("spec.ts" . ("ts"))))

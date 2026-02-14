@@ -19,7 +19,7 @@
 
 ;;; Code:
 
-(after! lsp-mode
+(with-eval-after-load 'lsp-mode
   (setq lsp-enable-file-watchers nil)
   (setq lsp-headerline-breadcrumb-enable t)
   (setq lsp-headerline-breadcrumb-segments '(symbols))
@@ -73,6 +73,6 @@ popup menu will list all available actions for selection."
   (add-to-list 'vertico-multiform-commands '(consult-lsp-file-symbols buffer (:not posframe)))
   (add-to-list 'vertico-multiform-commands '(consult-lsp-symbols buffer (:not posframe))))
 
-(after! lsp-json
+(with-eval-after-load 'lsp-json
   (map-put! lsp-json--schema-associations :/.prettierrc ["https://www.schemastore.org/prettierrc.json"])
   (map-put! lsp-json--schema-associations :/.prettierrc.json ["https://www.schemastore.org/prettierrc.json"]))

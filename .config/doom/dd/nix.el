@@ -25,7 +25,7 @@
                 ("Nix Options" "https://search.nixos.org/options?query=%s")
                 ("Nix Wiki" "https://nixos.wiki/index.php?search=%s&go=Go&fulltext=1"))))
 
-(after! nix-mode
+(with-eval-after-load 'nix-mode
   (defun +nix-extras/send-pkgs-to-nix-repl ()
     "Send `pkgs = import <nixpkgs> {}` to the active REPL."
     (interactive)

@@ -1,6 +1,6 @@
 ;;; common-lisp.el -*- lexical-binding: t; -*-
 
-(after! sly
+(with-eval-after-load 'sly
   (setq sly-complete-symbol-function #'sly-flex-completions)
 
   (setq sly-lisp-implementations

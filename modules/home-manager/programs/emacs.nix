@@ -42,7 +42,7 @@ let
 
     ;; Ensure local packages are git repositories
     ;; Ref: https://github.com/doomemacs/doomemacs/commit/8cdddd87d948cb9ba561f2861f11af6fc74567d9
-    (after! doom-straight
+    (with-eval-after-load 'doom-straight
       (setq straight-vc-use-snapshot-installation nil))
   '';
 

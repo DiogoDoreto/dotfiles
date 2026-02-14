@@ -65,7 +65,7 @@
   (setq ef-dark-palette-overrides
         '((bg-main "#000000")))) ; Make use of that deep OLED black
 
-(after! tree-sitter
+(with-eval-after-load 'tree-sitter
   (set-face-attribute 'tree-sitter-hl-face:property nil :slant 'normal)
   (set-face-attribute 'tree-sitter-hl-face:comment nil :slant 'italic))
 
@@ -82,7 +82,7 @@
 
 (setq flymake-show-diagnostics-at-end-of-line t)
 
-(after! flycheck
+(with-eval-after-load 'flycheck
   (map! (:map flycheck-mode-map
          :n "[e" #'flycheck-previous-error
          :n "]e" #'flycheck-next-error)
@@ -105,12 +105,12 @@
 
 (advice-add #'+default/search-buffer :around #'doom-set-jump-maybe-a)
 
-(after! flycheck
+(with-eval-after-load 'flycheck
   ;; `flycheck-previous-error' uses `flycheck-next-error' internaly, just one advice is needed
   (advice-add #'flycheck-next-error :around #'doom-set-jump-maybe-a)
   (advice-add #'flycheck-next-error :around #'evil-without-repeat-a))
 
-(after! avy
+(with-eval-after-load 'avy
   (advice-add #'avy-process :around #'doom-set-jump-maybe-a)
   (advice-add #'avy-process :around #'evil-without-repeat-a))
 
@@ -187,7 +187,7 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 (map! :i "C-<tab>" #'yas-expand)
 
-(after! yasnippet-capf
+(with-eval-after-load 'yasnippet-capf
   (remove-hook 'yas-minor-mode-hook #'+corfu-add-yasnippet-capf-h)
   (remove-hook 'completion-at-point-functions #'yasnippet-capf)
   (add-hook! 'yas-minor-mode-hook
@@ -223,7 +223,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
+                  (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (message "Checking last commit...")
                      (cdr (doom-call-process
@@ -332,12 +332,12 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
 
 ;;; After packages
 
-(after! corfu
+(with-eval-after-load 'corfu
   (setq +corfu-want-tab-prefer-expand-snippets nil
         +corfu-want-tab-prefer-navigating-snippets t
         +corfu-want-tab-prefer-navigating-org-tables t))
 
-(after! ibuffer
+(with-eval-after-load 'ibuffer
   ;; Update the value set by doom's :emacs/ibuffer module to increase the width
   ;; of the name column
   (setq ibuffer-formats
@@ -353,13 +353,13 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
                '(" " (vc-status 12 :left)))
            " " filename-and-process))))
 
-(after! envrc
+(with-eval-after-load 'envrc
   (advice-add 'shell-command-to-string :around #'envrc-propagate-environment))
 
-(after! good-scroll
+(with-eval-after-load 'good-scroll
   (setq good-scroll-step 20))
 
-(after! qml-mode
+(with-eval-after-load 'qml-mode
   (add-hook 'qml-mode-hook #'lsp-deferred))
 
 ;;; Use packages
