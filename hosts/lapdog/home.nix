@@ -44,6 +44,7 @@
       nodejs_24
       obs-studio
       pinentry-emacs
+      podman-compose
       pods # podman GUI
       pureref
       ungoogled-chromium
