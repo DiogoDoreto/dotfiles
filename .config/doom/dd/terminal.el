@@ -55,7 +55,7 @@
 
 ;;; Compilation
 
-(use-package! fancy-compilation
+(use-package fancy-compilation
   :commands fancy-compilation-mode
   :config
   (setq fancy-compilation-override-colors nil))

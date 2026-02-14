@@ -29,8 +29,8 @@
 
 ;;; Use Packages
 
-(use-package! jsts :defer t)
-(use-package! jsts-package-json-mode :hook (json-ts-mode-hook . jsts-package-json--maybe-activate))
+(use-package jsts :defer t)
+(use-package jsts-package-json-mode :hook (json-ts-mode-hook . jsts-package-json--maybe-activate))
 
 ;;; After Packages
 

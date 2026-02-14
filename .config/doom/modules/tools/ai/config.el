@@ -11,7 +11,7 @@
 (load! "whisper.el")
 (load! "gptel-oneshot.el")
 
-(use-package! mcp
+(use-package mcp
   :after gptel
   :config
   (setq mcp-hub-servers
@@ -28,7 +28,7 @@
           `(:command ,(car cmd) :args ,(cdr cmd)))
     (gptel-mcp-connect '("filesystem") nil t)))
 
-(use-package! gptel
+(use-package gptel
   :defer t
   :config
   (require 'gptel-integrations)
@@ -115,13 +115,13 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
                   (message "Github's enabled models: %S" (dd--gh-parse-enabled-models data)))))))
 
 
-(use-package! copilot
+(use-package copilot
   ;; :hook (prog-mode . copilot-mode)
   :bind (:map copilot-completion-map
               ("C-i" . 'copilot-accept-completion)
               ("M-i" . 'copilot-accept-completion-by-word)))
 
-(use-package! agent-shell
+(use-package agent-shell
   :defer t
   :after acp
   :config

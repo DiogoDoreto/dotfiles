@@ -148,7 +148,7 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
    nil "[ace-window]")
   (message "Using `ace-window' to display next command buffer..."))
 
-(use-package! ace-window
+(use-package ace-window
   :autoload (aw-select)
   :defer t)
 
@@ -172,9 +172,9 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 (add-hook 'org-mode-hook 'auto-fill-mode)
 
-(use-package! ol-eww :after org)
+(use-package ol-eww :after org)
 
-(use-package! org-block-capf
+(use-package org-block-capf
   :hook (org-mode-hook . org-block-capf-add-to-completion-at-point-functions))
 
 ;;; Projectile
@@ -364,39 +364,39 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
 
 ;;; Use packages
 
-(use-package! ef-themes
+(use-package ef-themes
   :after modus-themes
   :init
   (modus-themes-include-derivatives-mode 1))
 
-(use-package! tts
+(use-package tts
   :defer t
   :commands (tts-read tts-mode tts-kokoro-start-server))
 
-(use-package! magit-delta
+(use-package magit-delta
   :defer t
   :hook magit-mode)
 
-(use-package! info-rename-buffer
+(use-package info-rename-buffer
   :defer t
   :hook 'Info-selection-hook)
 
 ;; TODO fix jinx compilation when toggling jinx-mode
-;; (use-package! jinx)
+;; (use-package jinx)
 ;; (add-hook 'emacs-startup-hook #'global-jinx-mode)
 
-(use-package! ct :defer t)
+(use-package ct :defer t)
 
-(use-package! groovy-mode :defer t)
+(use-package groovy-mode :defer t)
 
-(use-package! devdocs-browser
+(use-package devdocs-browser
   :defer t
   :config
   (map! :leader "s k" #'devdocs-browser-open-in))
 
-(use-package! writegood-mode)
+(use-package writegood-mode)
 
-(use-package! hnreader
+(use-package hnreader
   :defer t
   :config
   (defun +hnreader/update-buffer (buf)
@@ -419,7 +419,7 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
     :quit nil
     :ttl nil))
 
-(use-package! elfeed-protocol
+(use-package elfeed-protocol
   :after elfeed
   :config
   (setq elfeed-search-filter "@2-weeks-ago +unread")
@@ -431,7 +431,7 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
                                  :password "freshrss")))
   (elfeed-protocol-enable))
 
-(use-package! combobulate
+(use-package combobulate
   :hook prog-mode)
 
 ;;; Random stuff...
