@@ -116,10 +116,21 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
 
 
 (use-package copilot
-  ;; :hook (prog-mode . copilot-mode)
+  :defer t
   :bind (:map copilot-completion-map
-              ("C-i" . 'copilot-accept-completion)
-              ("M-i" . 'copilot-accept-completion-by-word)))
+              ("s-<tab>" . 'copilot-accept-completion)
+              ("M-s-<tab>" . 'copilot-accept-completion-by-word)
+              ("C-s-<tab>" . 'copilot-next-completion)))
+
+(defvar-local dd/copilot-completion-enable nil
+  "Whether to automatic turn on copilot suggestions.")
+
+(add-hook
+ 'hack-local-variables-hook
+ (defun dd/maybe-enable-copilot ()
+   "Enable `copilot-mode' if `dd/copilot-completion-enable' is set to t."
+   (when dd/copilot-completion-enable
+     (copilot-mode 1))))
 
 (use-package agent-shell
   :defer t
