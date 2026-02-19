@@ -7,9 +7,9 @@
 (package! tts
   :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
-(package! modus-themes :pin "3247c5d0f7f745f51aaf814fa6abcb621b3e7b02")
+(package! modus-themes :pin "b2e0aff5edcdcb5f79a072dcba3f4c0c26ec1000")
 
-(package! ef-themes :pin "f92e321955a2c31feb89deaa91e9cb783c1573db")
+(package! ef-themes :pin "e9af6a569f2ad68710471a48ddbd30f4ee4f353c")
 
 (package! dts-mode :pin "cd1847d0e7162c1ecab772c6ca7ef4f3c5d2214d")
 
@@ -17,13 +17,13 @@
 
 (package! magit-delta :pin "5fc7dbddcfacfe46d3fd876172ad02a9ab6ac616")
 
-(package! git-link :pin "12caebc0982d3401a0b74ccddc2d5a651122de8a")
+(package! git-link :pin "d9b375f79e6071a9926bf73bba64111adfc93bf5")
 
 (package! fancy-compilation :pin "502d36e0fb4c4daedc16ea5d732dcbc8285d6fb1")
 
 (package! info-rename-buffer :pin "87fb263b18717538fd04878e3358e1e720415db8")
 
-(package! ct :pin "e3d082136e06c0ec777ab032bec5a785239f412b") ;; Color Tools
+(package! ct :pin "66fb78baf83525ca068c3ddd156ef0989a65bf9d") ;; Color Tools
 
 (package! devdocs-browser :pin "f6c3b96748cb4e6d3022a2cece15d0d0fc437cd6")
 
@@ -37,11 +37,11 @@
 
 (package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")
 
-(package! jinx :pin "e0ad6ea90e25c363a419eb5dbc378ae82252ed0a")
+(package! jinx :pin "75e8e4805fe6f4ab256bd59bec71464edbc23887")
 
 (package! elfeed-protocol :pin "4f5e77a28c501db686ac06a2ea250a7b37d5420c")
 
-(package! combobulate :pin "17c71802eed2df1a6b25199784806da6763fb90c")
+(package! combobulate :pin "38773810b5e532f25d11c6d1af02c3a8dffeacd7")
 
 ;; remove when fixed: https://github.com/doomemacs/doomemacs/issues/8585
 ;; (package! nixos-options :pin "053a2d5110ce05b7f99bcc2ac4804b70cbe87916")
