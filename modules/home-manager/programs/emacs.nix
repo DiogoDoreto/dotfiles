@@ -156,6 +156,7 @@ let
           "+tree-sitter"
         ];
       };
+      elixir-extra.enable = true;
       emacs-lisp.enable = true;
       json = {
         enable = true;
@@ -320,6 +321,8 @@ in
       "doom/snippets".source = dotfilesSymlink ".config/doom/snippets";
 
       "doom/dd".source = dotfilesSymlink ".config/doom/dd";
+
+      "doom/modules/lang/elixir-extra".source = dotfilesSymlink ".config/doom/modules/lang/elixir-extra";
 
       "doom/modules/tools/ai/packages.el".source =
         dotfilesSymlink ".config/doom/modules/tools/ai/packages.el";
