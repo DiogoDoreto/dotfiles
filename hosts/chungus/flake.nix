@@ -2,19 +2,14 @@
   description = "Chungus host";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nur = {
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-    nix-comfyui = {
-      url = "github:dyscorv/nix-comfyui";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     doomemacs = {
       url = "github:doomemacs/doomemacs";
@@ -25,7 +20,6 @@
   outputs =
     {
       nixpkgs,
-      nixpkgs-unstable,
       home-manager,
       ...
     }@inputs:
@@ -33,12 +27,11 @@
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
-        inputs.nix-comfyui.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
         })
       ];
-      pkgs-config = {
+      pkgs = import nixpkgs {
         inherit system overlays;
         config = {
           allowUnfree = true;
@@ -46,9 +39,10 @@
           cudaSupport = true;
         };
       };
-      pkgs = import nixpkgs pkgs-config;
-      pkgs-unstable = import nixpkgs-unstable pkgs-config;
-      specialArgs = { inherit inputs pkgs-unstable; };
+      specialArgs = {
+        inherit inputs;
+        pkgs-unstable = pkgs;
+      };
 
       home-manager-modules = [
         ../../modules/home-manager

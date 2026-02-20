@@ -1,17 +1,12 @@
-{ pkgs, inputs, ... }:
+{ pkgs, ... }:
 
 {
   imports = [
-    ./ai.nix
+    # ./ai.nix
   ];
 
   home = {
     packages = with pkgs; [
-      inkscape
-      inputs.home-manager.packages.x86_64-linux.home-manager
-      nix-tree
-      nodePackages.prettier
-      nodejs_24
       ungoogled-chromium
     ];
   };
@@ -36,10 +31,6 @@
       scripts = with pkgs.mpvScripts; [
         uosc # Feature-rich minimalist proximity-based UI for MPV player
         mpris # allows control of the player using standard media keys
-        # YouTube improvements
-        sponsorblock
-        quality-menu
-        youtube-upnext
       ];
     };
   };
@@ -59,12 +50,6 @@
   services.podman = {
     enable = true;
     containers = {
-      kokoro-tts = {
-        image = "ghcr.io/remsky/kokoro-fastapi-gpu";
-        autoStart = true;
-        ports = [ "8880:8880" ];
-        extraPodmanArgs = [ "--gpus=all" ];
-      };
     };
   };
 }

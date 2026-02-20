@@ -2,21 +2,46 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, pkgs-unstable, ... }:
+{ config, pkgs, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware.nix
-    ];
+  imports = [
+    # Include the results of the hardware scan.
+    ./hardware.nix
+  ];
 
   hardware.nvidia-container-toolkit = {
     enable = true;
     mount-nvidia-executables = false;
   };
-  hardware.nvidia.open = true;
-  services.xserver.videoDrivers = [ "nvidia" ];
+
+  # Basic Graphics Setup
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true; # Useful for some viewer dependencies
+  };
+
   nixpkgs.config.cudaSupport = true;
+
+  # Load NVIDIA Driver
+  services.xserver.videoDrivers = [ "nvidia" ];
+
+  hardware.nvidia = {
+    # Modesetting is required for most modern wayland compositors
+    modesetting.enable = true;
+
+    # Power management can be tricky; start with it disabled unless needed
+    powerManagement.enable = false;
+
+    # Use the proprietary "Open" kernel modules (recommended for RTX 40-series)
+    open = true;
+
+    # Enable the Nvidia settings menu
+    nvidiaSettings = true;
+
+    # Select the driver package
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+  };
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -68,7 +93,6 @@
     };
   };
 
-
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
@@ -95,7 +119,7 @@
   };
 
   # OpenTabletDriver is an open source, cross-platform, low latency, user-mode tablet driver.
-  hardware.opentabletdriver.enable = true;
+  # hardware.opentabletdriver.enable = true;
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
@@ -104,45 +128,27 @@
   users.users.dog = {
     isNormalUser = true;
     description = "Diogo Doreto";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+    ];
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDDhA9Eum8X+nly3QFAhrazy+5JLdVx+r8natZ6tCex0 diogo@doreto.com.br"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
     ];
   };
 
-  security.sudo = {
-    enable = true;
-    extraRules = [{
-      commands = [
-        {
-          command = "${pkgs.systemd}/bin/systemctl reboot";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "${pkgs.systemd}/bin/reboot";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "${pkgs.systemd}/bin/systemctl poweroff";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "${pkgs.systemd}/bin/poweroff";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-      users = [ "dog" ];
-    }];
-    extraConfig = with pkgs; ''
-      Defaults:picloud secure_path="${lib.makeBinPath [systemd]}:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin"
-    '';
+  users.users.root = {
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
+    ];
   };
 
   home-manager = {
-    # TODO check if this is the optimal way to have nixos and hm sharing the same nixpkgs reference
+    # install packages in /etc/profiles/per-user/dog
     useUserPackages = true;
+    # reuse system pkgs
     useGlobalPkgs = true;
-    users.dog = import ./home.nix;
+    users.dog = ./home.nix;
   };
 
   # Install firefox.
@@ -159,8 +165,8 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-  #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #  wget
+    home-manager
+    vim
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -184,37 +190,6 @@
   };
 
   virtualisation.podman.enable = true;
-
-  services.ollama = {
-    enable = true;
-    package = pkgs-unstable.ollama-cuda;
-    openFirewall = true;
-    host = "0.0.0.0";
-    acceleration = "cuda";
-    loadModels = [
-      "qwq"
-      "qwen2.5-coder:14b"
-      "qwen2.5-coder:32b"
-    ];
-  };
-
-  services.open-webui = {
-    enable = true;
-    package = pkgs-unstable.open-webui;
-    openFirewall = true;
-    host = "0.0.0.0";
-    # fix startup error. See https://github.com/NixOS/nixpkgs/issues/411914
-    environment = {
-      HOME = config.services.open-webui.stateDir;
-    };
-  };
-
-  services.sunshine = {
-    enable = true;
-    package = pkgs-unstable.sunshine;
-    openFirewall = true;
-    capSysAdmin = true;
-  };
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
