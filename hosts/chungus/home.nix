@@ -2,7 +2,6 @@
 
 {
   imports = [
-    ../../modules/home-manager
     ./ai.nix
   ];
 
