@@ -223,11 +223,6 @@ in
   options.dog.programs.emacs = {
     enable = mkEnableOption "emacs + doom";
 
-    whisperPackage = mkOption {
-      type = types.package;
-      default = pkgs.whisper-cpp;
-    };
-
     doom.init =
       let
         doomModuleType = types.submodule {
@@ -280,7 +275,6 @@ in
 
     home.packages = with pkgs; [
       sqlite # for org-roam
-      ffmpeg # for whisper package
       ripgrep
 
       # spell checking
@@ -335,20 +329,6 @@ in
         dotfilesSymlink ".config/doom/modules/tools/ai/my-gptel-tools.el";
       "doom/modules/tools/ai/config.el".source =
         dotfilesSymlink ".config/doom/modules/tools/ai/config.el";
-      "doom/modules/tools/ai/whisper-config.el".text = ''
-        (setq whisper-cpp-models-directory "~/.local/share/whisper/models/")
-        (setq whisper-cpp-directory "${cfg.whisperPackage}")
-        (setq whisper-install-whispercpp nil)
-      '';
-
-      "doom/modules/tools/ai/whisper.el".source =
-        let
-          commit = "fc122657bfb8d5faf6aedaefdc1687193f456d1f";
-        in
-        pkgs.fetchurl {
-          url = "https://raw.githubusercontent.com/natrys/whisper.el/${commit}/whisper.el";
-          sha256 = "sha256-jr3fl628fJYMEomT0aR9jrhqCxdVlLIz5umPic1mw3w=";
-        };
     };
   };
 }
