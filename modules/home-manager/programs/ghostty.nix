@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -16,7 +21,7 @@ in
       enableFishIntegration = true;
       settings = {
         command = "${lib.getExe pkgs.fish} -l";
-        theme = "nightfox";
+        theme = "Nightfox";
         window-theme = "ghostty";
         font-family = "VictorMono Nerd Font Propo";
         font-size = 11;
