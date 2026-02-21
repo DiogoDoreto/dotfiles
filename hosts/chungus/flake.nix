@@ -36,7 +36,8 @@
         config = {
           allowUnfree = true;
           allowUnfreePredicate = _: true;
-          cudaSupport = true;
+          # TODO enable after successful upgrade of nixos
+          # cudaSupport = true;
         };
       };
       specialArgs = {

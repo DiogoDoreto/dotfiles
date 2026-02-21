@@ -30,11 +30,15 @@ hm-dog-chungus-switch:
 
 .PHONY: nixos-chungus-boot
 nixos-chungus-boot:
-	sudo -A nixos-rebuild --flake .#chungus boot
+	sudo -A nixos-rebuild --flake ./hosts/chungus boot
+
+.PHONY: nixos-chungus-build
+nixos-chungus-build:
+	nixos-rebuild --flake ./hosts/chungus build
 
 .PHONY: nixos-chungus-switch
 nixos-chungus-switch:
-	sudo -A nixos-rebuild --flake .#chungus switch
+	sudo -A nixos-rebuild --flake ./hosts/chungus switch
 
 .PHONY: gc
 gc:

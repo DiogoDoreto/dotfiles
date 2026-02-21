@@ -21,7 +21,8 @@
     enable32Bit = true; # Useful for some viewer dependencies
   };
 
-  nixpkgs.config.cudaSupport = true;
+  # TODO enable after successful upgrade of nixos
+  # nixpkgs.config.cudaSupport = true;
 
   # Load NVIDIA Driver
   services.xserver.videoDrivers = [ "nvidia" ];
