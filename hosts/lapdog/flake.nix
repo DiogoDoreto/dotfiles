@@ -45,6 +45,27 @@
         inputs.nur.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
+          yabridge =
+            (prev.yabridge.override {
+              multiStdenv = final.stdenv;
+              pkgsi686Linux = {
+                libxcb = null;
+              };
+            }).overrideAttrs
+              (old: {
+                patches = [
+                  "${inputs.nixpkgs}/pkgs/by-name/ya/yabridge/libyabridge-drop-32-bit-support.patch"
+                  (final.replaceVars ./yabridge-hardcode-dependencies.patch {
+                    libdbus = final.dbus.lib;
+                    wine = prev.wineWowPackages.yabridge;
+                  })
+                  "${inputs.nixpkgs}/pkgs/by-name/ya/yabridge/libyabridge-from-nix-profiles.patch"
+                ];
+                mesonFlags = map (f: if f == "-Dbitbridge=true" then "-Dbitbridge=false" else f) old.mesonFlags;
+                installPhase =
+                  builtins.replaceStrings [ "cp yabridge-host{,-32}.exe{,.so}" ] [ "cp yabridge-host.exe{,.so}" ]
+                    old.installPhase;
+              });
         })
       ]
       ++ inputs.my-ipu7.outputs.overlays
