@@ -44,6 +44,7 @@
       podman-compose
       pods # podman GUI
       pureref
+      sshfs
       ungoogled-chromium
       onedrivegui
     ];
