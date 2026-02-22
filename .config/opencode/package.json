@@ -1,0 +1,12 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "1.2.10"
+  }
+}

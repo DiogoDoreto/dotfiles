@@ -1,4 +1,9 @@
-{ pkgs, config, ... }:
+{
+  pkgs,
+  config,
+  dog-lib,
+  ...
+}:
 
 {
   imports = [
@@ -7,12 +12,12 @@
 
   home = {
     packages = with pkgs; [
-      (callPackage ./bubblewrap-ai.nix {
+      (dog-lib.bubblewrapAi {
         # useful to verify bwrap script
         package = fish;
         wrappedBinName = "ai-shell";
       })
-      (callPackage ./bubblewrap-ai.nix {
+      (dog-lib.bubblewrapAi {
         package = llm-agents.copilot-cli;
         extraWritablePaths = [
           "~/.copilot/"
@@ -21,14 +26,6 @@
         extraCommandFlags = [
           "--allow-all-tools"
           "--allow-all-paths"
-        ];
-      })
-      (callPackage ./bubblewrap-ai.nix {
-        package = llm-agents.opencode;
-        extraWritablePaths = [
-          "~/.config/opencode/"
-          "~/.local/share/opencode/"
-          "~/projects/"
         ];
       })
       blender
@@ -127,6 +124,13 @@
     niri.enable = true;
     plasma-fix-taskbar-icons.enable = true;
     wezterm.enable = true;
+
+    opencode = {
+      enable = true;
+      extraWritablePaths = [
+        "~/projects/"
+      ];
+    };
 
     emacs = {
       enable = true;

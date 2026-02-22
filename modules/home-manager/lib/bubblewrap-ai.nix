@@ -1,17 +1,22 @@
 {
+  # Custom params:
+  # The package that will be bubblewrapped
   package,
+  # We default to wrapping the `mainProgram`, but use `wrappedBinName` to overwrite this
   wrappedBinName ? "",
+  # List of paths that the wrapped command will have read-only access
   extraReadOnlyPaths ? [ ],
+  # List of paths that the wrapped command will have write access
   extraWritablePaths ? [ ],
+  # Any extra flags that should always be provided to the wrapped command
   extraCommandFlags ? [ ],
 
+  # args provided by callPackage
   lib,
   stdenv,
   bubblewrap,
   writeShellScript,
 }:
-
-assert lib.asserts.assertMsg (package != null) "The 'package' parameter must not be null";
 
 stdenv.mkDerivation (finalAttrs: {
   pname = package.pname + "-bubblewrapped";
@@ -33,6 +38,7 @@ stdenv.mkDerivation (finalAttrs: {
         "/nix"
         "/run"
         "~/.config/git"
+        "~/.local/share/direnv"
       ];
       defaultWritablePaths = [
         # "/nix/var/nix/daemon-socket" # For package installs

@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  dog-lib,
   pkgs,
   inputs,
   ...
@@ -11,9 +12,7 @@ with lib;
 let
   cfg = config.dog.programs.emacs;
 
-  dotfilesSymlink =
-    pathInsideRepo:
-    config.lib.file.mkOutOfStoreSymlink (config.dog.dotfilesPath + ("/" + pathInsideRepo));
+  inherit (dog-lib) dotfilesSymlink;
 
   makeDoomMacroModules =
     moduleName: moduleCfg:

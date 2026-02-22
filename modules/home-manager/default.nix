@@ -1,8 +1,14 @@
-{ config, pkgs-unstable, inputs, ... }:
+{
+  config,
+  pkgs-unstable,
+  inputs,
+  ...
+}:
 
 {
   imports = [
     ./dog.nix
+    ./lib
     ./presets
     ./programs
   ];
