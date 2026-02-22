@@ -322,6 +322,22 @@
     startAt = "*-*-* 04:00:00";
   };
 
+  systemd.services.opencode-web = {
+    description = "OpenCode web UI";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    script = ''
+      export PATH=/etc/profiles/per-user/dog/bin:/run/current-system/sw/bin:$PATH
+      opencode web --port 32859
+    '';
+    serviceConfig = {
+      Type = "simple";
+      User = "dog";
+      WorkingDirectory = "/home/dog/projects";
+      Restart = "on-failure";
+    };
+  };
+
   # Enable the OpenSSH daemon.
   services.openssh = {
     enable = true;
@@ -477,6 +493,11 @@
           reverse_proxy localhost:8888
         '';
       };
+      "opencode.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy localhost:32859
+        '';
+      };
     };
   };
 
@@ -546,6 +567,13 @@
             "HomeAssistant" = rec {
               icon = "home-assistant.png";
               href = "https://ha.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
+            "OpenCode" = rec {
+              icon = "opencode.png";
+              href = "https://opencode.local.doreto.com.br";
               ping = href;
             };
           }

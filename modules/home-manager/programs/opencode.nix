@@ -45,5 +45,10 @@ in
     xdg.configFile = {
       "opencode".source = dotfilesSymlink ".config/opencode";
     };
+
+    # ensure folder exists, otherwise bwrap fails to start
+    systemd.user.tmpfiles.rules = [
+      "d %h/.local/share/opencode 0755 - - - -"
+    ];
   };
 }

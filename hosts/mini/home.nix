@@ -61,6 +61,13 @@
     ghostty.enable = true;
     git.enable = true;
     plasma-fix-taskbar-icons.enable = true;
+
+    opencode = {
+      enable = true;
+      extraWritablePaths = [
+        "~/projects/"
+      ];
+    };
   };
 
   services.podman = {

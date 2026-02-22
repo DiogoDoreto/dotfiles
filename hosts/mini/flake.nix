@@ -5,6 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     authentik-nix.url = "github:nix-community/authentik-nix";
+    llm-agents.url = "github:numtide/llm-agents.nix";
     nur = {
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -35,6 +36,7 @@
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
+        inputs.llm-agents.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
         })
