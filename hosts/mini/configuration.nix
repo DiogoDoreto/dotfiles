@@ -145,6 +145,7 @@
   nixpkgs.config.allowUnfree = true;
 
   programs.firefox.enable = true;
+  programs.fish.enable = true;
   programs.kdeconnect.enable = true;
 
   # List packages installed in system profile.
