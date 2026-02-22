@@ -323,6 +323,18 @@
     startAt = "*-*-* 04:00:00";
   };
 
+  services.postgresql = {
+    enable = true;
+    ensureDatabases = [ "dog" ];
+    ensureUsers = [
+      {
+        name = "dog";
+        ensureDBOwnership = true;
+        ensureClauses.createdb = true;
+      }
+    ];
+  };
+
   systemd.services.opencode-web = {
     description = "OpenCode web UI";
     wantedBy = [ "multi-user.target" ];
@@ -330,6 +342,22 @@
     script = ''
       export PATH=/etc/profiles/per-user/dog/bin:/run/current-system/sw/bin:$PATH
       opencode web --port 32859
+    '';
+    serviceConfig = {
+      Type = "simple";
+      User = "dog";
+      WorkingDirectory = "/home/dog/projects";
+      Restart = "on-failure";
+    };
+  };
+
+  systemd.services.vscodium-web = {
+    description = "VSCodium web UI";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    script = ''
+      export PATH=/etc/profiles/per-user/dog/bin:/run/current-system/sw/bin:$PATH
+      ${pkgs.vscodium-fhs}/bin/codium serve-web --without-connection-token --port 32849
     '';
     serviceConfig = {
       Type = "simple";
@@ -494,6 +522,11 @@
           reverse_proxy localhost:8888
         '';
       };
+      "code.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy localhost:32849
+        '';
+      };
       "opencode.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:32859
@@ -575,6 +608,13 @@
             "OpenCode" = rec {
               icon = "opencode.png";
               href = "https://opencode.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
+            "VSCode" = rec {
+              icon = "vscode.png";
+              href = "https://code.local.doreto.com.br";
               ping = href;
             };
           }

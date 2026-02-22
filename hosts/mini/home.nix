@@ -67,6 +67,9 @@
       extraWritablePaths = [
         "~/projects/"
       ];
+      extraReadOnlyPaths = [
+        "/var/run/postgresql"
+      ];
     };
   };
 
