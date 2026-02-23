@@ -135,6 +135,7 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
   :defer t
   :after acp
   :config
+  (setq agent-shell-session-strategy 'new)
   (setq agent-shell-preferred-agent-config
         (if (string= (system-name) "DT-5RHWB24")
             (agent-shell-github-make-copilot-config)
@@ -168,8 +169,9 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
 
        :desc "model=gpt-5-mini"        "1" (cmd! (setq gptel-model 'gpt-5-mini))
        :desc "model=gpt-5.2"           "2" (cmd! (setq gptel-model 'gpt-5.2))
-       :desc "model=gpt-5.1-codex"     "3" (cmd! (setq gptel-model 'gpt-5.1-codex))
-       :desc "model=claude-sonnet-4.5" "4" (cmd! (setq gptel-model 'claude-sonnet-4.5))))
+       :desc "model=gpt-5.2-codex"     "3" (cmd! (setq gptel-model 'gpt-5.2-codex))
+       :desc "model=claude-sonnet-4.6" "4" (cmd! (setq gptel-model 'claude-sonnet-4.6))
+       :desc "model=claude-opus-4.6"   "5" (cmd! (setq gptel-model 'claude-opus-4.6))))
 
 (map! :leader
       (:prefix ("l ." . "OneShot cmds")
