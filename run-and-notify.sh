@@ -23,7 +23,7 @@ cmd_str=${cmd_str% }
 
 # Execute command and capture exit code
 set +e  # Temporarily disable exit on error
-"$@"
+bash -c "$*"
 rc=$?
 set -e
 
