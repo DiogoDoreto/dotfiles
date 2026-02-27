@@ -74,10 +74,19 @@
     alsa.support32Bit = true;
     pulse.enable = true;
     jack.enable = true;
+    extraConfig.pipewire."92-low-latency" = {
+      "context.properties" = {
+        "default.clock.rate" = 48000;
+        "default.clock.quantum" = 32;
+        "default.clock.min-quantum" = 32;
+        "default.clock.max-quantum" = 32;
+      };
+    };
+  };
 
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
+  musnix = {
+    enable = true;
+    soundcardPciId = "00:1f.3";
   };
 
   hardware.ipu7 = {
@@ -140,8 +149,6 @@
     home-manager
     openvpn
   ];
-
-  musnix.enable = true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

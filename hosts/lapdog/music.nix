@@ -2,20 +2,19 @@
 
 {
   home.packages = with pkgs; [
-    ardour
-    drumgizmo
-    hydrogen
+    (reaper.overrideAttrs (prev: {
+      # systemd-inhibit ensures the laptop won't go to sleep during the app lifetime
+      postInstall = (prev.postInstall or "") + ''
+        substituteInPlace $out/share/applications/cockos-reaper.desktop \
+          --replace-fail "Exec=reaper" "Exec=systemd-inhibit reaper"
+      '';
+    }))
 
     # wineWow
     wineWowPackages.yabridge
     yabridge
     yabridgectl
   ];
-
-  home.sessionVariables = {
-    # DrumGizmo is a lv2 plugin
-    LV2_PATH = "/etc/profiles/per-user/$USER/lib/lv2/";
-  };
 
   # needed for yabridgectl
   home.sessionVariablesExtra = lib.mkAfter ''
