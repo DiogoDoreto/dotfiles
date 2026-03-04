@@ -260,7 +260,7 @@
 
   services.nextcloud = {
     enable = true;
-    package = pkgs.nextcloud31;
+    package = pkgs.nextcloud32;
     hostName = "localhost";
     settings = {
       trusted_domains = [
@@ -294,10 +294,10 @@
     passwordFile = "/var/lib/freshrss-pass.txt";
   };
 
-  services.open-webui = {
-    enable = true;
-    port = 11111;
-  };
+  # services.open-webui = {
+  #   enable = true;
+  #   port = 11111;
+  # };
 
   services.searx = {
     enable = true;
