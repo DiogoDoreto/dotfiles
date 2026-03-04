@@ -1,11 +1,12 @@
 ;; -*- lexical-binding: t; no-byte-compile: t; -*-
 
-(package! gptel :pin "d221329ee3aa0198ad51c003a8d94b2af3a72dce")
+(package! gptel :recipe (:nonrecursive t)
+  :pin "63795dee75db49a04fd87842a1dcdef29c855f93")
 
-(package! mcp :pin "2e947d2ddc8cbe655f846e23711e412d41f1bf6a")
+(package! mcp :pin "5c105a8db470eb9777fdbd26251548dec42c03f0")
 
-(package! shell-maker :pin "a7ff78f8cd29fba9a694b8d7bbee448c7a51472d")
-(package! acp :pin "49de56f0de328ad9022e2784f52acd73170f7e75")
-(package! agent-shell :pin "f880e4a6f51cc12a5193ea87a8742c53623d30f4")
+(package! shell-maker :pin "21db0ddcd1043f0445cc73d95f9bef2d16a29c6d")
+(package! acp :pin "f7e20ce831ce342c457bb6860ca3d41eb183152c")
+(package! agent-shell :pin "62737278bbc3b7ff756f9a3d493afa07690f6b9e")
 
-(package! copilot :pin "b16137fa8bf5d875fd6f9c91eea663ee1651d921")
+(package! copilot :pin "5ba5ee222487e79da21ab0d71c87cd365bb825d9")

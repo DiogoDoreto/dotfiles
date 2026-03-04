@@ -23,7 +23,11 @@ cmd_str=${cmd_str% }
 
 # Execute command and capture exit code
 set +e  # Temporarily disable exit on error
-bash -c "$*"
+if command -v systemd-inhibit >/dev/null 2>&1; then
+  systemd-inhibit bash -c "$*"
+else
+  bash -c "$*"
+fi
 rc=$?
 set -e
 

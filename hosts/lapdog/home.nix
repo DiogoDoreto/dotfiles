@@ -12,11 +12,11 @@
 
   home = {
     packages = with pkgs; [
-      (dog-lib.bubblewrapAi {
-        # useful to verify bwrap script
-        package = fish;
-        wrappedBinName = "ai-shell";
-      })
+      # (dog-lib.bubblewrapAi {
+      #   # useful to verify bwrap script
+      #   package = fish;
+      #   wrappedBinName = "ai-shell";
+      # })
       (dog-lib.bubblewrapAi {
         package = llm-agents.copilot-cli;
         extraWritablePaths = [
@@ -28,9 +28,9 @@
           "--allow-all-paths"
         ];
       })
-      blender
-      clonehero
-      freecad
+      # blender
+      # clonehero
+      # freecad
       imagemagick
       llm-agents.handy
       kdePackages.kdenlive
