@@ -51,21 +51,6 @@
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
         })
-        # TODO: remove once lager 0.1.2 lands on nixos-unstable
-        # https://github.com/NixOS/nixpkgs/pull/493363
-        (final: prev: {
-          lager = prev.callPackage ./lager.nix { };
-        })
-        # TODO: remove once https://github.com/NixOS/nixpkgs/pull/493590 lands on nixos-unstable
-        (final: prev: {
-          python3Packages = prev.python3Packages.overrideScope (
-            _: pyPrev: {
-              sphinxcontrib-newsfeed = pyPrev.sphinxcontrib-newsfeed.overridePythonAttrs (old: {
-                patches = (old.patches or [ ]) ++ [ ./sphinxcontrib-newsfeed-sphinx-9.1.patch ];
-              });
-            }
-          );
-        })
       ]
       ++ inputs.my-ipu7.outputs.overlays
       ++ inputs.my-niri.outputs.overlays;
