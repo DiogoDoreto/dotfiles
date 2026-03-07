@@ -32,6 +32,10 @@
       url = "../../modules/flakes/ipu7";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    my-claude-agent-acp = {
+      url = "../../flakes/claude-agent-acp";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
@@ -42,6 +46,7 @@
       overlays = [
         inputs.llm-agents.overlays.default
         inputs.my-kwtype.overlays.default
+        inputs.my-claude-agent-acp.overlays.${system}.default
         inputs.nur.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;

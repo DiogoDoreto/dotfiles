@@ -18,14 +18,22 @@
       #   wrappedBinName = "ai-shell";
       # })
       (dog-lib.bubblewrapAi {
-        package = llm-agents.copilot-cli;
+        package = llm-agents.claude-code;
         extraWritablePaths = [
-          "~/.copilot/"
+          "~/.claude/"
+          "~/.claude.json"
           "~/projects/"
         ];
         extraCommandFlags = [
-          "--allow-all-tools"
-          "--allow-all-paths"
+          "--dangerously-skip-permissions"
+        ];
+      })
+      (dog-lib.bubblewrapAi {
+        package = claude-agent-acp;
+        extraWritablePaths = [
+          "~/.claude/"
+          "~/.claude.json"
+          "~/projects/"
         ];
       })
       # blender
