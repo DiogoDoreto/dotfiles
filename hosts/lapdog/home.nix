@@ -23,6 +23,7 @@
           "~/.claude/"
           "~/.claude.json"
           "~/projects/"
+          "/run/user/1000/agent-browser"
         ];
         extraCommandFlags = [
           "--dangerously-skip-permissions"
@@ -34,12 +35,14 @@
           "~/.claude/"
           "~/.claude.json"
           "~/projects/"
+          "/run/user/1000/agent-browser"
         ];
       })
       # blender
       # clonehero
       # freecad
       imagemagick
+      llm-agents.agent-browser
       llm-agents.handy
       kdePackages.kdenlive
       keepassxc

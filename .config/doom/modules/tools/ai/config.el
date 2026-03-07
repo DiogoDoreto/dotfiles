@@ -135,7 +135,7 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
   :defer t
   :after acp
   :config
-  (setq agent-shell-session-strategy 'new)
+  (setq agent-shell-session-strategy 'prompt)
   (setq agent-shell-preferred-agent-config
         (if (string= (system-name) "DT-5RHWB24")
             (agent-shell-github-make-copilot-config)

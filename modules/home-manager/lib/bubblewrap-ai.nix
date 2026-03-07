@@ -48,17 +48,19 @@ stdenv.mkDerivation (finalAttrs: {
       # based on https://github.com/numtide/nix-ai-tools/blob/main/packages/claudebox/claudebox.sh
       wrapperScript = writeShellScript "${mainProgram}-bubblewrapped.sh" ''
         # Create isolated home directory (protects real home from YOLO mode)
-        fake_home=$(mktemp -d)
+        fake_home=$(mktemp -d ${mainProgram}_home.XXXXXXXXXX)
+        fake_tmp=$(mktemp -d ${mainProgram}_tmp.XXXXXXXXXX)
         at_exit() {
           rm -rf "$fake_home"
+          rm -rf "$fake_tmp"
         }
         trap at_exit EXIT
 
         bwrap_args=(
           --dev /dev
           --proc /proc
-          --tmpfs /tmp
           --bind "$fake_home" "$HOME"
+          --bind "$fake_tmp" "/tmp"
           ${lib.concatMapStrings (path: "--ro-bind ${path} ${path}\n") readOnlyPaths}
           ${lib.concatMapStrings (path: "--bind ${path} ${path}\n") writablePaths}
           --unshare-all
