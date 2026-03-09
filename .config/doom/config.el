@@ -162,6 +162,9 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 (map! :map evil-org-mode-map :n "z g" #'+org/play-gif-at-point)
 
+(map! :localleader :map org-mode-map
+      :ni "a m" #'yank-media) ; Paste image from clipboard
+
 (defun dd/scan-org-agenda-files ()
   (interactive)
   (setq org-agenda-files (directory-files-recursively org-directory "\\.org$")))
