@@ -226,7 +226,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                  (straight-vc-git--encode-url upstream-repo upstream-host)))
+                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (message "Checking last commit...")
                      (cdr (doom-call-process
@@ -439,13 +439,13 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
 
 ;;; Random stuff...
 
-(setq +doom-dashboard-menu-sections
-      `(,@(seq-take +doom-dashboard-menu-sections 5)
+(setq +dashboard-menu-sections
+      `(,@(seq-take +dashboard-menu-sections 5)
         ("Read Feeds"
-         :icon (nerd-icons-mdicon "nf-md-rss_box" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-mdicon "nf-md-rss_box" :face '+dashboard-menu-title)
          :action elfeed)
         ("Read HackerNews"
-         :icon (nerd-icons-faicon "nf-fa-hacker_news" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-faicon "nf-fa-hacker_news" :face '+dashboard-menu-title)
          :action hnreader-news)))
 
 ;; https://www.reddit.com/r/emacs/comments/idz35e/emacs_27_can_take_svg_screenshots_of_itself/

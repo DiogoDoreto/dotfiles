@@ -61,8 +61,8 @@ let
       };
     };
     ui = {
+      dashboard.enable = true;
       doom.enable = true;
-      doom-dashboard.enable = true;
       hl-todo.enable = true;
       modeline.enable = true;
       ophints.enable = true;
