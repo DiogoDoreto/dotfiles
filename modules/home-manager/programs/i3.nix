@@ -1,4 +1,10 @@
-{ config, lib, pkgs, inputs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
 
 with lib;
 
@@ -32,31 +38,33 @@ in
           workspaceAutoBackAndForth = true;
           defaultWorkspace = "workspace number 1";
           menu = config.dog.programs.rofi.command;
-          keybindings = let
-            playerctl = getExe pkgs.playerctl;
-            pactl = "${pkgs.pulseaudio}/bin/pactl";
-            sink = "\$(${pactl} get-default-sink)";
-            xrandr = getExe pkgs.xorg.xrandr;
-            lockscreen = pkgs.writeShellScript "lockscreen.sh" ''
-              DIMENSION="$(${xrandr} --query | grep Screen | sed -r 's/^.*current ([0-9]+) x ([0-9]+).*$/\1x\2/')"
-              ${pkgs.imagemagick}/bin/magick ${wallpaper} -resize "$DIMENSION^" -gravity SouthWest -extent "$DIMENSION" RGB:- | \
-                i3lock -e --raw "$DIMENSION:rgb" --image /dev/stdin --color=000000
-            '';
-          in mkOptionDefault {
-            # Mod1 == Alt key
-            "Ctrl+Shift+Mod1+e" = "exec emacsclient -nc";
-            "Ctrl+Shift+Mod1+f" = "exec firefox";
-            "Ctrl+Shift+Mod1+k" = "exec keepassxc";
-            "Ctrl+Shift+Mod1+m" = "exec pgrep spotify && [class=Spotify] focus || exec spotify";
-            "Ctrl+Shift+Mod1+q" = "exec --no-startup-id ${lockscreen}";
-            "XF86AudioPlay" = "exec ${playerctl} play-pause";
-            "XF86AudioNext" = "exec ${playerctl} next";
-            "XF86AudioPrev" = "exec ${playerctl} previous";
-            "XF86AudioRaiseVolume" = "exec --no-startup-id ${pactl} set-sink-volume ${sink} +5%";
-            "XF86AudioLowerVolume" = "exec --no-startup-id ${pactl} set-sink-volume ${sink} -5%";
-            "XF86AudioMute" = "exec --no-startup-id ${pactl} set-sink-mute ${sink} toggle";
-          };
-          bars = [];
+          keybindings =
+            let
+              playerctl = getExe pkgs.playerctl;
+              pactl = "${pkgs.pulseaudio}/bin/pactl";
+              sink = "\$(${pactl} get-default-sink)";
+              xrandr = getExe pkgs.xrandr;
+              lockscreen = pkgs.writeShellScript "lockscreen.sh" ''
+                DIMENSION="$(${xrandr} --query | grep Screen | sed -r 's/^.*current ([0-9]+) x ([0-9]+).*$/\1x\2/')"
+                ${pkgs.imagemagick}/bin/magick ${wallpaper} -resize "$DIMENSION^" -gravity SouthWest -extent "$DIMENSION" RGB:- | \
+                  i3lock -e --raw "$DIMENSION:rgb" --image /dev/stdin --color=000000
+              '';
+            in
+            mkOptionDefault {
+              # Mod1 == Alt key
+              "Ctrl+Shift+Mod1+e" = "exec emacsclient -nc";
+              "Ctrl+Shift+Mod1+f" = "exec firefox";
+              "Ctrl+Shift+Mod1+k" = "exec keepassxc";
+              "Ctrl+Shift+Mod1+m" = "exec pgrep spotify && [class=Spotify] focus || exec spotify";
+              "Ctrl+Shift+Mod1+q" = "exec --no-startup-id ${lockscreen}";
+              "XF86AudioPlay" = "exec ${playerctl} play-pause";
+              "XF86AudioNext" = "exec ${playerctl} next";
+              "XF86AudioPrev" = "exec ${playerctl} previous";
+              "XF86AudioRaiseVolume" = "exec --no-startup-id ${pactl} set-sink-volume ${sink} +5%";
+              "XF86AudioLowerVolume" = "exec --no-startup-id ${pactl} set-sink-volume ${sink} -5%";
+              "XF86AudioMute" = "exec --no-startup-id ${pactl} set-sink-mute ${sink} toggle";
+            };
+          bars = [ ];
           startup = [
             {
               command = "${getExe pkgs.feh} --bg-fill ${wallpaper} --geometry=+0-300";
@@ -92,7 +100,12 @@ in
             };
           };
           window.commands = [
-            { command = "border normal 1"; criteria = { class = "firefox"; }; }
+            {
+              command = "border normal 1";
+              criteria = {
+                class = "firefox";
+              };
+            }
           ];
         };
       };
