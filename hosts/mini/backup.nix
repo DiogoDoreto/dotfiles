@@ -1,6 +1,8 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
+  environment.systemPackages = with pkgs; [ borgbackup ];
+
   services.borgbackup.jobs.root = {
     repo = "/root/test-bkp";
     doInit = true;
@@ -55,5 +57,4 @@
       "- **"
     ];
   };
-
 }

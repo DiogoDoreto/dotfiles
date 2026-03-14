@@ -144,9 +144,7 @@
 
   # List packages installed in system profile.
   environment.systemPackages = with pkgs; [
-    borgbackup
     home-manager
-    openvpn
     vim
   ];
 

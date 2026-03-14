@@ -1,6 +1,8 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 
 {
+  environment.systemPackages = with pkgs; [ openvpn ];
+
   networking = {
     hostName = "dogdot";
     networkmanager.enable = true;
@@ -76,5 +78,4 @@
         # trust-anchor = ".,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D";
       };
   };
-
 }
