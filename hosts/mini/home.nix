@@ -1,8 +1,6 @@
 { pkgs, config, ... }:
 
 {
-  # imports = [ ./plasma.nix ];
-
   home = {
     packages = with pkgs; [
       calibre
