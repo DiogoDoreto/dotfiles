@@ -464,7 +464,17 @@ Saves to a temp file and puts the filename in the kill ring."
     (kill-new filename)
     (message filename)))
 
-;; remove when fixed: https://github.com/doomemacs/doomemacs/issues/8585
-(advice-add #'+nix/lookup-option :before
-            (lambda (&rest _args)
-              (require 'nixos-options)))
+(defvar dd--strip-text-properties
+  '(face font-lock-face font-face bold italic underline strike-through
+    foreground-color background-color color display invisible read-only
+    inhibit-read-only)
+  "Text properties to strip when copying to kill ring.")
+
+(if kill-transform-function
+    (message "WARNING: kill-transform-function already was set. Check config.el")
+  (setq kill-transform-function
+        (lambda (string)
+          "Remove formatting-related text properties when copying text"
+          (dolist (prop dd--strip-text-properties)
+            (remove-text-properties 0 (length string) (list prop nil) string))
+          string)))
