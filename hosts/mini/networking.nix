@@ -1,5 +1,9 @@
 { config, pkgs, ... }:
 
+let
+  vars = import ./_variables.nix;
+in
+
 {
   environment.systemPackages = with pkgs; [ openvpn ];
 
@@ -8,16 +12,14 @@
     networkmanager.enable = true;
     firewall = {
       enable = true;
-      allowedTCPPorts = [
-        53
-        80
-        443
-        21064
-        21065
-      ];
-      allowedUDPPorts = [
-        53
-        5353
+      allowedTCPPorts = with vars.ports; [
+        dns
+        http
+        https
+      ] ++ vars.ports.haHomekitBridge;
+      allowedUDPPorts = with vars.ports; [
+        dns
+        mdns
       ];
     };
   };

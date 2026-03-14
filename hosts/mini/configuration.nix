@@ -2,12 +2,11 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running 'nixos-help').
 
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}:
+{ pkgs, ... }:
+
+let
+  vars = import ./_variables.nix;
+in
 
 {
   imports = [
@@ -159,7 +158,7 @@
   # Enable the OpenSSH daemon.
   services.openssh = {
     enable = true;
-    ports = [ 17098 ];
+    ports = [ vars.ports.openssh ];
     # require public key authentication for better security
     settings = {
       PasswordAuthentication = false;
