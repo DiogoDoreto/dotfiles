@@ -16,18 +16,15 @@ lapdog-flake-update:
 	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Lapdog flake update" -- \
 	nix flake update --flake ./hosts/lapdog/
 
-.PHONY: remote-mini-build
-remote-mini-build:
-	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Mini boot" -- \
-	'nh os build --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/'
-
 .PHONY: remote-mini-switch
 remote-mini-switch:
-	nh os switch --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Mini switch" -- \
+	'nh os switch --target-host dogdot -H dogdot --elevation-strategy passwordless ./hosts/mini/'
 
 .PHONY: remote-mini-boot
 remote-mini-boot:
-	nh os boot --target-host dogdot --build-host dogdot -H dogdot ./hosts/mini/ && ssh dogdot reboot
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Mini boot" -- \
+	'nh os boot --target-host dogdot -H dogdot --elevation-strategy passwordless ./hosts/mini/ && ssh dogdot reboot'
 
 .PHONY: hm-dog-chungus-switch
 hm-dog-chungus-switch:
