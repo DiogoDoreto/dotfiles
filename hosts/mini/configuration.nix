@@ -25,12 +25,6 @@ in
     ./services/vscodium-web.nix
   ];
 
-  # for jellyfin-media-player
-  # migration to qt6: https://github.com/jellyfin/jellyfin-media-player/issues/282
-  # nixpkgs.config.permittedInsecurePackages = [
-  #   "qtwebengine-5.15.19"
-  # ];
-
   # TODO update kernel to use this:
   # hardware.intelgpu.driver = "xe";
 
