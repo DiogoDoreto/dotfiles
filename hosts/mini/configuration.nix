@@ -118,6 +118,7 @@
       extraGroups = [
         "networkmanager"
         "wheel"
+        "caddy_www"
       ];
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
@@ -224,6 +225,17 @@
       "- **"
     ];
   };
+
+  # Group for deploying static files to /var/lib/www.
+  # Add any user or service that needs to upload files here.
+  users.groups.caddy_www = { };
+  users.users.caddy.extraGroups = [ "caddy_www" ];
+
+  # 2775: setgid bit (2) ensures new files/dirs created inside /var/lib/www
+  # automatically inherit the caddy_www group, so caddy can always read them.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/www 2775 root caddy_www -"
+  ];
 
   users.groups.authentik = { };
   users.users.authentik = {
@@ -532,6 +544,12 @@
       "opencode.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:32859
+        '';
+      };
+      "www.local.doreto.com.br" = {
+        extraConfig = ''
+          root * /var/lib/www
+          file_server browse
         '';
       };
     };
