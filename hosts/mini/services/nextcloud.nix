@@ -1,5 +1,9 @@
 { config, pkgs, ... }:
 
+let
+  vars = import ../_variables.nix;
+in
+
 {
   services.nextcloud = {
     enable = true;
@@ -21,7 +25,7 @@
   services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
     {
       addr = "127.0.0.1";
-      port = 5387;
+      port = vars.ports.nextcloud;
     }
   ];
 }

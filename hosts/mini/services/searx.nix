@@ -1,11 +1,15 @@
 { pkgs, ... }:
 
+let
+  vars = import ../_variables.nix;
+in
+
 {
   services.searx = {
     enable = true;
     settings = {
       server.bind_address = "127.0.0.1";
-      server.port = 8888;
+      server.port = vars.ports.searx;
       server.secret_key = "searx";
       search.formats = [
         "html"

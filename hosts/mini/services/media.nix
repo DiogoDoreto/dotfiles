@@ -1,5 +1,9 @@
 { pkgs, ... }:
 
+let
+  vars = import ../_variables.nix;
+in
+
 {
   users = {
     groups.media = {
@@ -26,7 +30,7 @@
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart = "${pkgs.qbittorrent-nox}/bin/qbittorrent-nox --profile=/var/lib/qbittorrent --webui-port=8079";
+      ExecStart = "${pkgs.qbittorrent-nox}/bin/qbittorrent-nox --profile=/var/lib/qbittorrent --webui-port=${toString vars.ports.qbittorrent}";
       Restart = "on-failure";
       RestartSec = 5;
       User = "qbittorrent";
@@ -36,16 +40,25 @@
   };
 
   services.bazarr.enable = true;
+  services.bazarr.listenPort = vars.ports.bazarr;
+
   services.lidarr.enable = true;
+  services.lidarr.settings.server.port = vars.ports.lidarr;
+
   services.prowlarr.enable = true;
+  services.prowlarr.settings.server.port = vars.ports.prowlarr;
+
   services.radarr.enable = true;
+  services.radarr.settings.server.port = vars.ports.radarr;
+
   services.sonarr.enable = true;
+  services.sonarr.settings.server.port = vars.ports.sonarr;
 
   services.jellyfin.enable = true;
 
   services.calibre-web = {
     enable = true;
-    listen.port = 18083;
+    listen.port = vars.ports.calibre;
     group = "media";
     options = {
       calibreLibrary = "/var/lib/dog/media/Books";
@@ -57,7 +70,7 @@
 
   services.audiobookshelf = {
     enable = true;
-    port = 18090;
+    port = vars.ports.audiobookshelf;
   };
 
   systemd.tmpfiles.settings.mediaDirs = {

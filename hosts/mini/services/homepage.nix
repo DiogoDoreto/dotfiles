@@ -1,9 +1,13 @@
 { pkgs, ... }:
 
+let
+  vars = import ../_variables.nix;
+in
+
 {
   services.homepage-dashboard = {
     enable = true;
-    listenPort = 8082;
+    listenPort = vars.ports.homepage;
     allowedHosts = "home.local.doreto.com.br";
     widgets = [
       {
