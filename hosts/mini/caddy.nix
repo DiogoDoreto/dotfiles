@@ -76,6 +76,11 @@ in
           reverse_proxy localhost:${p.calibre}
         '';
       };
+      "git.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy localhost:${p.forgejo}
+        '';
+      };
       "audiobook.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:${p.audiobookshelf}
