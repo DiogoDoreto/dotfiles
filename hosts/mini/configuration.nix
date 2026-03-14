@@ -15,6 +15,7 @@ in
     ./caddy.nix
     ./backup.nix
     ./services/authentik.nix
+    ./services/forgejo.nix
     ./services/freshrss.nix
     ./services/homepage.nix
     ./services/mail-me.nix
