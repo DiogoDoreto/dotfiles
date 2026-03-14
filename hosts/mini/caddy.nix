@@ -96,11 +96,6 @@ in
           reverse_proxy localhost:${p.homepage}
         '';
       };
-      "vite.local.doreto.com.br" = {
-        extraConfig = ''
-          reverse_proxy localhost:${p.vite}
-        '';
-      };
       "search.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:${p.searx}

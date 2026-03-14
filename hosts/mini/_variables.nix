@@ -16,7 +16,6 @@
     radarr = 7878;
     searx = 8888;
     sonarr = 8989;
-    vite = 5173; # local dev server
     vscodium = 32849;
   };
 }
