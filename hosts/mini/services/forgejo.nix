@@ -36,6 +36,8 @@ in
       HOME = "/var/lib/forgejo";
       FORGEJO_WORK_DIR = "/var/lib/forgejo";
       FORGEJO_CUSTOM = "/var/lib/forgejo/custom";
+      # Trust Caddy's local CA so the OIDC discovery URL fetch succeeds
+      SSL_CERT_FILE = "/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt";
     };
     script = ''
       if forgejo admin auth list | grep -qw "authentik"; then
