@@ -50,11 +50,14 @@ These steps must be completed before deploying the NixOS changes. Authentik is a
   - In the **Applications** section, move `FreshRSS` from Available to Selected
   - Save — the outpost hot-reloads within seconds
 
-- [ ] **Step 4: Verify outpost is serving the provider**
+- [x] **Step 4: Verify outpost is serving the provider**
 
-  Visit `https://auth.local.doreto.com.br/outpost.goauthentik.io/auth/caddy` in a browser.
-  Expected: a redirect to Authentik's login page (HTTP 302), not a 404.
-  A 404 means the outpost hasn't picked up the provider — wait a few seconds and retry.
+  ```bash
+  curl -v http://[::1]:9001/outpost.goauthentik.io/ping
+  ```
+  Expected: HTTP 204. The outpost listens on `[::1]:9001` (authentik-nix worker default).
+  Note: visiting the URL in a browser returns 404 because Authentik needs forwarded host headers
+  to match a provider — test with curl only.
 
 ---
 
@@ -66,8 +69,8 @@ These steps must be completed before deploying the NixOS changes. Authentik is a
 - [ ] **Step 1: Verify current config evaluates**
 
   ```bash
-  cd /home/dog/projects/dotfiles
-  nix eval .#nixosConfigurations.mini.config.services.freshrss.authType
+  cd /home/dog/projects/dotfiles/hosts/mini
+  nix eval .#nixosConfigurations.dogdot.config.services.freshrss.authType
   ```
   Expected output: `"form"` (the current default)
 
@@ -104,20 +107,24 @@ These steps must be completed before deploying the NixOS changes. Authentik is a
       # Strip any client-supplied Remote-User to prevent identity injection
       request_header -Remote-User
 
-      # Gate all non-API requests through Authentik's forward auth.
-      # /api/* paths (GReader, Fever) use FreshRSS's own API password auth and bypass SSO.
-      @notApi not path /api/*
-      forward_auth @notApi https://auth.local.doreto.com.br {
-        uri /outpost.goauthentik.io/auth/caddy
-        copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email
-        transport http {
-          tls_insecure_skip_verify
-        }
-      }
+      route {
+        # Proxy outpost paths back to Authentik (needed for sign-out callbacks)
+        reverse_proxy /outpost.goauthentik.io/* http://[::1]:9001
 
-      # Map Authentik's username header to what FreshRSS expects ($SERVER['HTTP_REMOTE_USER'])
-      @notApiRequest not path /api/*
-      request_header @notApiRequest Remote-User {http.request.header.X-Authentik-Username}
+        # Gate all non-API requests through Authentik's forward auth.
+        # /api/* paths (GReader, Fever) use FreshRSS's own API password auth and bypass SSO.
+        # The outpost HTTP listener is at [::1]:9001 (authentik-nix worker default).
+        @notApi not path /api/*
+        forward_auth @notApi http://[::1]:9001 {
+          uri /outpost.goauthentik.io/auth/caddy
+          copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Entitlements X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+          trusted_proxies private_ranges
+        }
+
+        # Map Authentik's username header to what FreshRSS expects ($SERVER['HTTP_REMOTE_USER'])
+        @notApiRequest not path /api/*
+        request_header @notApiRequest Remote-User {http.request.header.X-Authentik-Username}
+      }
 
       # User provisioning notes:
       # - FreshRSS auto-creates accounts on first login (http_auth_auto_register = true by default)
@@ -134,19 +141,19 @@ These steps must be completed before deploying the NixOS changes. Authentik is a
 - [ ] **Step 3: Verify config evaluates without errors**
 
   ```bash
-  nix eval .#nixosConfigurations.mini.config.services.freshrss.authType
+  nix eval .#nixosConfigurations.dogdot.config.services.freshrss.authType
   ```
   Expected: `"http_auth"`
 
   ```bash
-  nix eval .#nixosConfigurations.mini.config.services.phpfpm.pools.freshrss.phpEnv
+  nix eval .#nixosConfigurations.dogdot.config.services.phpfpm.pools.freshrss.phpEnv
   ```
   Expected: `{ TRUSTED_PROXY = "127.0.0.1"; ... }` (may include other env vars from the module)
 
 - [ ] **Step 4: Build the system without switching**
 
   ```bash
-  nixos-rebuild build --flake .#mini
+  nixos-rebuild build --flake hosts/mini#dogdot
   ```
   Expected: build succeeds with no errors. Fix any Nix evaluation errors before proceeding.
 
@@ -164,7 +171,7 @@ These steps must be completed before deploying the NixOS changes. Authentik is a
 - [ ] **Step 1: Deploy**
 
   ```bash
-  nixos-rebuild switch --flake .#mini
+  nixos-rebuild switch --flake hosts/mini#dogdot
   ```
   Expected: switch completes; `freshrss-config.service` restarts cleanly.
 
