@@ -58,6 +58,7 @@ in
       RemainAfterExit = true;
       User = "forgejo";
       Group = "forgejo";
+      SupplementaryGroups = [ "caddy" ];
       WorkingDirectory = "/var/lib/forgejo";
       EnvironmentFile = "/etc/secrets/forgejo/oauth";
     };
