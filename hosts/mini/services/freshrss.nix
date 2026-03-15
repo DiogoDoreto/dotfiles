@@ -3,9 +3,9 @@
 # User provisioning notes:
 # - FreshRSS auto-creates accounts on first login (http_auth_auto_register = true by default)
 # - The FreshRSS username will equal the Authentik username (X-Authentik-Username)
-# - New accounts are regular users. Grant admin via:
-#     sudo -u freshrss DATA_PATH=/var/lib/freshrss php \
-#       /run/current-system/sw/share/freshrss/cli/update-user.php --user <name> --admin 1
+# - New accounts are regular users. Grant admin via (uses shebang PHP, no php in PATH needed):
+#     pkg=$(systemctl show freshrss-config --property=WorkingDirectory --value)
+#     sudo -u freshrss DATA_PATH=/var/lib/freshrss "$pkg/cli/update-user.php" --user <name> --admin 1
 # - Recovery if Authentik is unavailable: temporarily set authType = "form" and
 #   passwordFile = "/var/lib/freshrss-pass.txt", then nixos-rebuild switch
 

@@ -209,13 +209,11 @@ These steps must be completed before deploying the NixOS changes. Authentik is a
 
 - [ ] **Step 5: Grant admin role to your account**
 
-  Replace `<username>` with your Authentik username:
+  Replace `<username>` with your Authentik username. The CLI scripts have a nix store shebang
+  so no `php` in PATH is needed — get the package path from the live service:
   ```bash
-  sudo -u freshrss \
-    DATA_PATH=/var/lib/freshrss \
-    /run/current-system/sw/bin/php \
-    /run/current-system/sw/share/freshrss/cli/update-user.php \
-    --user <username> --admin 1
+  pkg=$(systemctl show freshrss-config --property=WorkingDirectory --value)
+  sudo -u freshrss DATA_PATH=/var/lib/freshrss "$pkg/cli/update-user.php" --user <username> --admin 1
   ```
 
   Verify admin panel is accessible in FreshRSS UI under `Administration`.
