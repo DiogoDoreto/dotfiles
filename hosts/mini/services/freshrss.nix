@@ -1,21 +1,24 @@
 { pkgs, ... }:
 
-# User provisioning notes:
-# - FreshRSS auto-creates accounts on first login (http_auth_auto_register = true by default)
-# - The FreshRSS username will equal the Authentik username (X-Authentik-Username)
-# - New accounts are regular users. Grant admin via (uses shebang PHP, no php in PATH needed):
-#     pkg=$(systemctl show freshrss-config --property=WorkingDirectory --value)
-#     sudo -u freshrss DATA_PATH=/var/lib/freshrss "$pkg/cli/update-user.php" --user <name> --admin 1
-# - Recovery if Authentik is unavailable: temporarily set authType = "form" and
-#   passwordFile = "/var/lib/freshrss-pass.txt", then nixos-rebuild switch
-
 {
   services.freshrss = {
     enable = true;
-    extensions = with pkgs.freshrss-extensions; [
-      youtube
-      reading-time
-    ];
+    # Patch: Caddy (like any CGI-compliant server) sets REMOTE_USER="" as a FastCGI
+    # parameter for unauthenticated requests. FreshRSS 1.28.1's httpAuthUser() uses
+    # array_unique() to detect multiple auth headers but doesn't filter empty strings
+    # first. This causes it to see both REMOTE_USER="" and HTTP_REMOTE_USER="diogo" as
+    # two distinct auth headers and abort. The fix adds array_filter() to strip empties.
+    # Remove when fixed: https://github.com/FreshRSS/FreshRSS/issues/7720
+    package = pkgs.freshrss.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        sed -i \
+          's/\$auths = array_unique(/$auths = array_filter(array_unique(/' \
+          app/Utils/httpUtil.php
+        sed -i \
+          '/array_intersect_key(\$_SERVER,/{n; s/^\(\s*\));$/\1));/}' \
+          app/Utils/httpUtil.php
+      '';
+    });
     webserver = "caddy";
     virtualHost = "freshrss.local.doreto.com.br";
     baseUrl = "https://freshrss.local.doreto.com.br";
@@ -25,36 +28,34 @@
     defaultUser = "diogo";
   };
 
-  # Allow FreshRSS to trust the Remote-User header from Caddy.
-  # FreshRSS checks REMOTE_ADDR against TRUSTED_PROXY before accepting HTTP_REMOTE_USER.
-  # In Caddy's php_fastcgi, REMOTE_ADDR is the actual client IP (not Caddy's IP), so we
-  # must cover the full private range. This is safe because Caddy strips any client-supplied
-  # Remote-User header before adding its own (see request_header -Remote-User above).
+  # FreshRSS requires trusted_sources or TRUSTED_PROXY to be set before it will
+  # trust HTTP_REMOTE_USER. REMOTE_ADDR in FastCGI is the client IP (Caddy passes it
+  # through), so the LAN range must be listed here.
   services.phpfpm.pools.freshrss.phpEnv = {
-    TRUSTED_PROXY = "127.0.0.1 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16";
+    TRUSTED_PROXY = "127.0.0.1/32 ::1/128 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12";
   };
 
   services.caddy.virtualHosts."freshrss.local.doreto.com.br".extraConfig = ''
-    # Strip any client-supplied Remote-User to prevent identity injection
-    request_header -Remote-User
+    # Authentik's forwardHandleCaddy uses X-Forwarded-Host to match the application URL.
+    # Caddy does not set this automatically; must be set before forward_auth runs.
+    request_header X-Forwarded-Host {http.request.host}
 
-    route {
-      # Proxy outpost paths back to Authentik (needed for sign-out callbacks)
-      reverse_proxy /outpost.goauthentik.io/* http://localhost:9000
+    # Proxy outpost paths directly to Authentik (sign-out callbacks, login flow).
+    # These must be excluded from forward_auth or the Authentik login redirect loops.
+    @outpost path /outpost.goauthentik.io/*
+    reverse_proxy @outpost http://localhost:9000
 
-      # Gate all non-API requests through Authentik's forward auth.
-      # /api/* paths (GReader, Fever) use FreshRSS's own API password auth and bypass SSO.
-      # The outpost HTTP listener is at localhost:9000 (authentik-nix Go server default).
-      @notApi not path /api/*
-      forward_auth @notApi http://localhost:9000 {
-        uri /outpost.goauthentik.io/auth/caddy
-        copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Entitlements X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
-        trusted_proxies private_ranges
-      }
-
-      # Map Authentik's username header to what FreshRSS expects ($SERVER['HTTP_REMOTE_USER'])
-      @notApiRequest not path /api/*
-      request_header @notApiRequest Remote-User {http.request.header.X-Authentik-Username}
+    # Gate all non-API, non-outpost requests through Authentik forward auth.
+    # /api/* paths (GReader, Fever) use FreshRSS's own API password auth — bypass SSO.
+    @needsAuth {
+      not path /api/*
+      not path /outpost.goauthentik.io/*
+    }
+    forward_auth @needsAuth http://localhost:9000 {
+      uri /outpost.goauthentik.io/auth/caddy
+      # Rename X-Authentik-Username → Remote-User so FreshRSS receives HTTP_REMOTE_USER.
+      copy_headers X-Authentik-Username>Remote-User
+      trusted_proxies private_ranges
     }
   '';
 }
