@@ -68,6 +68,20 @@ in
       {
         Apps = [
           {
+            "Authentik" = rec {
+              icon = "authentik.png";
+              href = "https://auth.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
+            "Forgejo" = rec {
+              icon = "forgejo.png";
+              href = "https://git.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
             "HomeAssistant" = rec {
               icon = "home-assistant.png";
               href = "https://ha.local.doreto.com.br";
