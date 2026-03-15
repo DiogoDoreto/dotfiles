@@ -61,8 +61,8 @@ stdenv.mkDerivation (finalAttrs: {
           --proc /proc
           --bind "$fake_home" "$HOME"
           --bind "$fake_tmp" "/tmp"
-          ${lib.concatMapStrings (path: "--ro-bind ${path} ${path}\n") readOnlyPaths}
-          ${lib.concatMapStrings (path: "--bind ${path} ${path}\n") writablePaths}
+          ${lib.concatMapStrings (path: "--ro-bind-try ${path} ${path}\n") readOnlyPaths}
+          ${lib.concatMapStrings (path: "--bind-try ${path} ${path}\n") writablePaths}
           --unshare-all
           --share-net
           --setenv HOME "$HOME"
