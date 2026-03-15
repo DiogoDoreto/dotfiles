@@ -17,7 +17,10 @@ in
         DISABLE_SSH = true;
       };
       service = {
-        DISABLE_REGISTRATION = true; # Authentik-only login
+        DISABLE_REGISTRATION = true; # disables manual registration
+      };
+      oauth2_client = {
+        ENABLE_AUTO_REGISTRATION = true; # auto-create accounts for OAuth2 users
       };
       session = {
         COOKIE_SECURE = true;
