@@ -5,8 +5,8 @@
 
 (package! mcp :pin "5c105a8db470eb9777fdbd26251548dec42c03f0")
 
-(package! shell-maker :pin "86fbe695085fd59c7b65799da84a3e917ebf4528")
-(package! acp :pin "f7e20ce831ce342c457bb6860ca3d41eb183152c")
-(package! agent-shell :pin "41c4b2143a6b583f3f7e886e0b93943e0abced18")
+(package! shell-maker :pin "79181104659ce70900a1ccadaed9ffa67be49924")
+(package! acp :pin "9737a9678a658a3289229d7d37459c84db1eef24")
+(package! agent-shell :pin "ff935495a78af8c93980d07ea34b07f8a268e705")
 
 (package! copilot :pin "5ba5ee222487e79da21ab0d71c87cd365bb825d9")
