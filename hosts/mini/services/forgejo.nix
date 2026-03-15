@@ -36,10 +36,12 @@ in
       HOME = "/var/lib/forgejo";
       FORGEJO_WORK_DIR = "/var/lib/forgejo";
       FORGEJO_CUSTOM = "/var/lib/forgejo/custom";
-      # Trust Caddy's local CA so the OIDC discovery URL fetch succeeds
-      SSL_CERT_FILE = "/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt";
     };
     script = ''
+      # LoadCredential makes the Caddy CA cert available via $CREDENTIALS_DIRECTORY
+      # (systemd reads it as root, so forgejo user doesn't need direct access)
+      export SSL_CERT_FILE="$CREDENTIALS_DIRECTORY/caddy-ca"
+
       if forgejo admin auth list | grep -qw "authentik"; then
         echo "Auth source 'authentik' already exists, skipping"
         exit 0
@@ -58,9 +60,9 @@ in
       RemainAfterExit = true;
       User = "forgejo";
       Group = "forgejo";
-      SupplementaryGroups = [ "caddy" ];
       WorkingDirectory = "/var/lib/forgejo";
       EnvironmentFile = "/etc/secrets/forgejo/oauth";
+      LoadCredential = "caddy-ca:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt";
     };
   };
 }
