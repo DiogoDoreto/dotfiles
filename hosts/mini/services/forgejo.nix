@@ -7,7 +7,7 @@ in
 {
   services.forgejo = {
     enable = true;
-    # package defaults to pkgs.forgejo-lts per the NixOS module
+    package = pkgs.forgejo;
     settings = {
       server = {
         HTTP_ADDR = "127.0.0.1"; # localhost only — Caddy proxies
@@ -30,7 +30,10 @@ in
     after = [ "forgejo.service" ];
     requires = [ "forgejo.service" ];
     wantedBy = [ "multi-user.target" ];
-    path = [ config.services.forgejo.package pkgs.gnugrep ];
+    path = [
+      config.services.forgejo.package
+      pkgs.gnugrep
+    ];
     environment = {
       USER = "forgejo";
       HOME = "/var/lib/forgejo";

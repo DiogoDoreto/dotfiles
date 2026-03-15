@@ -68,20 +68,6 @@ in
       {
         Apps = [
           {
-            "Authentik" = rec {
-              icon = "authentik.png";
-              href = "https://auth.local.doreto.com.br";
-              ping = href;
-            };
-          }
-          {
-            "Forgejo" = rec {
-              icon = "forgejo.png";
-              href = "https://git.local.doreto.com.br";
-              ping = href;
-            };
-          }
-          {
             "HomeAssistant" = rec {
               icon = "home-assistant.png";
               href = "https://ha.local.doreto.com.br";
@@ -96,6 +82,27 @@ in
             };
           }
           {
+            "Forgejo" = rec {
+              icon = "forgejo.png";
+              href = "https://git.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
+            "Authentik" = rec {
+              icon = "authentik.png";
+              href = "https://auth.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
+            "Searx" = rec {
+              icon = "searxng.png";
+              href = "https://search.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
             "VSCode" = rec {
               icon = "vscode.png";
               href = "https://code.local.doreto.com.br";
@@ -106,13 +113,6 @@ in
             "Open WebUI" = rec {
               icon = "open-webui.png";
               href = "https://ai.local.doreto.com.br";
-              ping = href;
-            };
-          }
-          {
-            "Searx" = rec {
-              icon = "searxng.png";
-              href = "https://search.local.doreto.com.br";
               ping = href;
             };
           }
