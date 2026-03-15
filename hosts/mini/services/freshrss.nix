@@ -22,13 +22,16 @@
     # Auth is handled by Caddy forward_auth → Authentik (see extraConfig below).
     # passwordFile is not needed for http_auth mode.
     authType = "http_auth";
+    defaultUser = "diogo";
   };
 
   # Allow FreshRSS to trust the Remote-User header from Caddy.
-  # FreshRSS only trusts this header if REMOTE_ADDR is in the TRUSTED_PROXY list.
-  # Caddy → php-fpm via Unix socket sets REMOTE_ADDR=127.0.0.1.
+  # FreshRSS checks REMOTE_ADDR against TRUSTED_PROXY before accepting HTTP_REMOTE_USER.
+  # In Caddy's php_fastcgi, REMOTE_ADDR is the actual client IP (not Caddy's IP), so we
+  # must cover the full private range. This is safe because Caddy strips any client-supplied
+  # Remote-User header before adding its own (see request_header -Remote-User above).
   services.phpfpm.pools.freshrss.phpEnv = {
-    TRUSTED_PROXY = "127.0.0.1";
+    TRUSTED_PROXY = "127.0.0.1 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16";
   };
 
   services.caddy.virtualHosts."freshrss.local.doreto.com.br".extraConfig = ''
@@ -37,13 +40,13 @@
 
     route {
       # Proxy outpost paths back to Authentik (needed for sign-out callbacks)
-      reverse_proxy /outpost.goauthentik.io/* http://[::1]:9001
+      reverse_proxy /outpost.goauthentik.io/* http://localhost:9000
 
       # Gate all non-API requests through Authentik's forward auth.
       # /api/* paths (GReader, Fever) use FreshRSS's own API password auth and bypass SSO.
-      # The outpost HTTP listener is at [::1]:9001 (authentik-nix worker default).
+      # The outpost HTTP listener is at localhost:9000 (authentik-nix Go server default).
       @notApi not path /api/*
-      forward_auth @notApi http://[::1]:9001 {
+      forward_auth @notApi http://localhost:9000 {
         uri /outpost.goauthentik.io/auth/caddy
         copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Entitlements X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
         trusted_proxies private_ranges
