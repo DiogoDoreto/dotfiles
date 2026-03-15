@@ -17,15 +17,28 @@ in
         DISABLE_SSH = true;
       };
       service = {
-        DISABLE_REGISTRATION = true; # disables manual registration
+        ALLOW_ONLY_EXTERNAL_REGISTRATION = true;
+        DISABLE_REGISTRATION = true;
+        ENABLE_INTERNAL_SIGNIN = false;
+        SHOW_REGISTRATION_BUTTON = false;
       };
       oauth2_client = {
         ENABLE_AUTO_REGISTRATION = true; # auto-create accounts for OAuth2 users
+      };
+      openid = {
+        ENABLE_OPENID_SIGNUP = true;
       };
       session = {
         COOKIE_SECURE = true;
       };
     };
+  };
+
+  systemd.services.forgejo = {
+    serviceConfig.LoadCredential = [
+      "caddy-ca:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
+    ];
+    environment.SSL_CERT_FILE = "%d/caddy-ca";
   };
 
   systemd.services.forgejo-oauth-setup = {
