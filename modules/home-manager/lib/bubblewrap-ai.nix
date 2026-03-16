@@ -33,6 +33,7 @@ stdenv.mkDerivation (finalAttrs: {
       defaultReadOnlyPaths = [
         "/usr"
         "/bin"
+        "/lib"
         "/lib64"
         "/etc"
         "/nix"

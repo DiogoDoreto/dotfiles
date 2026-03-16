@@ -27,6 +27,12 @@ in
       default = [ ];
       description = "Extra read-only paths to bind mount into the bubblewrap sandbox.";
     };
+
+    configSource = mkOption {
+      type = types.str;
+      default = ".config/opencode";
+      description = "Dotfiles-relative path used as the source for the opencode XDG config directory.";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -43,7 +49,7 @@ in
     ];
 
     xdg.configFile = {
-      "opencode".source = dotfilesSymlink ".config/opencode";
+      "opencode".source = dotfilesSymlink cfg.configSource;
     };
 
     # ensure folder exists, otherwise bwrap fails to start
