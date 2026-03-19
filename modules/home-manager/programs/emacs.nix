@@ -171,7 +171,13 @@ let
           "+tree-sitter"
         ];
       };
-      markdown.enable = true;
+      markdown = {
+        enable = true;
+        flags = [
+          "+grip"
+          "+tree-sitter"
+        ];
+      };
       nix = {
         enable = true;
         flags = [
