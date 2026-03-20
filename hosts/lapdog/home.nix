@@ -58,6 +58,7 @@
       sshfs
       ungoogled-chromium
       onedrivegui
+      forgejo-cli
     ];
   };
 

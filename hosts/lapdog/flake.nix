@@ -37,6 +37,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     llm-agents.url = "github:numtide/llm-agents.nix";
+    forgejo-cli.url = "git+https://codeberg.org/forgejo-contrib/forgejo-cli";
   };
 
   outputs =
@@ -50,6 +51,7 @@
         inputs.nur.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
+          inherit (inputs.forgejo-cli.packages.${system}) forgejo-cli;
         })
       ]
       ++ inputs.my-ipu7.outputs.overlays
