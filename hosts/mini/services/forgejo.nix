@@ -33,7 +33,30 @@ in
       session = {
         COOKIE_SECURE = true;
       };
+      actions = {
+        ENABLED = true;
+      };
     };
+  };
+
+  # Runner token must be provisioned manually:
+  # 1. Go to https://git.local.doreto.com.br/admin/actions/runners
+  # 2. Copy the registration token
+  # 3. sudo install -m 600 -o root /dev/stdin /etc/secrets/forgejo/runner-token
+  #    TOKEN=(paste token, then Ctrl+D)
+  services.gitea-actions-runner.instances.mini = {
+    enable = true;
+    url = "https://git.local.doreto.com.br";
+    name = "mini";
+    tokenFile = "/etc/secrets/forgejo/runner-token";
+    labels = [ "nix:host" ];
+  };
+
+  systemd.services.gitea-runner-mini = {
+    serviceConfig.LoadCredential = [
+      "caddy-ca:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
+    ];
+    environment.SSL_CERT_FILE = "%d/caddy-ca";
   };
 
   systemd.services.forgejo = {
