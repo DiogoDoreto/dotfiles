@@ -16,6 +16,7 @@ in
         dns
         http
         https
+        forgejoSsh
       ] ++ vars.ports.haHomekitBridge;
       allowedUDPPorts = with vars.ports; [
         dns

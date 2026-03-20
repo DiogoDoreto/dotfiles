@@ -16,6 +16,7 @@
     bazarr = 6767;
     calibre = 18083;
     forgejo = 3000;
+    forgejoSsh = 2222;
     home-assistant = 8123; # default; not configurable via NixOS option
     homepage = 8082;
     jellyfin = 8096; # default; not configurable via NixOS option

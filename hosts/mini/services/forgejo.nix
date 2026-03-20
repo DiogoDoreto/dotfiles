@@ -14,7 +14,9 @@ in
         HTTP_PORT = vars.ports.forgejo;
         DOMAIN = "git.local.doreto.com.br";
         ROOT_URL = "https://git.local.doreto.com.br/";
-        DISABLE_SSH = true;
+        SSH_DOMAIN = "git.local.doreto.com.br";
+        SSH_PORT = vars.ports.forgejoSsh;
+        START_SSH_SERVER = true;
       };
       service = {
         ALLOW_ONLY_EXTERNAL_REGISTRATION = true;
