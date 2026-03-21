@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   vars = import ../_variables.nix;
@@ -52,10 +57,22 @@ in
     labels = [ "nix:host" ];
   };
 
+  users.groups.gitea-runner = { };
+  users.users.gitea-runner = {
+    isSystemUser = true;
+    group = "gitea-runner";
+  };
+
   systemd.services.gitea-runner-mini = {
-    serviceConfig.LoadCredential = [
-      "caddy-ca:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
-    ];
+    path = [ pkgs.rsync ];
+    serviceConfig = {
+      DynamicUser = lib.mkForce false;
+      User = "gitea-runner";
+      Group = "gitea-runner";
+      LoadCredential = [
+        "caddy-ca:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
+      ];
+    };
     environment.SSL_CERT_FILE = "%d/caddy-ca";
   };
 
