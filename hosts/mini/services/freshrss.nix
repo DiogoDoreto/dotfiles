@@ -32,7 +32,7 @@
   # trust HTTP_REMOTE_USER. REMOTE_ADDR in FastCGI is the client IP (Caddy passes it
   # through), so the LAN range must be listed here.
   services.phpfpm.pools.freshrss.phpEnv = {
-    TRUSTED_PROXY = "127.0.0.1/32 ::1/128 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12";
+    TRUSTED_PROXY = "127.0.0.1/32 ::1/128 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12 100.64.0.0/10";
   };
 
   services.caddy.virtualHosts."freshrss.local.doreto.com.br".extraConfig = ''
