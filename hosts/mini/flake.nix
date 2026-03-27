@@ -18,6 +18,10 @@
       url = "github:doomemacs/doomemacs";
       flake = false;
     };
+    nextcloud-org-notes = {
+      url = "path:/home/dog/projects/nextcloud-org-notes";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -34,6 +38,7 @@
         inputs.llm-agents.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
+          orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
         })
       ];
       pkgs = import nixpkgs {

@@ -21,6 +21,8 @@ in
       adminpassFile = "/var/lib/nextcloud-pass.txt";
       dbtype = "sqlite";
     };
+    extraApps = { inherit (pkgs) orgnotes; };
+    extraAppsEnable = true;
   };
   services.nginx.virtualHosts."${config.services.nextcloud.hostName}".listen = [
     {

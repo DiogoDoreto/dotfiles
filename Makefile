@@ -16,6 +16,12 @@ lapdog-flake-update:
 	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Lapdog flake update" -- \
 	nix flake update --flake ./hosts/lapdog/
 
+.PHONY: test-org-notes-remote-mini-switch
+test-org-notes-remote-mini-switch:
+	cd hosts/mini/ && nix flake update nextcloud-org-notes
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Mini switch" -- \
+	'nh os switch --target-host dogdot -H dogdot --elevation-strategy passwordless ./hosts/mini/'
+
 .PHONY: remote-mini-switch
 remote-mini-switch:
 	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Mini switch" -- \

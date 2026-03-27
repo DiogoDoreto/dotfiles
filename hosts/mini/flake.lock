@@ -318,6 +318,42 @@
         "type": "github"
       }
     },
+    "nextcloud-org-notes": {
+      "inputs": {
+        "nextcloud-vue": "nextcloud-vue",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "openspec": "openspec",
+        "utils": "utils"
+      },
+      "locked": {
+        "lastModified": 1774215089,
+        "narHash": "sha256-gHFXg60gyv3JcNZsR8EHCxO4ynaT06IPaFzapM6uM+4=",
+        "path": "/home/dog/projects/nextcloud-org-notes",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/dog/projects/nextcloud-org-notes",
+        "type": "path"
+      }
+    },
+    "nextcloud-vue": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1773992274,
+        "narHash": "sha256-7LOwIeB7+VV9zrMYBHc8A2WjpfMaGWWjcalaNYg9FWw=",
+        "owner": "nextcloud-libraries",
+        "repo": "nextcloud-vue",
+        "rev": "842ce2c9d47c33e73cc5c0474494098e862a1b0f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nextcloud-libraries",
+        "repo": "nextcloud-vue",
+        "type": "github"
+      }
+    },
     "nixos-hardware": {
       "locked": {
         "lastModified": 1772972630,
@@ -418,6 +454,27 @@
         "type": "github"
       }
     },
+    "openspec": {
+      "inputs": {
+        "nixpkgs": [
+          "nextcloud-org-notes",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1772182342,
+        "narHash": "sha256-9Q0iUyZGcDPLdgvnrBN3GumV8g9akV8TFb8bFkD1yYs=",
+        "owner": "Fission-AI",
+        "repo": "OpenSpec",
+        "rev": "afdca0d5dab1aa109cfd8848b2512333ccad60c3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Fission-AI",
+        "repo": "OpenSpec",
+        "type": "github"
+      }
+    },
     "pyproject-build-systems": {
       "inputs": {
         "nixpkgs": [
@@ -474,6 +531,7 @@
         "doomemacs": "doomemacs",
         "home-manager": "home-manager",
         "llm-agents": "llm-agents",
+        "nextcloud-org-notes": "nextcloud-org-notes",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_3",
         "nur": "nur"
@@ -509,6 +567,21 @@
         "type": "github"
       }
     },
+    "systems_3": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
@@ -527,6 +600,24 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "utils": {
+      "inputs": {
+        "systems": "systems_3"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
         "type": "github"
       }
     },
