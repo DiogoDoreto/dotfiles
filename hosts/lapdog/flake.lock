@@ -84,11 +84,11 @@
     "doomemacs": {
       "flake": false,
       "locked": {
-        "lastModified": 1773987920,
-        "narHash": "sha256-iO4svl8iB3zo1GArQpiFg+IBi/mENxn+AOCgOlMuO4Q=",
+        "lastModified": 1774080407,
+        "narHash": "sha256-FYbalilgDFjIVwK+D6DjDos1IMmMGA20lRf8k6Ykm1Y=",
         "owner": "doomemacs",
         "repo": "doomemacs",
-        "rev": "ebf77f71c43cf4ff2cef5fb7f29cb3e189f17647",
+        "rev": "d8d75443d39d95f3c5256504eb838e0acc62ef44",
         "type": "github"
       },
       "original": {
@@ -204,11 +204,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1773979202,
-        "narHash": "sha256-cFe/HoD9XFkCQALm+y1kTOBvKGQA8p0YsBxLpWCsZAw=",
+        "lastModified": 1774190239,
+        "narHash": "sha256-j1CRpjQSAChzvkh+4P2WQpO7aJJn514ZpbQ03T1fk38=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "124f2bbdf02a73235a74bc353fc9c706a3b0e015",
+        "rev": "20277623694c39636c6d6cc709461931d0fe64d3",
         "type": "github"
       },
       "original": {
@@ -413,11 +413,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1773628058,
-        "narHash": "sha256-hpXH0z3K9xv0fHaje136KY872VT2T5uwxtezlAskQgY=",
+        "lastModified": 1773840656,
+        "narHash": "sha256-9tpvMGFteZnd3gRQZFlRCohVpqooygFuy9yjuyRL2C0=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f8573b9c935cfaa162dd62cc9e75ae2db86f85df",
+        "rev": "9cf7092bdd603554bd8b63c216e8943cf9b12512",
         "type": "github"
       },
       "original": {
