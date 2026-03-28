@@ -12,7 +12,7 @@
 
     # services
     audiobookshelf = 18090;
-    authentik = 9443; # authentik internal HTTPS; default; not configurable via NixOS option
+    authentik = 9000; # authentik internal HTTP; default from authentik-nix module
     bazarr = 6767;
     calibre = 18083;
     forgejo = 3000;

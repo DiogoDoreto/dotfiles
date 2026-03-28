@@ -150,6 +150,44 @@ in
   #   enableSSHSupport = true;
   # };
 
+  # Trust the local Caddy root certificate so services can verify
+  # certificates signed by Caddy's internal CA (for local domains).
+  # A systemd service copies the cert from Caddy to the system trust store at boot.
+  systemd.services.caddy-cert-trust =
+    let
+      setupCaCertScript = pkgs.writeShellScript "setup-caddy-ca-cert" ''
+        set -e
+        CADDY_CERT="/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
+        CUSTOM_CA_BUNDLE="/etc/ssl/certs/ca-bundle-with-local-ca.crt"
+
+        if [ ! -f "$CADDY_CERT" ]; then
+          echo "Error: Caddy certificate not found at $CADDY_CERT" >&2
+          exit 1
+        fi
+
+        mkdir -p /etc/ssl/certs
+        cp /etc/static/ssl/certs/ca-bundle.crt "$CUSTOM_CA_BUNDLE"
+
+        # Append Caddy cert if not already present
+        if ! grep -q "$(head -1 "$CADDY_CERT")" "$CUSTOM_CA_BUNDLE" 2>/dev/null; then
+          echo "" >> "$CUSTOM_CA_BUNDLE"
+          cat "$CADDY_CERT" >> "$CUSTOM_CA_BUNDLE"
+        fi
+
+        chmod 644 "$CUSTOM_CA_BUNDLE"
+      '';
+    in
+    {
+      description = "Setup Caddy root certificate for system CA bundle";
+      wantedBy = [ "multi-user.target" ];
+      before = [ "caddy.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = "yes";
+        ExecStart = setupCaCertScript;
+      };
+    };
+
   # Enable the OpenSSH daemon.
   services.openssh = {
     enable = true;

@@ -29,11 +29,7 @@ in
       };
       "auth.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy https://localhost:${p.authentik} {
-            transport http {
-              tls_insecure_skip_verify
-            }
-          }
+          reverse_proxy http://localhost:${p.authentik}
         '';
       };
       "nextcloud.local.doreto.com.br" = {
