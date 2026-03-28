@@ -8,6 +8,7 @@
   home = {
     packages = with pkgs; [
       ungoogled-chromium
+      python3Packages.huggingface-hub
     ];
   };
 

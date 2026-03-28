@@ -104,15 +104,15 @@ git commit -m "chungus: enable cudaSupport for NixOS pkgs, add llama-swap import
 **Files:**
 - Modify: `hosts/chungus/home.nix`
 
-- [ ] **Step 1: Add huggingface-hub to home.packages**
+- [ ] **Step 1: Add python3Packages.huggingface-hub to home.packages**
 
-In `hosts/chungus/home.nix`, add `huggingface-hub` to the packages list:
+In `hosts/chungus/home.nix`, add `python3Packages.huggingface-hub` to the packages list (provides the `hf` CLI):
 
 ```nix
 home = {
   packages = with pkgs; [
     ungoogled-chromium
-    huggingface-hub
+    python3Packages.huggingface-hub
   ];
 };
 ```
@@ -249,10 +249,10 @@ Expected: `active (running)`. The service will be running but not yet serving mo
 
 - [ ] **Step 1: Download Qwen3.5-35B-A3B-Q4_K_M.gguf**
 
-On chungus, using the now-available `huggingface-cli`:
+On chungus, using the now-available `hf` CLI (from `python3Packages.huggingface-hub`):
 
 ```bash
-huggingface-cli download bartowski/Qwen_Qwen3.5-35B-A3B-GGUF \
+hf download bartowski/Qwen_Qwen3.5-35B-A3B-GGUF \
   Qwen3.5-35B-A3B-Q4_K_M.gguf \
   --local-dir /tmp/hf-download
 ```

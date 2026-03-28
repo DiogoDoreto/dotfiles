@@ -8,6 +8,7 @@
   imports = [
     # Include the results of the hardware scan.
     ./hardware.nix
+    ./services/llama-swap.nix
   ];
 
   hardware.nvidia-container-toolkit = {
@@ -21,8 +22,7 @@
     enable32Bit = true; # Useful for some viewer dependencies
   };
 
-  # TODO enable after successful upgrade of nixos
-  # nixpkgs.config.cudaSupport = true;
+  nixpkgs.config.cudaSupport = true;
 
   # Load NVIDIA Driver
   services.xserver.videoDrivers = [ "nvidia" ];
