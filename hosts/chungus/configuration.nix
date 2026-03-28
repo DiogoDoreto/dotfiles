@@ -33,24 +33,28 @@
 
   nixpkgs.config.cudaSupport = true;
 
-  # Load NVIDIA Driver
-  services.xserver.videoDrivers = [ "nvidia" ];
+  # Intel (display) + NVIDIA (compute) via PRIME offload
+  # Intel UHD 770 handles display; RTX 4090 is free for CUDA/compute workloads
+  services.xserver.videoDrivers = [
+    "modesetting"
+    "nvidia"
+  ];
 
   hardware.nvidia = {
-    # Modesetting is required for most modern wayland compositors
     modesetting.enable = true;
-
-    # Power management can be tricky; start with it disabled unless needed
     powerManagement.enable = false;
-
-    # Use the proprietary "Open" kernel modules (recommended for RTX 40-series)
     open = true;
-
-    # Enable the Nvidia settings menu
     nvidiaSettings = true;
-
-    # Select the driver package
     package = config.boot.kernelPackages.nvidiaPackages.stable;
+
+    prime = {
+      offload = {
+        enable = true;
+        enableOffloadCmd = true; # provides `nvidia-offload` wrapper
+      };
+      intelBusId = "PCI:0:2:0"; # Intel UHD Graphics 770
+      nvidiaBusId = "PCI:1:0:0"; # NVIDIA RTX 4090
+    };
   };
 
   # Bootloader.
