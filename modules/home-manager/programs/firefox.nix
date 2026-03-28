@@ -13,10 +13,11 @@ in
 {
   options.dog.programs.firefox = {
     enable = mkEnableOption "Firefox";
+    devedition = mkEnableOption "Firefox Developer Edition";
   };
 
   config = mkIf cfg.enable {
-    home.packages = [
+    home.packages = mkIf cfg.devedition [
       pkgs.firefox-devedition
     ];
 
@@ -129,6 +130,7 @@ in
         profiles.dog = base-profile // {
           id = 0;
         };
+      } // optionalAttrs cfg.devedition {
         profiles.dev-edition-default = base-profile // {
           id = 1;
         };
