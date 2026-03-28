@@ -1,9 +1,33 @@
 { pkgs, lib, ... }:
+
+# Download the model with:
+#   hf download unsloth/Qwen3.5-35B-A3B-GGUF \
+#     --local-dir /tmp/qwen35 \
+#     --include "*UD-Q4_K_XL*"
+#   sudo mv /tmp/qwen35/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf /var/lib/llama-swap/models
+
+# Memory calculator: https://www.kolosal.ai/memory-calculator
+
 let
-  # pkgs.llama-cpp has CUDA support because nixpkgs.config.cudaSupport = true
-  # is set in configuration.nix, which feeds the NixOS module system's pkgs.
   llama-server = lib.getExe' pkgs.llama-cpp "llama-server";
   modelDir = "/var/lib/llama-swap/models";
+
+  qwen35BaseFlags = [
+    "--port \${PORT}"
+    "--no-webui"
+    "-m ${modelDir}/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf"
+    "-ngl 99"
+    "--flash-attn"
+    "-c 32768"
+    "-b 512"
+    "--cache-type-k bf16" # may need to change to q8_0 or q5_1 to fit in memory
+    "--cache-type-v bf16"
+    "--top-k 20"
+    "--top-p 0.95"
+    "--min-p 0.00"
+  ];
+
+  mkCmd = flags: "${llama-server} ${lib.concatStringsSep " " flags}";
 in
 {
   services.llama-swap = {
@@ -15,13 +39,29 @@ in
     settings = {
       healthCheckTimeout = 120;
       models = {
-        "qwen3.5-35b-a3b" = {
-          # \${PORT} uses Nix's \${ escape (Nix manual: "To write a dollar sign
-          # followed by {, you can write \${"). This produces literal ${PORT} in
-          # the generated YAML, which llama-swap substitutes at runtime with the
-          # actual port number.
-          cmd = "${llama-server} --port \${PORT} -m ${modelDir}/Qwen3.5-35B-A3B-Q4_K_M.gguf -ngl 99 --flash-attn -c 32768 -b 512 --no-webui";
-          aliases = [ "qwen3.5" ];
+        "qwen3.5-35b-a3b-coding" = {
+          # Coding/precise tasks: lower temperature, no presence penalty
+          cmd = mkCmd (
+            qwen35BaseFlags
+            ++ [
+              "--temp 0.6"
+            ]
+          );
+          aliases = [
+            "qwen3.5"
+            "qwen3.5-coding"
+          ];
+        };
+        "qwen3.5-35b-a3b-general" = {
+          # General tasks: higher temperature, presence penalty to reduce repetition
+          cmd = mkCmd (
+            qwen35BaseFlags
+            ++ [
+              "--temp 1.0"
+              "--presence-penalty 1.5"
+            ]
+          );
+          aliases = [ "qwen3.5-general" ];
         };
       };
     };
