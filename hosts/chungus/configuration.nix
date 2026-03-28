@@ -31,13 +31,8 @@
     enable32Bit = true; # Useful for some viewer dependencies
   };
 
-  nixpkgs.config.cudaSupport = true;
-
-  nixpkgs.overlays = [
-    (final: prev: {
-      firefox = prev.firefox.override { cudaSupport = false; };
-    })
-  ];
+  # enable CUDA per-program that needs it
+  # nixpkgs.config.cudaSupport = true;
 
   # Intel (display) + NVIDIA (compute) via PRIME offload
   # Intel UHD 770 handles display; RTX 4090 is free for CUDA/compute workloads

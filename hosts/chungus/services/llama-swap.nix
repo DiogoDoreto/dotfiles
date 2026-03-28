@@ -9,19 +9,20 @@
 # Memory calculator: https://www.kolosal.ai/memory-calculator
 
 let
-  llama-server = lib.getExe' pkgs.llama-cpp "llama-server";
+  llama-cpp = pkgs.llama-cpp.override { cudaSupport = true; };
+  llama-server = lib.getExe' llama-cpp "llama-server";
   modelDir = "/var/lib/llama-swap/models";
 
   qwen35BaseFlags = [
     "--port \${PORT}"
-    "--no-webui"
     "-m ${modelDir}/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf"
+    "--mmproj ${modelDir}/mmproj-F16.gguf"
     "-ngl 99"
-    "--flash-attn"
+    "--flash-attn on"
     "-c 32768"
     "-b 512"
-    "--cache-type-k bf16" # may need to change to q8_0 or q5_1 to fit in memory
-    "--cache-type-v bf16"
+    "--cache-type-k q4_0"
+    "--cache-type-v q4_0"
     "--top-k 20"
     "--top-p 0.95"
     "--min-p 0.00"
