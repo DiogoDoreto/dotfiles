@@ -11,6 +11,7 @@
     ./lib
     ./presets
     ./programs
+    ./services
   ];
 
   home = {

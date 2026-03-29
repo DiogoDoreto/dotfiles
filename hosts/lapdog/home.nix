@@ -130,6 +130,11 @@
 
   dog.presets.linux.enable = true;
 
+  dog.services.auto-commit = {
+    enable = true;
+    watchedDirectories = [ "/home/dog/Nextcloud/Notes" ];
+  };
+
   dog.programs = {
     cli-tools.enable = true;
     git.enable = true;

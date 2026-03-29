@@ -1,0 +1,7 @@
+{ ... }:
+
+{
+  imports = [
+    ./auto-commit.nix
+  ];
+}
