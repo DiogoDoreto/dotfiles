@@ -87,6 +87,11 @@ in
           reverse_proxy localhost:${p.openWebui}
         '';
       };
+      "chat.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy localhost:${p.libreChat}
+        '';
+      };
       "ha.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy 192.168.0.2:${p.home-assistant}

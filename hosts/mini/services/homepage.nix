@@ -110,9 +110,9 @@ in
             };
           }
           {
-            "Open WebUI" = rec {
-              icon = "open-webui.png";
-              href = "https://ai.local.doreto.com.br";
+            "LibreChat" = rec {
+              icon = "librechat.png";
+              href = "https://chat.local.doreto.com.br";
               ping = href;
             };
           }

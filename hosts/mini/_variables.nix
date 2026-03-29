@@ -23,6 +23,7 @@
     jellyfin = 8096; # default; not configurable via NixOS option
     lidarr = 8686;
     nextcloud = 5387; # nginx listen port (proxied by caddy)
+    libreChat = 11112;
     openWebui = 11111;
     opencode = 32859;
     openssh = 17098;
