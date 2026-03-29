@@ -6,7 +6,7 @@ Lockfiles are ignored."
   (let ((default-directory (projectile-project-root)))
     (shell-command-to-string
      (concat (format "git diff --cached --unified=%d" context-lines)
-             " -- . ':!package-lock.json' ':!yarn.lock' ':!flake.lock'"))))
+             " -- . ':!package-lock.json' ':!*.lock'"))))
 
 ;;; ** Create commit command
 
@@ -255,9 +255,9 @@ by adding B-tree index on frequently queried column.
     (require 'gptel)
     (message "Preparing commit...")
     (gptel-request
-        (dd--create-commit-user-prompt commit-reason)
-      :system (dd--create-commit-system-prompt)
-      :callback #'dd--create-commit-callback)))
+     (dd--create-commit-user-prompt commit-reason)
+     :system (dd--create-commit-system-prompt)
+     :callback #'dd--create-commit-callback)))
 
 ;;; ** Code review command
 
@@ -311,6 +311,6 @@ With prefix ARG, prompt for a review focus."
       (display-buffer (current-buffer))
       (message "Preparing code review...")
       (gptel-request
-          (dd--create-code-review-user-prompt focus-area)
-        :system (dd--create-code-review-system-prompt)
-        :stream t))))
+       (dd--create-code-review-user-prompt focus-area)
+       :system (dd--create-code-review-system-prompt)
+       :stream t))))
