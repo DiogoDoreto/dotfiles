@@ -22,6 +22,7 @@ in
     ./services/media.nix
     ./services/nextcloud.nix
     ./services/opencode-web.nix
+    ./services/openwebui.nix
     ./services/searx.nix
     ./services/vscodium-web.nix
   ];

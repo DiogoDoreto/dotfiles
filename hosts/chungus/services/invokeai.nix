@@ -2,6 +2,12 @@
 
 {
   virtualisation.oci-containers.containers.invokeai = {
+    # Check latest versions on https://github.com/invoke-ai/InvokeAI/releases
+    # The registry does not publish stable version tags beyond v2.3.0, so
+    # pinning is not viable. To manually upgrade, run on chungus (sudo
+    # required — oci-containers runs as root with a separate image store):
+    #   sudo podman pull ghcr.io/invoke-ai/invokeai:latest
+    #   sudo systemctl restart podman-invokeai.service
     image = "ghcr.io/invoke-ai/invokeai:latest";
     ports = [ "9090:9090" ];
     volumes = [
