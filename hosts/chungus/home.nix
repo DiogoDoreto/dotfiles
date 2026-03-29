@@ -7,8 +7,8 @@
 
   home = {
     packages = with pkgs; [
+      pods
       ungoogled-chromium
-      python3Packages.huggingface-hub
     ];
   };
 

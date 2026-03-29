@@ -112,6 +112,11 @@ in
           reverse_proxy localhost:${p.opencode}
         '';
       };
+      "invokeai.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy 192.168.0.3:${p.invokeai}
+        '';
+      };
       "www.local.doreto.com.br" = {
         extraConfig = ''
           root * /var/lib/www

@@ -19,6 +19,7 @@
     forgejoSsh = 2222;
     home-assistant = 8123; # default; not configurable via NixOS option
     homepage = 8082;
+    invokeai = 9090;
     jellyfin = 8096; # default; not configurable via NixOS option
     lidarr = 8686;
     nextcloud = 5387; # nginx listen port (proxied by caddy)

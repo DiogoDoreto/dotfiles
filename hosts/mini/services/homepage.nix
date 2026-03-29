@@ -116,6 +116,13 @@ in
               ping = href;
             };
           }
+          {
+            "InvokeAI" = rec {
+              icon = "midjourney-light.png";
+              href = "https://invokeai.local.doreto.com.br";
+              ping = href;
+            };
+          }
         ];
       }
       {

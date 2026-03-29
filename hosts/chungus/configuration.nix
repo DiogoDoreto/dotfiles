@@ -9,6 +9,7 @@
     # Include the results of the hardware scan.
     ./hardware.nix
     ./services/llama-swap.nix
+    ./services/invokeai.nix
   ];
 
   nix.settings = {
