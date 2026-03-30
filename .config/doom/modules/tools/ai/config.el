@@ -117,9 +117,11 @@ Also see multipliers here: https://docs.github.com/en/enterprise-cloud@latest/co
 (use-package copilot
   :defer t
   :bind (:map copilot-completion-map
-              ("s-<tab>" . 'copilot-accept-completion)
-              ("M-s-<tab>" . 'copilot-accept-completion-by-word)
-              ("C-s-<tab>" . 'copilot-next-completion)))
+              ("C-f" . #'copilot-accept-completion)
+              ("M-f" . #'copilot-accept-completion-by-word)
+              ("C-e" . #'copilot-accept-completion-by-line)
+              ("M-n" . #'copilot-next-completion)
+              ("M-p" . #'copilot-previous-completion)))
 
 (defvar-local dd/copilot-completion-enable nil
   "Whether to automatic turn on copilot suggestions.")
