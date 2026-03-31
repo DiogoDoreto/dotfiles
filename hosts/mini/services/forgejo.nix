@@ -64,28 +64,35 @@ in
   };
 
   systemd.services.gitea-runner-mini = {
+    after = [
+      "caddy-cert-trust.service"
+      "forgejo.service"
+    ];
+    wants = [
+      "caddy-cert-trust.service"
+      "forgejo.service"
+    ];
     path = [ pkgs.rsync ];
     serviceConfig = {
       DynamicUser = lib.mkForce false;
       User = "gitea-runner";
       Group = "gitea-runner";
-      LoadCredential = [
-        "caddy-ca:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
-      ];
     };
-    environment.SSL_CERT_FILE = "%d/caddy-ca";
+    environment.SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
   };
 
   systemd.services.forgejo = {
-    serviceConfig.LoadCredential = [
-      "caddy-ca:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
-    ];
-    environment.SSL_CERT_FILE = "%d/caddy-ca";
+    after = [ "caddy-cert-trust.service" ];
+    wants = [ "caddy-cert-trust.service" ];
+    environment.SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
   };
 
   systemd.services.forgejo-oauth-setup = {
     description = "Configure Authentik OAuth2 source in Forgejo";
-    after = [ "forgejo.service" ];
+    after = [
+      "forgejo.service"
+      "caddy-cert-trust.service"
+    ];
     requires = [ "forgejo.service" ];
     wantedBy = [ "multi-user.target" ];
     path = [
@@ -97,12 +104,9 @@ in
       HOME = "/var/lib/forgejo";
       FORGEJO_WORK_DIR = "/var/lib/forgejo";
       FORGEJO_CUSTOM = "/var/lib/forgejo/custom";
+      SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
     };
     script = ''
-      # LoadCredential makes the Caddy CA cert available via $CREDENTIALS_DIRECTORY
-      # (systemd reads it as root, so forgejo user doesn't need direct access)
-      export SSL_CERT_FILE="$CREDENTIALS_DIRECTORY/caddy-ca"
-
       if forgejo admin auth list | grep -qw "authentik"; then
         echo "Auth source 'authentik' already exists, skipping"
         exit 0
@@ -123,7 +127,6 @@ in
       Group = "forgejo";
       WorkingDirectory = "/var/lib/forgejo";
       EnvironmentFile = "/etc/secrets/forgejo/oauth";
-      LoadCredential = "caddy-ca:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt";
     };
   };
 }
