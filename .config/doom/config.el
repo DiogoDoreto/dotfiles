@@ -226,7 +226,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
+                  (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (message "Checking last commit...")
                      (cdr (doom-call-process
@@ -263,6 +263,7 @@ Based on the code of `doom/bump-package-at-point'"
 (load! "dd/lsp")
 (load! "dd/nix")
 (load! "dd/terminal")
+(load! "dd/tree-sitter")
 
 (pcase (system-name)
   ("dogdot" (load! "dd/host-dogdot"))
@@ -433,9 +434,6 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
                                  :api-url "https://freshrss.local.doreto.com.br/api/fever.php"
                                  :password "freshrss")))
   (elfeed-protocol-enable))
-
-(use-package combobulate
-  :hook prog-mode)
 
 ;;; Random stuff...
 

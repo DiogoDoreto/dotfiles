@@ -41,7 +41,7 @@
 
 (package! elfeed-protocol :pin "4f5e77a28c501db686ac06a2ea250a7b37d5420c")
 
-(package! combobulate :pin "38773810b5e532f25d11c6d1af02c3a8dffeacd7")
+(package! evil-textobj-tree-sitter :pin "7f58008a82c70eb1c6c5761db499f0be0db9d6cb")
 
 ;; ghostel — terminal emulator powered by libghostty-vt.
 ;; The package directory is placed by Nix at straight's repos path (see
