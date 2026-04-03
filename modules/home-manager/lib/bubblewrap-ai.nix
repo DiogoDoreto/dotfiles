@@ -40,6 +40,7 @@ stdenv.mkDerivation (finalAttrs: {
         "/run"
         "~/.config/git"
         "~/.local/share/direnv"
+        "~/.local/share/doomemacs/straight/repos"
       ];
       defaultWritablePaths = [
         # "/nix/var/nix/daemon-socket" # For package installs

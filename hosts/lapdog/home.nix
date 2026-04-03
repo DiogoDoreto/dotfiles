@@ -17,27 +17,6 @@
       #   package = fish;
       #   wrappedBinName = "ai-shell";
       # })
-      (dog-lib.bubblewrapAi {
-        package = llm-agents.claude-code;
-        extraWritablePaths = [
-          "~/.claude/"
-          "~/.claude.json"
-          "~/projects/"
-          "/run/user/1000/agent-browser"
-        ];
-        extraCommandFlags = [
-          "--dangerously-skip-permissions"
-        ];
-      })
-      (dog-lib.bubblewrapAi {
-        package = claude-agent-acp;
-        extraWritablePaths = [
-          "~/.claude/"
-          "~/.claude.json"
-          "~/projects/"
-          "/run/user/1000/agent-browser"
-        ];
-      })
       # blender
       # clonehero
       # freecad
@@ -143,7 +122,22 @@
     plasma-fix-taskbar-icons.enable = true;
     wezterm.enable = true;
 
+    claude-code = {
+      enable = true;
+      extraWritablePaths = [
+        "~/projects/"
+        "/run/user/1000/agent-browser"
+      ];
+    };
+
     opencode = {
+      enable = true;
+      extraWritablePaths = [
+        "~/projects/"
+      ];
+    };
+
+    pi = {
       enable = true;
       extraWritablePaths = [
         "~/projects/"

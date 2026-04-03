@@ -3,6 +3,7 @@
 {
   imports = [
     ./blueman.nix
+    ./claude-code.nix
     ./cli-tools.nix
     ./emacs.nix
     ./firefox.nix
@@ -13,6 +14,7 @@
     ./i3.nix
     ./plasma-fix-taskbar-icons.nix
     ./opencode.nix
+    ./pi.nix
     ./podman.nix
     ./polybar.nix
     ./rofi.nix
