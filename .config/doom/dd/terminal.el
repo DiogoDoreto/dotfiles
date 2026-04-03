@@ -40,8 +40,11 @@
 (defun dd/vterm (name)
   "Create a new vterm buffer that won't be removed automatically."
   (interactive "sVTerm buffer name: ")
-  (let (display-buffer-alist)
-    (vterm name)))
+  (let ((display-buffer-alist nil)
+        (buf-name (format "*vterm:%s:%s*"
+                          (or (projectile-project-name) "-")
+                          name)))
+    (vterm buf-name)))
 
 (map! :leader :desc "Open named vterm" :n "o v" #'dd/vterm)
 
