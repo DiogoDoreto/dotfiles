@@ -32,6 +32,10 @@
       url = "../../modules/flakes/ipu7";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    my-ghostel = {
+      url = "../../flakes/ghostel";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     my-claude-agent-acp = {
       url = "../../flakes/claude-agent-acp";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -53,6 +57,7 @@
     let
       system = "x86_64-linux";
       overlays = [
+        inputs.my-ghostel.overlays.${system}.default
         inputs.llm-agents.overlays.default
         inputs.my-kwtype.overlays.default
         inputs.my-claude-agent-acp.overlays.${system}.default

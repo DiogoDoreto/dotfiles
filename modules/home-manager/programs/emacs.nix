@@ -228,6 +228,14 @@ in
   options.dog.programs.emacs = {
     enable = mkEnableOption "emacs + doom";
 
+    ghostel.enable = mkEnableOption "ghostel native terminal emulator" // {
+      description = ''
+        Enable ghostel, an Emacs terminal emulator powered by libghostty-vt.
+        Requires the ghostel flake overlay to be applied to pkgs
+        (pkgs.ghostel-package must exist). See flakes/ghostel/README.md.
+      '';
+    };
+
     doom.init =
       let
         doomModuleType = types.submodule {
@@ -308,6 +316,14 @@ in
     home.sessionVariables = {
       DOOMLOCALDIR = "$HOME/.local/share/doomemacs";
       DOOMPROFILELOADFILE = "$HOME/.local/share/doomemacs/profiles/load.el";
+    };
+
+    # When ghostel is enabled, symlink the combined package (elisp + .so) into
+    # straight.el's repos directory. The path matches DOOMLOCALDIR set below.
+    # straight uses it with :type nil — no git operations; build artifacts go
+    # to straight/build/, so the read-only nix store symlink is fine.
+    home.file = mkIf cfg.ghostel.enable {
+      ".local/share/doomemacs/straight/repos/ghostel".source = pkgs.ghostel-package;
     };
 
     xdg.configFile = {

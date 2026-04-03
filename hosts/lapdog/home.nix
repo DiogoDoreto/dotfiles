@@ -146,6 +146,7 @@
 
     emacs = {
       enable = true;
+      ghostel.enable = true;
       doom.init.lang.common-lisp.enable = true;
     };
   };

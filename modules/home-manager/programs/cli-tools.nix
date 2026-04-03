@@ -61,6 +61,13 @@ in
           tree = "eza --tree";
         };
         shellInitLast = ''
+          ### Ghostel (Emacs terminal emulator) ###
+          # Ghostel's PTY does not set VERASE, so fish never derives a \x7f
+          # backspace binding from it.  Bind it explicitly when running inside ghostel.
+          if test "$INSIDE_EMACS" = "ghostel"
+              bind --user \x7f backward-delete-char
+          end
+
           ### Emacs' vterm integration ###
 
           function vterm_printf;
