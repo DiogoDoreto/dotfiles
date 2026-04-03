@@ -41,9 +41,9 @@
       # blender
       # clonehero
       # freecad
+      handy
       imagemagick
       llm-agents.agent-browser
-      llm-agents.handy
       kdePackages.kdenlive
       keepassxc
       krita

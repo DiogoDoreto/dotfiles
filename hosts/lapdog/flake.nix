@@ -37,6 +37,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     llm-agents.url = "github:numtide/llm-agents.nix";
+    handy = {
+      url = "github:cjpais/Handy";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     forgejo-cli.url = "git+https://codeberg.org/forgejo-contrib/forgejo-cli";
   };
 
@@ -52,6 +56,7 @@
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
           inherit (inputs.forgejo-cli.packages.${system}) forgejo-cli;
+          handy = inputs.handy.packages.${system}.default;
         })
       ]
       ++ inputs.my-ipu7.outputs.overlays
