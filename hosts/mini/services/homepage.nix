@@ -123,6 +123,13 @@ in
               ping = href;
             };
           }
+          {
+            "Kokoro TTS" = {
+              icon = "kokoro-web.png";
+              href = "https://tts.local.doreto.com.br/web/";
+              ping = "https://tts.local.doreto.com.br";
+            };
+          }
         ];
       }
       {

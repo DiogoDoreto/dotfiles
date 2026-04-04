@@ -24,6 +24,7 @@ in
     ./services/opencode-web.nix
     ./services/librechat.nix
     # ./services/openwebui.nix
+    ./services/kokoro.nix
     ./services/searx.nix
     ./services/vscodium-web.nix
   ];

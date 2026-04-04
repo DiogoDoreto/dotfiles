@@ -117,6 +117,11 @@ in
           reverse_proxy localhost:${p.opencode}
         '';
       };
+      "tts.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy localhost:${p.kokoro}
+        '';
+      };
       "invokeai.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy 192.168.0.3:${p.invokeai}
