@@ -33,6 +33,11 @@ in
       gcc
       gnumake
       libtool
+
+      # python
+      python3
+      python3Packages.pip
+      uv
     ];
 
     programs = {
