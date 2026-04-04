@@ -43,7 +43,7 @@ stdenv.mkDerivation (finalAttrs: {
         "~/.local/share/doomemacs/straight/repos"
       ];
       defaultWritablePaths = [
-        # "/nix/var/nix/daemon-socket" # For package installs
+        "~/.agents"
       ];
       readOnlyPaths = defaultReadOnlyPaths ++ extraReadOnlyPaths;
       writablePaths = defaultWritablePaths ++ extraWritablePaths;

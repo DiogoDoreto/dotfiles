@@ -5,6 +5,9 @@
   ...
 }:
 
+let
+  inherit (dog-lib) dotfilesSymlink;
+in
 {
   imports = [
     ./music.nix
@@ -39,6 +42,10 @@
       onedrivegui
       forgejo-cli
     ];
+  };
+
+  home.file = {
+    ".agents".source = dotfilesSymlink ".config/agents";
   };
 
   programs = {
