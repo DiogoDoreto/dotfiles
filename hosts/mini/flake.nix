@@ -56,7 +56,7 @@
         ../../modules/home-manager
       ];
       nixos-modules = [
-        (import ../../nix-config.nix nixpkgs)
+        (import ../../nix-config.nix inputs)
         home-manager.nixosModules.home-manager
         {
           home-manager.extraSpecialArgs = specialArgs;

@@ -24,7 +24,7 @@
       specialArgs = { inherit inputs; };
 
       nixos-modules = [
-        (import ../../nix-config.nix nixpkgs)
+        (import ../../nix-config.nix inputs)
         nixos-hardware.nixosModules.common-cpu-intel
         nixos-hardware.nixosModules.common-gpu-amd
         nixos-hardware.nixosModules.common-pc-laptop

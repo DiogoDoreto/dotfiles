@@ -88,7 +88,7 @@
       ]
       ++ inputs.my-niri.outputs.homeModules;
       nixos-modules = [
-        (import ../../nix-config.nix nixpkgs)
+        (import ../../nix-config.nix inputs)
         home-manager.nixosModules.home-manager
         inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
         inputs.musnix.nixosModules.musnix
