@@ -19,26 +19,21 @@ prevent eager expansion."
   :init (after! tree-sitter (require 'evil-textobj-tree-sitter))
   :after-call doom-first-input-hook
   :config
-  (defvar +tree-sitter-inner-text-objects-map (make-sparse-keymap))
-  (defvar +tree-sitter-outer-text-objects-map (make-sparse-keymap))
   (defvar +tree-sitter-goto-previous-map (make-sparse-keymap))
   (defvar +tree-sitter-goto-next-map (make-sparse-keymap))
 
-  (evil-define-key '(visual operator) 'global
-    "i" +tree-sitter-inner-text-objects-map
-    "a" +tree-sitter-outer-text-objects-map)
   (evil-define-key 'normal 'global
     "[g" +tree-sitter-goto-previous-map
     "]g" +tree-sitter-goto-next-map)
 
-  (map! (:map +tree-sitter-inner-text-objects-map
+  (map! (:map evil-inner-text-objects-map
               "A" (+tree-sitter-get-textobj '("parameter.inner" "call.inner"))
               "f" (+tree-sitter-get-textobj "function.inner")
               "F" (+tree-sitter-get-textobj "call.inner")
               "C" (+tree-sitter-get-textobj "class.inner")
               "v" (+tree-sitter-get-textobj "conditional.inner")
               "l" (+tree-sitter-get-textobj "loop.inner"))
-        (:map +tree-sitter-outer-text-objects-map
+        (:map evil-outer-text-objects-map
               "A" (+tree-sitter-get-textobj '("parameter.outer" "call.outer"))
               "f" (+tree-sitter-get-textobj "function.outer")
               "F" (+tree-sitter-get-textobj "call.outer")
