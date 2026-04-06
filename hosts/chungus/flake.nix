@@ -11,6 +11,10 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    llama-cpp = {
+      url = "github:ggml-org/llama.cpp/master";
+      inputs.nixpkgs.follows = "nixpkgs"; # TODO maybe we need to remove to hit the cache
+    };
     doomemacs = {
       url = "github:doomemacs/doomemacs";
       flake = false;
@@ -29,6 +33,7 @@
         inputs.nur.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
+          llama-cpp = inputs.llama-cpp.packages.${system}.cuda;
         })
       ];
       pkgs = import nixpkgs {

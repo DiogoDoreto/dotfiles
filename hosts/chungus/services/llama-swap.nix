@@ -9,14 +9,16 @@
 # Memory calculator: https://www.kolosal.ai/memory-calculator
 
 let
-  llama-cpp = pkgs.llama-cpp.override { cudaSupport = true; };
-  llama-server = lib.getExe' llama-cpp "llama-server";
+  llama-server = lib.getExe' pkgs.llama-cpp "llama-server";
   modelDir = "/var/lib/llama-swap/models";
 
-  qwen35BaseFlags = [
+  llamaBaseFlags = [
     "--port \${PORT}"
-    "-m ${modelDir}/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf"
-    "--mmproj ${modelDir}/mmproj-F16.gguf"
+  ];
+
+  qwen35BaseFlags = llamaBaseFlags ++ [
+    "-m ${modelDir}/qwen3.5/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf"
+    "--mmproj ${modelDir}/qwen3.5/mmproj-F16.gguf"
     "-ngl 99"
     "--flash-attn on"
     "-c 32768"
@@ -40,6 +42,18 @@ in
     settings = {
       healthCheckTimeout = 120;
       models = {
+        "gemma-4-E4B" = {
+          cmd = mkCmd (
+            llamaBaseFlags
+            ++ [
+              "-m ${modelDir}/gemma4/gemma-4-E4B-it-UD-Q8_K_XL.gguf"
+              "--mmproj ${modelDir}/gemma4/mmproj-BF16.gguf"
+              "--temp 1.0"
+              "--top-p 0.95"
+              "--top-k 64"
+            ]
+          );
+        };
         "qwen3.5-35b-a3b-coding" = {
           # Coding/precise tasks: lower temperature, no presence penalty
           cmd = mkCmd (
