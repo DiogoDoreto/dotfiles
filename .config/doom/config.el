@@ -177,6 +177,8 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 (use-package ol-eww :after org)
 
+(add-hook 'eww-mode-hook (lambda () (setq-local doom-real-buffer-p t)))
+
 (use-package org-block-capf
   :hook (org-mode-hook . org-block-capf-add-to-completion-at-point-functions))
 
