@@ -114,6 +114,18 @@ in
         enableFishIntegration = true;
       };
 
+      tmux = {
+        enable = true;
+        keyMode = "vi";
+        mouse = true;
+        baseIndex = 1;
+        escapeTime = 0;
+        historyLimit = 10000;
+        focusEvents = true;
+        sensibleOnTop = true;
+        terminal = "tmux-256color";
+      };
+
       zoxide = {
         enable = true;
         enableFishIntegration = true;

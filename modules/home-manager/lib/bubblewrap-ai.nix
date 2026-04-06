@@ -39,6 +39,7 @@ stdenv.mkDerivation (finalAttrs: {
         "/nix"
         "/run"
         "~/.config/git"
+        "~/.config/tmux"
         "~/.local/share/direnv"
         "~/.local/share/doomemacs/straight/repos"
       ];
@@ -48,28 +49,32 @@ stdenv.mkDerivation (finalAttrs: {
       readOnlyPaths = defaultReadOnlyPaths ++ extraReadOnlyPaths;
       writablePaths = defaultWritablePaths ++ extraWritablePaths;
       # based on https://github.com/numtide/nix-ai-tools/blob/main/packages/claudebox/claudebox.sh
-      wrapperScript = writeShellScript "${mainProgram}-bubblewrapped.sh" ''
+      wrapperScript = writeShellScript "${finalBinName}-bubblewrapped.sh" ''
         # Create isolated home directory (protects real home from YOLO mode)
-        fake_home=$(mktemp -dt ${mainProgram}_home.XXXXXXXXXX)
-        fake_tmp=$(mktemp -dt ${mainProgram}_tmp.XXXXXXXXXX)
+        isolated_root=$(mktemp -dt ${finalBinName}.XXXXXXXXXX)
+        mkdir -p $isolated_root/{home,tmp,tmux}
+        inner_home=$isolated_root/home
+        inner_tmp=$isolated_root/tmp
+        inner_tmux=$isolated_root/tmux
         at_exit() {
-          rm -rf "$fake_home"
-          rm -rf "$fake_tmp"
+          rm -rf "$isolated_root"
         }
         trap at_exit EXIT
 
         bwrap_args=(
           --dev /dev
           --proc /proc
-          --bind "$fake_home" "$HOME"
-          --bind "$fake_tmp" "/tmp"
+          --bind "$inner_home" "$HOME"
+          --bind "$inner_tmp" "/tmp"
           ${lib.concatMapStrings (path: "--ro-bind-try ${path} ${path}\n") readOnlyPaths}
           ${lib.concatMapStrings (path: "--bind-try ${path} ${path}\n") writablePaths}
+          --bind "$inner_tmux" "/run/user/1000/tmux-1000"
           --unshare-all
           --share-net
           --setenv HOME "$HOME"
           --setenv USER "$USER"
           --setenv PATH "$PATH"
+          --setenv TMUX_TMPDIR "/run/user/1000/tmux-1000"
           --setenv TMPDIR "/tmp"
           --setenv TEMPDIR "/tmp"
           --setenv TEMP "/tmp"
