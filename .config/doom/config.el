@@ -92,6 +92,8 @@
 
 ;;; Jumping / Repeating
 
+(repeat-mode 1)
+
 (map! :m "C-i"       #'better-jumper-jump-forward ;; something was overwriting this to cause indentation
       :m "<mouse-8>" #'better-jumper-jump-backward
       :m "<mouse-9>" #'better-jumper-jump-forward)
