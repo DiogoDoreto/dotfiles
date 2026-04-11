@@ -19,6 +19,7 @@ in
       # Usage: start-agent-vm [extra qemu args…]
       (pkgs.writeShellScriptBin "start-agent-vm" ''
         set -euo pipefail
+        mkdir -p /home/dog/.local/share/lapdog-agent/home
         sudo ${pkgs.systemd}/bin/systemctl start microvm@lapdog-agent.service
         echo "VM starting (systemctl start microvm@lapdog-agent)."
         echo ""

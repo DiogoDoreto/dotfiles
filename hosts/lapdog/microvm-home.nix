@@ -18,6 +18,8 @@ in
     };
   };
 
+  targets.genericLinux.enable = true;
+
   dog.dotfilesPath = /home/dog/projects/dotfiles;
 
   dog.programs = {

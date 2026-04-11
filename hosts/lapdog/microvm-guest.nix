@@ -59,7 +59,7 @@
     uid = 1000;
     group = "dog";
     home = "/home/dog";
-    createHome = true;
+    createHome = false; # home dir is the virtiofs-mounted agent-home share
     extraGroups = [ "wheel" ];
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
@@ -82,6 +82,14 @@
 
   # ── Filesystem mounts (virtiofs) ──────────────────────────────────────────
   # virtiofs tags must match the `tag` fields in microvm.shares below.
+
+  # /home/dog — persistent home directory (host: ~/.local/share/lapdog-agent/home)
+  fileSystems."/home/dog" = {
+    device = "agent-home";
+    fsType = "virtiofs";
+    options = [ "defaults" ];
+    neededForBoot = false;
+  };
 
   # ~/projects — the main working area (read-write)
   fileSystems."/home/dog/projects" = {
@@ -123,10 +131,25 @@
   };
 
   # ── MicroVM hardware ──────────────────────────────────────────────────────
+  # Without this, systemd tries to unmount /nix/store during shutdown, but
+  # umount lives in /nix/store, causing a deadlock.
+  systemd.mounts = [
+    {
+      what = "store";
+      where = "/nix/store";
+      overrideStrategy = "asDropin";
+      unitConfig.DefaultDependencies = false;
+    }
+  ];
+
   microvm = {
     hypervisor = "qemu";
     vcpu = 4;
     mem = 4096;
+
+    # Enable writable nix store overlay so nix-daemon works and
+    # home-manager activation can write to the store.
+    writableStoreOverlay = "/nix/.rw-store";
 
     # TAP networking: traffic goes through the host kernel, so nftables
     # rules on the host can filter and log it (unlike SLIRP which bypasses
@@ -141,6 +164,21 @@
     ];
 
     shares = [
+      # /nix/store — host store shared read-only; no squashfs/erofs needed.
+      # Combined with writableStoreOverlay above for a writable overlay.
+      {
+        proto = "virtiofs";
+        tag = "ro-store";
+        source = "/nix/store";
+        mountPoint = "/nix/.ro-store";
+      }
+      # /home/dog — persistent home (host: $XDG_DATA_HOME/lapdog-agent/home)
+      {
+        proto = "virtiofs";
+        tag = "agent-home";
+        source = "/home/dog/.local/share/lapdog-agent/home";
+        mountPoint = "/home/dog";
+      }
       # ~/projects — main code working directory
       {
         proto = "virtiofs";
