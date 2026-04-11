@@ -25,7 +25,7 @@ in
       # freecad
       handy
       imagemagick
-      llm-agents.agent-browser
+      # llm-agents.agent-browser
       kdePackages.kdenlive
       keepassxc
       krita
