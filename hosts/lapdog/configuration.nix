@@ -297,7 +297,7 @@
   # handles TAP interface creation automatically.
   microvm.vms."lapdog-agent" = {
     # Don't start on boot — launch manually when you need an agent session.
-    autoStart = false;
+    autostart = false;
     # Pull the guest NixOS config from this flake's nixosConfigurations.
     flake = self;
   };

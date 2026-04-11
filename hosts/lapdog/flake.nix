@@ -57,7 +57,12 @@
   };
 
   outputs =
-    { self, nixpkgs, home-manager, ... }@inputs:
+    {
+      self,
+      nixpkgs,
+      home-manager,
+      ...
+    }@inputs:
     let
       system = "x86_64-linux";
       overlays = [
@@ -122,7 +127,7 @@
           ];
         };
     in
-    {
+    rec {
       homeConfigurations = {
         dog = buildHomeFromNixos nixosConfigurations.lapdog.config.users.users.dog ./home.nix;
       };

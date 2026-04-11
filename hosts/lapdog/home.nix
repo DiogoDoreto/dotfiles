@@ -136,8 +136,10 @@ in
           hostname = "10.0.100.2";
           user = "dog";
           # Host key changes every run (ephemeral VM) — skip verification.
-          strictHostKeyChecking = "no";
-          userKnownHostsFile = "/dev/null";
+          extraOptions = {
+            StrictHostKeyChecking = "no";
+            UserKnownHostsFile = "/dev/null";
+          };
         };
       };
     };
