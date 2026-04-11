@@ -35,15 +35,9 @@
       allowedUDPPorts = [ ];
       # Allow forwarding between the vm0 bridge and the outside world.
       # The nftables table below handles logging; these rules open the door.
-      extraCommands = ''
-        iptables -A FORWARD -i vm0 -j ACCEPT
-        iptables -A FORWARD -o vm0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-        iptables -t nat -A POSTROUTING -s 10.0.100.0/24 ! -o vm0 -j MASQUERADE
-      '';
-      extraStopCommands = ''
-        iptables -D FORWARD -i vm0 -j ACCEPT 2>/dev/null || true
-        iptables -D FORWARD -o vm0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || true
-        iptables -t nat -D POSTROUTING -s 10.0.100.0/24 ! -o vm0 -j MASQUERADE 2>/dev/null || true
+      extraForwardRules = ''
+        iifname "vm0" accept
+        oifname "vm0" ct state related,established accept
       '';
     };
 
@@ -70,6 +64,17 @@
   # DNS hostnames are captured separately by dnsmasq below, which is more
   # readable for auditing than raw IP:port pairs.
   networking.nftables.enable = true;
+  # NAT/masquerade for vm0 bridge traffic — must be ip family (not inet)
+  # because masquerade is IPv4-only.
+  networking.nftables.tables."vm-agent-nat" = {
+    family = "ip";
+    content = ''
+      chain postrouting {
+        type nat hook postrouting priority srcnat;
+        ip saddr 10.0.100.0/24 oifname != "vm0" masquerade
+      }
+    '';
+  };
   networking.nftables.tables."vm-agent-audit" = {
     family = "inet";
     content = ''
@@ -324,6 +329,25 @@
         "1.1.1.1"
         "1.0.0.1"
       ];
+    };
+  };
+
+  # ── MicroVM: attach TAP interface to bridge ───────────────────────────────
+  # microvm.nix creates the TAP (vm-agent0) via microvm-tap-interfaces@lapdog-agent
+  # but does NOT enslave it to a bridge.  This service runs after the TAP exists
+  # and before the VM starts, wiring it into vm0 so that 10.0.100.0/24 routing
+  # and nftables rules work correctly.
+  systemd.services."microvm-bridge-lapdog-agent" = {
+    description = "Attach vm-agent0 TAP to vm0 bridge for lapdog-agent VM";
+    after = [ "microvm-tap-interfaces@lapdog-agent.service" ];
+    before = [ "microvm@lapdog-agent.service" ];
+    partOf = [ "microvm@lapdog-agent.service" ];
+    wantedBy = [ "microvm@lapdog-agent.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.iproute2}/bin/ip link set vm-agent0 master vm0";
+      ExecStop = "${pkgs.iproute2}/bin/ip link set vm-agent0 nomaster";
     };
   };
 
