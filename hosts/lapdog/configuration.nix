@@ -33,8 +33,15 @@
       enable = true;
       allowedTCPPorts = [ ];
       allowedUDPPorts = [ ];
+      # Open DNS on the vm0 bridge so the VM can reach the dnsmasq instance
+      # at 10.0.100.1:53.  Without this the input chain's default DROP policy
+      # silently discards DNS queries and the VM can't resolve any hostnames.
+      interfaces.vm0 = {
+        allowedUDPPorts = [ 53 ];
+        allowedTCPPorts = [ 53 ]; # TCP DNS for large responses / DNSSEC
+      };
       # Allow forwarding between the vm0 bridge and the outside world.
-      # The nftables table below handles logging; these rules open the door.
+      # These rules only take effect if filterForward = true; kept for clarity.
       extraForwardRules = ''
         iifname "vm0" accept
         oifname "vm0" ct state related,established accept
