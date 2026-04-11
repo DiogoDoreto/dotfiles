@@ -115,6 +115,7 @@
       "wheel"
       "audio"
       "video"
+      "kvm" # needed to run QEMU/microvm without root
     ];
   };
 
@@ -236,6 +237,67 @@
   };
 
   virtualisation.podman.enable = true;
+
+  # ── MicroVM: share ~/.claude.json with the agent VM ───────────────────────
+  # virtiofsd can only share *directories*, not individual files.  We create
+  # a small staging dir and bind-mount ~/.claude.json into it at runtime;
+  # the VM then sees it via the "claude-share" virtiofs tag.
+  systemd.tmpfiles.settings."lapdog-agent-claude" = {
+    "/var/lib/lapdog-agent" = {
+      d = {
+        mode = "0755";
+        user = "root";
+        group = "root";
+      };
+    };
+    "/var/lib/lapdog-agent/claude-share" = {
+      d = {
+        mode = "0700";
+        user = "dog";
+        group = "users";
+      };
+    };
+    # Placeholder file that the bind mount will overlay at runtime.
+    "/var/lib/lapdog-agent/claude-share/.claude.json" = {
+      f = {
+        mode = "0600";
+        user = "dog";
+        group = "users";
+      };
+    };
+  };
+
+  systemd.services."lapdog-agent-bind-claude-json" = {
+    description = "Bind-mount ~/.claude.json into lapdog-agent virtiofs share dir";
+    wantedBy = [ "multi-user.target" ];
+    after = [
+      "systemd-tmpfiles-setup.service"
+      "local-fs.target"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = pkgs.writeShellScript "lapdog-agent-bind-start" ''
+        src=/home/dog/.claude.json
+        dst=/var/lib/lapdog-agent/claude-share/.claude.json
+        # Create the file on first run so claude-code inside the VM can
+        # write its auth token back to the host even before the first
+        # host-side login.
+        if [ ! -f "$src" ]; then
+          install -m 600 -o dog -g users /dev/null "$src"
+        fi
+        if ! ${pkgs.util-linux}/bin/mountpoint -q "$dst"; then
+          ${pkgs.util-linux}/bin/mount --bind "$src" "$dst"
+        fi
+      '';
+      ExecStop = pkgs.writeShellScript "lapdog-agent-bind-stop" ''
+        dst=/var/lib/lapdog-agent/claude-share/.claude.json
+        if ${pkgs.util-linux}/bin/mountpoint -q "$dst"; then
+          ${pkgs.util-linux}/bin/umount "$dst"
+        fi
+      '';
+    };
+  };
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

@@ -132,7 +132,7 @@ in
         "lapdog-agent" = {
           hostname = "127.0.0.1";
           port = 2222;
-          user = "agent";
+          user = "dog";
           strictHostKeyChecking = "no";
           userKnownHostsFile = "/dev/null";
         };

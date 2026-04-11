@@ -2,25 +2,30 @@
 #
 # This is an ephemeral, throwaway VM for running coding agents (Claude Code,
 # etc.) in isolation. Nothing persists to disk — the Nix store is read-only
-# and all writable state lives in tmpfs. Only the virtiofs/9p shares outlive
-# the VM session.
+# and all writable state lives in tmpfs. Only the virtiofs-shared paths
+# survive the session (projects, ~/.claude, ~/.claude.json).
 #
 # HOW TO RUN:
+#   start-agent-vm          # convenience wrapper in dog's $PATH
+#   # or directly:
 #   nix run /home/dog/projects/dotfiles/hosts/lapdog#lapdog-agent
 #
-# This forwards host port 2222 → guest port 22. SSH in with:
-#   ssh -p 2222 agent@localhost
+# SSH access (host port 2222 → guest port 22):
+#   ssh lapdog-agent         # uses the ~/.ssh/config alias defined in home.nix
+#   ssh -p 2222 dog@127.0.0.1
 #
-# The ~/projects directory from the host is available inside the VM at
-# /home/agent/projects. SSH authorised keys are read from the host's
-# ~/.ssh/authorized_keys so any key you can use on lapdog works here too.
+# Before first use, authorise your SSH public key:
+#   cat ~/.ssh/id_ed25519.pub >> ~/.claude/authorized_keys
+#
+# The key file lives inside the virtiofs-shared ~/.claude dir, so it is
+# persistent across VM runs without any extra sharing.
 { pkgs, lib, ... }:
 {
   system.stateVersion = "25.05";
 
   # ── Networking ────────────────────────────────────────────────────────────
-  # QEMU user-mode networking (SLIRP) gives the VM a private NAT'd network
-  # with internet access out of the box; no host bridge or TAP setup needed.
+  # QEMU user-mode networking (SLIRP): internet access via NAT, no host
+  # bridge or TAP setup required.
   networking = {
     hostName = "lapdog-agent";
     useNetworkd = true;
@@ -29,7 +34,6 @@
 
   systemd.network = {
     enable = true;
-    # Accept whatever address SLIRP hands out via DHCP.
     networks."10-microvm-eth" = {
       matchConfig.Type = "ether";
       networkConfig.DHCP = "yes";
@@ -41,25 +45,22 @@
     enable = true;
     settings = {
       PasswordAuthentication = false;
-      PermitRootLogin = "prohibit-password";
+      PermitRootLogin = "no";
     };
-    # Fall back to the host's authorized_keys (mounted via 9p below) so that
-    # any SSH key accepted on lapdog also works inside the VM.
-    authorizedKeysFiles = lib.mkForce [
-      "%h/.ssh/authorized_keys"
-      "/run/host-keys/authorized_keys"
-    ];
+    # Authorised keys live inside the virtiofs-shared ~/.claude directory.
+    # Add your public key there once:  cat ~/.ssh/id_ed25519.pub >> ~/.claude/authorized_keys
+    authorizedKeysFiles = lib.mkForce [ "%h/.claude/authorized_keys" ];
   };
 
   # ── Users ─────────────────────────────────────────────────────────────────
-  # UID 1000 matches the host's "dog" user so 9p-shared files have the right
-  # ownership inside the VM (securityModel = "none" skips uid translation).
-  users.groups.agent = { };
-  users.users.agent = {
+  # UID/GID 1000 matches "dog" on the host so virtiofs-shared files have
+  # consistent ownership on both sides.
+  users.groups.dog = { gid = 1000; };
+  users.users.dog = {
     isNormalUser = true;
     uid = 1000;
-    group = "agent";
-    home = "/home/agent";
+    group = "dog";
+    home = "/home/dog";
     createHome = true;
     extraGroups = [ "wheel" ];
   };
@@ -67,8 +68,6 @@
   security.sudo.wheelNeedsPassword = false;
 
   # ── Packages ──────────────────────────────────────────────────────────────
-  # Keep the image small; coding agents need git, shell tools, a runtime or
-  # two, and claude-code itself. Add more here as your projects require.
   environment.systemPackages = with pkgs; [
     git
     curl
@@ -76,59 +75,61 @@
     jq
     ripgrep
     fd
-    file
     neovim
     python3
     nodejs_24
-    # claude-code comes from the llm-agents overlay defined in the flake
+    # claude-code via the llm-agents overlay declared in the flake
     llm-agents.claude-code
   ];
 
-  # Let nix commands work inside the VM (useful for ad-hoc builds).
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"
   ];
 
-  # ── Filesystem shares (9p via QEMU virtfs) ────────────────────────────────
-  # 9p requires no host daemon — QEMU handles it directly.
-  # "cache=mmap" gives reasonable performance for source-code workloads.
-  fileSystems."/home/agent/projects" = {
+  # ── Filesystem mounts (virtiofs) ──────────────────────────────────────────
+  # virtiofs tags must match the `tag` fields in microvm.shares below.
+
+  # ~/projects — the main working area (read-write)
+  fileSystems."/home/dog/projects" = {
     device = "projects";
-    fsType = "9p";
-    options = [
-      "trans=virtio"
-      "version=9p2000.L"
-      "cache=mmap"
-      "_netdev"
-    ];
+    fsType = "virtiofs";
+    options = [ "defaults" ];
     neededForBoot = false;
   };
 
-  # Mount the host's ~/.ssh read-only so SSH authorised keys are inherited.
-  fileSystems."/run/host-keys" = {
-    device = "host-keys";
-    fsType = "9p";
-    options = [
-      "trans=virtio"
-      "version=9p2000.L"
-      "cache=none"
-      "_netdev"
-      "ro"
-    ];
+  # ~/.claude — persistent agent context directory (read-write).
+  # Also holds the SSH authorized_keys file for getting into the VM.
+  fileSystems."/home/dog/.claude" = {
+    device = "claude-dir";
+    fsType = "virtiofs";
+    options = [ "defaults" ];
     neededForBoot = false;
   };
+
+  # /run/claude-share — staging dir on the host containing a bind-mounted
+  # copy of ~/.claude.json (auth token / settings).  A tmpfiles symlink
+  # in the guest wires it to the expected ~/.claude.json path.
+  fileSystems."/run/claude-share" = {
+    device = "claude-share";
+    fsType = "virtiofs";
+    options = [ "defaults" ];
+    neededForBoot = false;
+  };
+
+  # Create ~/.claude.json as a symlink into the shared staging dir.
+  # tmpfiles runs after local-fs.target, so the virtiofs mounts are up.
+  systemd.tmpfiles.rules = [
+    "L+ /home/dog/.claude.json - - - - /run/claude-share/.claude.json"
+  ];
 
   # ── MicroVM hardware ──────────────────────────────────────────────────────
   microvm = {
     hypervisor = "qemu";
-
-    # 4 vCPUs and 4 GB RAM should be comfortable for most coding-agent tasks.
-    # Adjust to taste — the VM is ephemeral so there's no migration cost.
     vcpu = 4;
     mem = 4096;
 
-    # User-mode networking: the VM gets internet access via SLIRP NAT.
+    # User-mode networking: internet via SLIRP NAT, no host config needed.
     interfaces = [
       {
         type = "user";
@@ -137,7 +138,7 @@
       }
     ];
 
-    # Host port 2222 → guest port 22 so you can SSH without any host routing.
+    # Host port 2222 → guest port 22 for SSH access from the host.
     forwardPorts = [
       {
         from = "host";
@@ -147,21 +148,27 @@
     ];
 
     shares = [
-      # Host ~/projects → VM /home/agent/projects (read-write)
+      # ~/projects — main code working directory
       {
-        proto = "9p";
+        proto = "virtiofs";
         tag = "projects";
         source = "/home/dog/projects";
-        mountPoint = "/home/agent/projects";
-        securityModel = "none";
+        mountPoint = "/home/dog/projects";
       }
-      # Host ~/.ssh → VM /run/host-keys (read-only, for authorized_keys)
+      # ~/.claude — agent context (memories, settings) + SSH authorized_keys
       {
-        proto = "9p";
-        tag = "host-keys";
-        source = "/home/dog/.ssh";
-        mountPoint = "/run/host-keys";
-        securityModel = "none";
+        proto = "virtiofs";
+        tag = "claude-dir";
+        source = "/home/dog/.claude";
+        mountPoint = "/home/dog/.claude";
+      }
+      # ~/.claude.json — auth token / API settings (via host bind mount;
+      # see configuration.nix systemd.services.lapdog-agent-bind-claude-json)
+      {
+        proto = "virtiofs";
+        tag = "claude-share";
+        source = "/var/lib/lapdog-agent/claude-share";
+        mountPoint = "/run/claude-share";
       }
     ];
   };
