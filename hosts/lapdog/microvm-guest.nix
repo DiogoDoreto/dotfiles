@@ -70,17 +70,9 @@
 
   # ── Packages ──────────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
-    git
     curl
     wget
-    jq
-    ripgrep
-    fd
     neovim
-    python3
-    nodejs_24
-    # claude-code via the llm-agents overlay declared in the flake
-    llm-agents.claude-code
   ];
 
   nix.settings.experimental-features = [
@@ -122,6 +114,13 @@
   systemd.tmpfiles.rules = [
     "L+ /home/dog/.claude.json - - - - /run/claude-share/.claude.json"
   ];
+
+  # ── Home Manager ─────────────────────────────────────────────────────────
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    users.dog = ./microvm-home.nix;
+  };
 
   # ── MicroVM hardware ──────────────────────────────────────────────────────
   microvm = {

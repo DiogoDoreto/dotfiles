@@ -143,17 +143,20 @@
         # microvm.vms."lapdog-agent".flake = self in configuration.nix.
         # Manage with: systemctl start/stop microvm@lapdog-agent
         lapdog-agent = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = { inherit inputs; };
+          inherit system specialArgs;
           modules = [
+            (import ../../nix-config.nix inputs)
             inputs.microvm.nixosModules.microvm
+            home-manager.nixosModules.home-manager
             {
+              home-manager.extraSpecialArgs = specialArgs;
+              home-manager.sharedModules = [
+                ../../modules/home-manager
+              ];
               nixpkgs = {
                 overlays = [
                   inputs.llm-agents.overlays.default
-                  inputs.my-claude-agent-acp.overlays.${system}.default
                 ];
-                config.allowUnfree = true;
               };
             }
             ./microvm-guest.nix
