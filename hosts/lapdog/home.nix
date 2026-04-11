@@ -15,6 +15,23 @@ in
 
   home = {
     packages = with pkgs; [
+      # Start the ephemeral coding-agent MicroVM and print SSH instructions.
+      # Usage: start-agent-vm [extra qemu args…]
+      (pkgs.writeShellScriptBin "start-agent-vm" ''
+        set -euo pipefail
+        DOTFILES="''${DOTFILES:-/home/dog/projects/dotfiles}"
+        FLAKE="$DOTFILES/hosts/lapdog"
+        echo "Building lapdog-agent MicroVM…"
+        runner=$(nix build --no-link --print-out-paths "$FLAKE#nixosConfigurations.lapdog-agent.config.microvm.runner.qemu")
+        echo ""
+        echo "VM is starting.  SSH in with:"
+        echo "  ssh lapdog-agent   # (uses ~/.ssh/config alias)"
+        echo "  ssh -p 2222 agent@127.0.0.1"
+        echo ""
+        echo "Press Ctrl-a x to kill the VM."
+        echo "──────────────────────────────────────────────"
+        exec "$runner" "$@"
+      '')
       # (dog-lib.bubblewrapAi {
       #   # useful to verify bwrap script
       #   package = fish;
@@ -107,6 +124,17 @@ in
           user = "dog";
           addKeysToAgent = "yes";
           identityFile = "~/.ssh/id_ed25519_dogdot";
+        };
+        # Ephemeral coding-agent MicroVM (started with `nix run
+        # ~/projects/dotfiles/hosts/lapdog#lapdog-agent`).
+        # The VM is throwaway — skip host-key verification since the key
+        # regenerates each run.
+        "lapdog-agent" = {
+          hostname = "127.0.0.1";
+          port = 2222;
+          user = "agent";
+          strictHostKeyChecking = "no";
+          userKnownHostsFile = "/dev/null";
         };
       };
     };
