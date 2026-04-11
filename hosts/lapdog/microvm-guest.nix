@@ -8,11 +8,11 @@
 # HOW TO RUN:
 #   start-agent-vm          # convenience wrapper in dog's $PATH
 #   # or directly:
-#   nix run /home/dog/projects/dotfiles/hosts/lapdog#lapdog-agent
+#   sudo systemctl start microvm@lapdog-agent
 #
-# SSH access (host port 2222 → guest port 22):
+# SSH access (VM is at 10.0.100.2 on the vm0 bridge):
 #   ssh lapdog-agent         # uses the ~/.ssh/config alias defined in home.nix
-#   ssh -p 2222 dog@127.0.0.1
+#   ssh dog@10.0.100.2
 #
 # Before first use, authorise your SSH public key:
 #   cat ~/.ssh/id_ed25519.pub >> ~/.claude/authorized_keys
@@ -36,7 +36,12 @@
     enable = true;
     networks."10-microvm-eth" = {
       matchConfig.Type = "ether";
-      networkConfig.DHCP = "yes";
+      networkConfig = {
+        Address = "10.0.100.2/24";
+        Gateway = "10.0.100.1";
+        # Use the host's dnsmasq instance on the bridge; it logs all queries.
+        DNS = "10.0.100.1";
+      };
     };
   };
 
@@ -129,21 +134,15 @@
     vcpu = 4;
     mem = 4096;
 
-    # User-mode networking: internet via SLIRP NAT, no host config needed.
+    # TAP networking: traffic goes through the host kernel, so nftables
+    # rules on the host can filter and log it (unlike SLIRP which bypasses
+    # the kernel entirely).  The host sets up bridge vm0 + NAT; see
+    # configuration.nix for the nftables and dnsmasq setup.
     interfaces = [
       {
-        type = "user";
-        id = "user0";
+        type = "tap";
+        id = "vm-agent0";
         mac = "02:00:00:00:00:01";
-      }
-    ];
-
-    # Host port 2222 → guest port 22 for SSH access from the host.
-    forwardPorts = [
-      {
-        from = "host";
-        host.port = 2222;
-        guest.port = 22;
       }
     ];
 

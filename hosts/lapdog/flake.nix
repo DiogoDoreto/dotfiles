@@ -57,7 +57,7 @@
   };
 
   outputs =
-    { nixpkgs, home-manager, ... }@inputs:
+    { self, nixpkgs, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
       overlays = [
@@ -84,7 +84,7 @@
       };
       pkgs = import nixpkgs pkgs-config;
       specialArgs = {
-        inherit inputs;
+        inherit inputs self;
         pkgs-unstable = pkgs;
       };
       home-manager-modules = [
@@ -96,6 +96,7 @@
         home-manager.nixosModules.home-manager
         inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
         inputs.musnix.nixosModules.musnix
+        inputs.microvm.nixosModules.host
         {
           home-manager.extraSpecialArgs = specialArgs;
           home-manager.sharedModules = home-manager-modules;
@@ -121,30 +122,7 @@
           ];
         };
     in
-    let
-      # Minimal overlay set for the agent guest: only the packages it needs.
-      agent-overlays = [
-        inputs.llm-agents.overlays.default
-        inputs.my-claude-agent-acp.overlays.${system}.default
-      ];
-
-      # The agent VM guest configuration.
-      lapdog-agent = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit inputs; };
-        modules = [
-          inputs.microvm.nixosModules.microvm
-          {
-            nixpkgs = {
-              overlays = agent-overlays;
-              config.allowUnfree = true;
-            };
-          }
-          ./microvm-guest.nix
-        ];
-      };
-    in
-    rec {
+    {
       homeConfigurations = {
         dog = buildHomeFromNixos nixosConfigurations.lapdog.config.users.users.dog ./home.nix;
       };
@@ -155,15 +133,27 @@
           modules = nixos-modules;
         };
 
-        # Ephemeral coding-agent VM.  Run with:
-        #   nix run .#lapdog-agent
-        inherit lapdog-agent;
-      };
-
-      # Convenience: `nix run .#lapdog-agent` starts the VM directly.
-      apps.${system}.lapdog-agent = {
-        type = "app";
-        program = "${lapdog-agent.config.microvm.runner.qemu}";
+        # Coding-agent MicroVM guest OS definition.
+        # The lapdog host's microvm.nixosModules.host picks this up via
+        # microvm.vms."lapdog-agent".flake = self in configuration.nix.
+        # Manage with: systemctl start/stop microvm@lapdog-agent
+        lapdog-agent = nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = { inherit inputs; };
+          modules = [
+            inputs.microvm.nixosModules.microvm
+            {
+              nixpkgs = {
+                overlays = [
+                  inputs.llm-agents.overlays.default
+                  inputs.my-claude-agent-acp.overlays.${system}.default
+                ];
+                config.allowUnfree = true;
+              };
+            }
+            ./microvm-guest.nix
+          ];
+        };
       };
     };
 }

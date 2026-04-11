@@ -19,18 +19,19 @@ in
       # Usage: start-agent-vm [extra qemu args…]
       (pkgs.writeShellScriptBin "start-agent-vm" ''
         set -euo pipefail
-        DOTFILES="''${DOTFILES:-/home/dog/projects/dotfiles}"
-        FLAKE="$DOTFILES/hosts/lapdog"
-        echo "Building lapdog-agent MicroVM…"
-        runner=$(nix build --no-link --print-out-paths "$FLAKE#nixosConfigurations.lapdog-agent.config.microvm.runner.qemu")
+        sudo ${pkgs.systemd}/bin/systemctl start microvm@lapdog-agent.service
+        echo "VM starting (systemctl start microvm@lapdog-agent)."
         echo ""
-        echo "VM is starting.  SSH in with:"
-        echo "  ssh lapdog-agent   # (uses ~/.ssh/config alias)"
-        echo "  ssh -p 2222 agent@127.0.0.1"
+        echo "SSH in once it's ready:"
+        echo "  ssh lapdog-agent"
         echo ""
-        echo "Press Ctrl-a x to kill the VM."
-        echo "──────────────────────────────────────────────"
-        exec "$runner" "$@"
+        echo "Audit DNS queries:    journalctl -u dnsmasq -g 'query'"
+        echo "Audit connections:    journalctl -k -g '\[vm-agent\]'"
+        echo "Stop:                 stop-agent-vm"
+      '')
+      (pkgs.writeShellScriptBin "stop-agent-vm" ''
+        sudo ${pkgs.systemd}/bin/systemctl stop microvm@lapdog-agent.service
+        echo "VM stopped."
       '')
       # (dog-lib.bubblewrapAi {
       #   # useful to verify bwrap script
@@ -129,10 +130,12 @@ in
         # ~/projects/dotfiles/hosts/lapdog#lapdog-agent`).
         # The VM is throwaway — skip host-key verification since the key
         # regenerates each run.
+        # Coding-agent MicroVM on the vm0 bridge.
+        # Start with: start-agent-vm
         "lapdog-agent" = {
-          hostname = "127.0.0.1";
-          port = 2222;
+          hostname = "10.0.100.2";
           user = "dog";
+          # Host key changes every run (ephemeral VM) — skip verification.
           strictHostKeyChecking = "no";
           userKnownHostsFile = "/dev/null";
         };

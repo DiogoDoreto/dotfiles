@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ pkgs, ... }:
+{ pkgs, self, ... }:
 
 {
   imports = [
@@ -21,12 +21,65 @@
 
   networking = {
     hostName = "lapdog";
-    networkmanager.enable = true;
+    networkmanager = {
+      enable = true;
+      # Keep NetworkManager away from the microvm bridge and its TAP devices.
+      unmanaged = [
+        "interface-name:vm0"
+        "interface-name:vm-*"
+      ];
+    };
     firewall = {
       enable = true;
       allowedTCPPorts = [ ];
       allowedUDPPorts = [ ];
+      # Allow forwarding between the vm0 bridge and the outside world.
+      # The nftables table below handles logging; these rules open the door.
+      extraCommands = ''
+        iptables -A FORWARD -i vm0 -j ACCEPT
+        iptables -A FORWARD -o vm0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+        iptables -t nat -A POSTROUTING -s 10.0.100.0/24 ! -o vm0 -j MASQUERADE
+      '';
+      extraStopCommands = ''
+        iptables -D FORWARD -i vm0 -j ACCEPT 2>/dev/null || true
+        iptables -D FORWARD -o vm0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || true
+        iptables -t nat -D POSTROUTING -s 10.0.100.0/24 ! -o vm0 -j MASQUERADE 2>/dev/null || true
+      '';
     };
+
+    # Bridge for the coding-agent MicroVM.
+    # VM gets static 10.0.100.2/24; this host is the gateway at 10.0.100.1.
+    # Services bound only to 127.0.0.1 are not reachable from the VM —
+    # the loopback address is not routable via this bridge.
+    bridges.vm0.interfaces = [ ];
+    interfaces.vm0.ipv4.addresses = [
+      {
+        address = "10.0.100.1";
+        prefixLength = 24;
+      }
+    ];
+  };
+
+  # IP forwarding is required to route packets between vm0 and the LAN/internet.
+  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+
+  # ── MicroVM audit logging via nftables ────────────────────────────────────
+  # Log every new TCP/UDP connection the VM initiates.  Connection records go
+  # to journald (kernel facility) and are readable with:
+  #   journalctl -k -g '\[vm-agent\]'
+  # DNS hostnames are captured separately by dnsmasq below, which is more
+  # readable for auditing than raw IP:port pairs.
+  networking.nftables.enable = true;
+  networking.nftables.tables."vm-agent-audit" = {
+    family = "inet";
+    content = ''
+      chain vm-forward-log {
+        type filter hook forward priority filter - 1;
+        # Log new outbound connections (TCP + UDP; skip ICMP to reduce noise).
+        iifname "vm0" ip protocol tcp  ct state new log prefix "[vm-agent] " level info
+        iifname "vm0" ip protocol udp  ct state new log prefix "[vm-agent] " level info
+      }
+    '';
   };
 
   security.pki.certificateFiles = [ ../mini/home-caddy.crt ];
@@ -237,6 +290,59 @@
   };
 
   virtualisation.podman.enable = true;
+
+  # ── MicroVM: agent VM declaration ─────────────────────────────────────────
+  # The host module (microvm.nixosModules.host, loaded in flake.nix) reads
+  # this and creates microvm@lapdog-agent.service which runs as root and
+  # handles TAP interface creation automatically.
+  microvm.vms."lapdog-agent" = {
+    # Don't start on boot — launch manually when you need an agent session.
+    autoStart = false;
+    # Pull the guest NixOS config from this flake's nixosConfigurations.
+    flake = self;
+  };
+
+  # ── MicroVM: DNS logging via dnsmasq ──────────────────────────────────────
+  # dnsmasq runs only on the vm0 bridge so it doesn't interfere with the
+  # host's own DNS (systemd-resolved on 127.0.0.53).  All queries from the
+  # VM are logged to journald with hostnames, making audits readable:
+  #   journalctl -u dnsmasq -g 'query'
+  #
+  # To block a host after auditing, add to dnsmasq.settings in this file:
+  #   address = [ "/unwanted.example.com/#" ];
+  services.dnsmasq = {
+    enable = true;
+    resolveLocalQueries = false; # don't touch host DNS resolution
+    settings = {
+      interface = "vm0";
+      bind-interfaces = true; # only listen on vm0, not all interfaces
+      log-queries = true;
+      # Forward to Cloudflare; change to "no-resolv = false" to use the
+      # host's resolv.conf instead.
+      no-resolv = true;
+      server = [
+        "1.1.1.1"
+        "1.0.0.1"
+      ];
+    };
+  };
+
+  # Allow dog to start/stop the agent VM without a password prompt.
+  security.sudo.extraRules = [
+    {
+      users = [ "dog" ];
+      commands = [
+        {
+          command = "${pkgs.systemd}/bin/systemctl start microvm@lapdog-agent.service";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "${pkgs.systemd}/bin/systemctl stop microvm@lapdog-agent.service";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
 
   # ── MicroVM: share ~/.claude.json with the agent VM ───────────────────────
   # virtiofsd can only share *directories*, not individual files.  We create
