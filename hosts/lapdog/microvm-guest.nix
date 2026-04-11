@@ -13,13 +13,7 @@
 # SSH access (VM is at 10.0.100.2 on the vm0 bridge):
 #   ssh lapdog-agent         # uses the ~/.ssh/config alias defined in home.nix
 #   ssh dog@10.0.100.2
-#
-# Before first use, authorise your SSH public key:
-#   cat ~/.ssh/id_ed25519.pub >> ~/.claude/authorized_keys
-#
-# The key file lives inside the virtiofs-shared ~/.claude dir, so it is
-# persistent across VM runs without any extra sharing.
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 {
   system.stateVersion = "25.05";
 
@@ -52,15 +46,14 @@
       PasswordAuthentication = false;
       PermitRootLogin = "no";
     };
-    # Authorised keys live inside the virtiofs-shared ~/.claude directory.
-    # Add your public key there once:  cat ~/.ssh/id_ed25519.pub >> ~/.claude/authorized_keys
-    authorizedKeysFiles = lib.mkForce [ "%h/.claude/authorized_keys" ];
   };
 
   # ── Users ─────────────────────────────────────────────────────────────────
   # UID/GID 1000 matches "dog" on the host so virtiofs-shared files have
   # consistent ownership on both sides.
-  users.groups.dog = { gid = 1000; };
+  users.groups.dog = {
+    gid = 1000;
+  };
   users.users.dog = {
     isNormalUser = true;
     uid = 1000;
@@ -68,6 +61,9 @@
     home = "/home/dog";
     createHome = true;
     extraGroups = [ "wheel" ];
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
+    ];
   };
 
   security.sudo.wheelNeedsPassword = false;
@@ -104,7 +100,6 @@
   };
 
   # ~/.claude — persistent agent context directory (read-write).
-  # Also holds the SSH authorized_keys file for getting into the VM.
   fileSystems."/home/dog/.claude" = {
     device = "claude-dir";
     fsType = "virtiofs";

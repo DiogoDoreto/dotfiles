@@ -135,6 +135,7 @@ in
         "lapdog-agent" = {
           hostname = "10.0.100.2";
           user = "dog";
+          identityFile = "~/.ssh/id_ed25519_dogdot";
           # Host key changes every run (ephemeral VM) — skip verification.
           extraOptions = {
             StrictHostKeyChecking = "no";
