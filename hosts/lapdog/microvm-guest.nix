@@ -83,43 +83,6 @@
     "flakes"
   ];
 
-  # ── Filesystem mounts (virtiofs) ──────────────────────────────────────────
-  # virtiofs tags must match the `tag` fields in microvm.shares below.
-
-  # /home/dog — persistent home directory (host: ~/.local/share/lapdog-agent/home)
-  fileSystems."/home/dog" = {
-    device = "agent-home";
-    fsType = "virtiofs";
-    options = [ "defaults" ];
-    neededForBoot = false;
-  };
-
-  # ~/projects — the main working area (read-write)
-  fileSystems."/home/dog/projects" = {
-    device = "projects";
-    fsType = "virtiofs";
-    options = [ "defaults" ];
-    neededForBoot = false;
-  };
-
-  # ~/.claude — persistent agent context directory (read-write).
-  fileSystems."/home/dog/.claude" = {
-    device = "claude-dir";
-    fsType = "virtiofs";
-    options = [ "defaults" ];
-    neededForBoot = false;
-  };
-
-  # /run/claude-share — staging dir on the host containing a bind-mounted
-  # copy of ~/.claude.json (auth token / settings).  A tmpfiles symlink
-  # in the guest wires it to the expected ~/.claude.json path.
-  fileSystems."/run/claude-share" = {
-    device = "claude-share";
-    fsType = "virtiofs";
-    options = [ "defaults" ];
-    neededForBoot = false;
-  };
-
   # Create ~/.claude.json as a symlink into the shared staging dir.
   # tmpfiles runs after local-fs.target, so the virtiofs mounts are up.
   systemd.tmpfiles.rules = [
@@ -203,6 +166,14 @@
         tag = "claude-share";
         source = "/var/lib/lapdog-agent/claude-share";
         mountPoint = "/run/claude-share";
+      }
+      # ~/.local/share/doomemacs/straight/repos — Doom Emacs package sources (read-only)
+      {
+        proto = "virtiofs";
+        tag = "emacs-doom-straight-repos";
+        source = "/home/dog/.local/share/doomemacs/straight/repos";
+        mountPoint = "/home/dog/.local/share/doomemacs/straight/repos";
+        readOnly = true;
       }
     ];
   };
