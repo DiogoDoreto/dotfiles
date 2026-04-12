@@ -51,8 +51,8 @@
                 qwen-3-coder-480b)))
 
   (setq gptel--system-message (alist-get 'assistant gptel-directives)
-        gptel-model 'gpt-5-mini
-        gptel-backend (gptel-make-gh-copilot "Copilot")
+        gptel-model 'claude-sonnet-4.6
+        gptel-backend (gptel-make-gh-copilot "Copilot" :host "api.business.githubcopilot.com")
         gptel-default-mode 'org-mode
         gptel-confirm-tool-calls nil)
 
