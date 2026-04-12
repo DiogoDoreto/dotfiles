@@ -7,7 +7,7 @@
     repo = "/root/test-bkp";
     doInit = true;
     compression = "auto,lzma";
-    startAt = "daily";
+    startAt = "06:00";
     encryption = {
       mode = "repokey-blake2";
       passCommand = "cat /etc/secrets/borgbackup";
