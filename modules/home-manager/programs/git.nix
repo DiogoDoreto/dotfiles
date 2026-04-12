@@ -19,7 +19,10 @@ in
     programs.git = {
       enable = true;
       settings = {
-        user.name = "Diogo Doreto";
+        user = {
+          name = "Diogo Doreto";
+          email = "diogo@doreto.com.br";
+        };
         alias = {
           co = "checkout";
           st = "status -sb";
@@ -37,7 +40,7 @@ in
         rebase.autoSquash = true;
       };
       includes = [
-        { path = "~/.config/git/config.private"; } # set user.email here
+        { path = "~/.config/git/config.private"; }
       ];
       ignores = [
         ".private/"
@@ -52,7 +55,7 @@ in
         "yarn-error.log*"
         # AI tools
         ".agent-shell/"
-        "AGENTS.md"
+        ".claude/*.local.json"
       ];
     };
   };
