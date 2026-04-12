@@ -1,7 +1,7 @@
 # Builds libghostty-vt.a (and its bundled C++ deps libsimdutf.a, libhighway.a)
 # from the ghostty commit vendored by ghostel.
 #
-# ghostty source: ghostty-org/ghostty @ c2dd7579e28ff1fecb4a68f32ae8cacda576550c
+# ghostty source: ghostty-org/ghostty @ ba398dfff3e30ff83da07140981ca138410cf608
 # (version 1.3.2-dev, minimum_zig_version = "0.15.2")
 #
 # highway and simdutf are local path deps inside ghostty's own source tree
@@ -27,8 +27,8 @@ let
   ghosttySrc = fetchFromGitHub {
     owner = "ghostty-org";
     repo = "ghostty";
-    rev = "c2dd7579e28ff1fecb4a68f32ae8cacda576550c";
-    hash = "sha256-S6MCGP7eTjBJvhdo+wn/y90S9RC/6UaYLCN/TPOQ/G4=";
+    rev = "ba398dfff3e30ff83da07140981ca138410cf608";
+    hash = "sha256-Tdf9W6ZMvxfMEnMZ3p9LvmizMFPWpP2Evb34zrRzP3c=";
   };
 
   zigDeps = callPackage ./ghostty-deps.nix { inherit zig_0_15; };
@@ -36,7 +36,7 @@ in
 stdenv.mkDerivation {
   pname = "libghostty-vt";
   # Tracks the ghostty submodule commit in ghostel; bump together with ghostty rev above.
-  version = "1.3.2-dev-c2dd757";
+  version = "1.3.2-dev-ba398df";
 
   src = ghosttySrc;
 

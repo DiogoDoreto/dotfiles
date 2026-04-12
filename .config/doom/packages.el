@@ -46,15 +46,20 @@
 ;; ghostel — terminal emulator powered by libghostty-vt.
 ;; The package directory is placed by Nix at straight's repos path (see
 ;; modules/home-manager/programs/emacs.nix and flakes/ghostel/).
-;; :type nil tells straight to skip all VCS operations; ghostel-module.so
-;; lives alongside ghostel.el so ghostel finds it automatically at load time.
+;; ghostel-module.so lives alongside ghostel.el so ghostel finds it automatically at load time.
 (when (file-directory-p (expand-file-name
                          "straight/repos/ghostel"
                          (or (getenv "DOOMLOCALDIR")
                              (expand-file-name "~/.local/share/doomemacs"))))
   (package! ghostel
+    :type 'local
     :recipe (:local-repo "ghostel"
              :files ("*.el" "*.so" "etc")
+             :type nil))
+  (package! evil-ghostel
+    :type 'local
+    :recipe (:local-repo "ghostel"
+             :files ("evil-ghostel.el")
              :type nil)))
 
 ;; remove when fixed: https://github.com/doomemacs/doomemacs/issues/8585

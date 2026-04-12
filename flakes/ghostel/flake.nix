@@ -19,8 +19,8 @@
         ghostel-src = pkgs.fetchFromGitHub {
           owner = "dakra";
           repo = "ghostel";
-          rev = "ff6dc1b027b34dd5d9371b0af094a56c86ae2468";
-          hash = "sha256-uqLF+j1I/+APGVU7xTwKTL2WpJgAJs8M0o+UB24mvrY=";
+          rev = "0f6038896e27910750a21c5fc16334034ad2c830";
+          hash = "sha256-eveu/6/PTas+NUTmteR8DuVOhUNRCQxTpRSbRfQPFeQ=";
         };
 
         # ── Native module build chain ─────────────────────────────────────────

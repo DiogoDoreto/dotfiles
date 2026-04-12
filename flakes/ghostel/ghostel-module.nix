@@ -3,7 +3,7 @@
 # Takes the pre-built libghostty-vt (static libs + headers) and compiles
 # ghostel's Zig source into a shared library Emacs can load via module-load.
 #
-# ghostel source: dakra/ghostel @ ff6dc1b027b34dd5d9371b0af094a56c86ae2468
+# ghostel source: dakra/ghostel @ 0f6038896e27910750a21c5fc16334034ad2c830
 #
 # ghostel's build.zig expects this directory layout relative to the source root:
 #   vendor/ghostty/zig-out/lib/libghostty-vt.a
@@ -24,7 +24,7 @@
 }:
 stdenv.mkDerivation {
   pname = "ghostel-module";
-  version = "0.2.50";
+  version = "0.12.2";
 
   src = ghostel-src;
 
