@@ -11,6 +11,7 @@ in
 
     packages = with pkgs; [
       llm-agents.claude-code
+      claude-agent-acp
     ];
 
     file = {
