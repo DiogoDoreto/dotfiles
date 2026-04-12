@@ -65,13 +65,16 @@
     }@inputs:
     let
       system = "x86_64-linux";
+
       overlays = [
-        inputs.my-ghostel.overlays.${system}.default
         inputs.llm-agents.overlays.default
-        inputs.my-kwtype.overlays.default
-        inputs.my-claude-agent-acp.overlays.${system}.default
-        inputs.my-pi.overlays.${system}.default
         inputs.nur.overlays.default
+
+        inputs.my-claude-agent-acp.overlays.${system}.default
+        inputs.my-ghostel.overlays.${system}.default
+        inputs.my-kwtype.overlays.default
+        inputs.my-pi.overlays.${system}.default
+
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
           inherit (inputs.forgejo-cli.packages.${system}) forgejo-cli;
@@ -80,62 +83,43 @@
       ]
       ++ inputs.my-ipu7.outputs.overlays
       ++ inputs.my-niri.outputs.overlays;
-      pkgs-config = {
-        inherit system overlays;
-        config = {
-          allowUnfree = true;
-          allowUnfreePredicate = _: true;
-        };
-      };
-      pkgs = import nixpkgs pkgs-config;
+
       specialArgs = {
         inherit inputs self;
-        pkgs-unstable = pkgs;
+        pkgs-unstable = import nixpkgs {
+          inherit system overlays;
+          config.allowUnfree = true;
+          config.allowUnfreePredicate = _: true;
+        };
       };
-      home-manager-modules = [
-        ../../modules/home-manager
-      ]
-      ++ inputs.my-niri.outputs.homeModules;
+
       nixos-modules = [
         (import ../../nix-config.nix inputs)
         home-manager.nixosModules.home-manager
-        inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
-        inputs.musnix.nixosModules.musnix
-        inputs.microvm.nixosModules.host
         {
-          home-manager.extraSpecialArgs = specialArgs;
-          home-manager.sharedModules = home-manager-modules;
           nixpkgs = { inherit overlays; };
-        }
-        ./configuration.nix
-      ]
-      ++ inputs.my-ipu7.outputs.nixosModules
-      ++ inputs.my-niri.outputs.nixosModules;
-      buildHomeFromNixos =
-        user: entryModule:
-        home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-          extraSpecialArgs = specialArgs;
-          modules = home-manager-modules ++ [
-            {
-              home = {
-                username = user.name;
-                homeDirectory = user.home;
-              };
-            }
-            entryModule
+          home-manager.extraSpecialArgs = specialArgs;
+          home-manager.sharedModules = [
+            ../../modules/home-manager
           ];
-        };
+        }
+      ];
     in
-    rec {
-      homeConfigurations = {
-        dog = buildHomeFromNixos nixosConfigurations.lapdog.config.users.users.dog ./home.nix;
-      };
-
+    {
       nixosConfigurations = {
         lapdog = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
-          modules = nixos-modules;
+          modules =
+            nixos-modules
+            ++ inputs.my-ipu7.outputs.nixosModules
+            ++ inputs.my-niri.outputs.nixosModules
+            ++ [
+              inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
+              inputs.musnix.nixosModules.musnix
+              inputs.microvm.nixosModules.host
+              { home-manager.sharedModules = inputs.my-niri.outputs.homeModules; }
+              ./configuration.nix
+            ];
         };
 
         # Coding-agent MicroVM guest OS definition.
@@ -144,21 +128,8 @@
         # Manage with: systemctl start/stop microvm@lapdog-agent
         lapdog-agent = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
-          modules = [
-            (import ../../nix-config.nix inputs)
+          modules = nixos-modules ++ [
             inputs.microvm.nixosModules.microvm
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.extraSpecialArgs = specialArgs;
-              home-manager.sharedModules = [
-                ../../modules/home-manager
-              ];
-              nixpkgs = {
-                overlays = [
-                  inputs.llm-agents.overlays.default
-                ];
-              };
-            }
             ./microvm-guest.nix
           ];
         };
