@@ -39,6 +39,9 @@
     };
   };
 
+  # trust internal network certificate
+  security.pki.certificateFiles = [ ../mini/home-caddy.crt ];
+
   # ── SSH ───────────────────────────────────────────────────────────────────
   services.openssh = {
     enable = true;

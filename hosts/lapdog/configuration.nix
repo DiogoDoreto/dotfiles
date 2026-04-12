@@ -327,12 +327,20 @@
     resolveLocalQueries = false; # don't touch host DNS resolution
     settings = {
       interface = "vm0";
-      bind-interfaces = true; # only listen on vm0, not all interfaces
+      # explicit bind — prevents dnsmasq from
+      # falling back to 0.0.0.0:53 if vm0 is late
+      listen-address = "10.0.100.1";
+      bind-interfaces = true;
       log-queries = true;
       # Forward to Cloudflare; change to "no-resolv = false" to use the
       # host's resolv.conf instead.
       no-resolv = true;
       server = [
+        # Local domains resolved exclusively by mini's dnsmasq.
+        # Syntax: /domain/upstream — only that server is queried for the domain.
+        "/local.doreto.com.br/192.168.0.2"
+        "/home/192.168.0.2"
+        # Everything else goes to Cloudflare.
         "1.1.1.1"
         "1.0.0.1"
       ];
