@@ -26,5 +26,6 @@ in
   dog.programs = {
     git.enable = true;
     cli-tools.enable = true;
+    claude-code.enable = true;
   };
 }

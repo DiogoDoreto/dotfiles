@@ -16,42 +16,47 @@ in
   options.dog.programs.claude-code = {
     enable = mkEnableOption "claude-code";
 
-    extraWritablePaths = mkOption {
-      type = types.listOf types.str;
-      default = [ ];
-      description = "Extra writable paths to bind mount into the bubblewrap sandbox.";
-    };
+    bubblewrap = {
+      enable = mkEnableOption "Whether to wrap the commands in a bubblewrap sandbox.";
 
-    extraReadOnlyPaths = mkOption {
-      type = types.listOf types.str;
-      default = [ ];
-      description = "Extra read-only paths to bind mount into the bubblewrap sandbox.";
+      extraWritablePaths = mkOption {
+        type = types.listOf types.str;
+        default = [ ];
+        description = "Extra writable paths to bind mount into the bubblewrap sandbox.";
+      };
+
+      extraReadOnlyPaths = mkOption {
+        type = types.listOf types.str;
+        default = [ ];
+        description = "Extra read-only paths to bind mount into the bubblewrap sandbox.";
+      };
     };
   };
 
   config = mkIf cfg.enable {
-    home.packages = [
-      (bubblewrapAi {
-        package = pkgs.llm-agents.claude-code;
+    home.packages =
+      let
+        wrapIfNeeded = args: if cfg.bubblewrap.enable then bubblewrapAi args else args.package;
         extraWritablePaths = [
           "~/.claude/"
           "~/.claude.json"
         ]
-        ++ cfg.extraWritablePaths;
-        extraReadOnlyPaths = cfg.extraReadOnlyPaths;
-        extraCommandFlags = [
-          "--dangerously-skip-permissions"
-        ];
-      })
-      (bubblewrapAi {
-        package = pkgs.claude-agent-acp;
-        extraWritablePaths = [
-          "~/.claude/"
-          "~/.claude.json"
-        ]
-        ++ cfg.extraWritablePaths;
-        extraReadOnlyPaths = cfg.extraReadOnlyPaths;
-      })
-    ];
+        ++ cfg.bubblewrap.extraWritablePaths;
+      in
+      [
+        (wrapIfNeeded {
+          inherit extraWritablePaths;
+          package = pkgs.llm-agents.claude-code;
+          extraReadOnlyPaths = cfg.bubblewrap.extraReadOnlyPaths;
+          extraCommandFlags = [
+            "--dangerously-skip-permissions"
+          ];
+        })
+        (wrapIfNeeded {
+          inherit extraWritablePaths;
+          package = pkgs.claude-agent-acp;
+          extraReadOnlyPaths = cfg.bubblewrap.extraReadOnlyPaths;
+        })
+      ];
   };
 }

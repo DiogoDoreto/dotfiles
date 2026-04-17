@@ -166,10 +166,13 @@ in
 
     claude-code = {
       enable = true;
-      extraWritablePaths = [
-        "~/projects/"
-        "/run/user/1000/agent-browser"
-      ];
+      bubblewrap = {
+        enable = true;
+        extraWritablePaths = [
+          "~/projects/"
+          "/run/user/1000/agent-browser"
+        ];
+      };
     };
 
     opencode = {
