@@ -11,6 +11,17 @@ with lib;
 let
   cfg = config.dog.programs.claude-code;
   inherit (dog-lib) bubblewrapAi;
+
+  defaultSettings = {
+    "\$schema" = "https://json.schemastore.org/claude-code-settings.json";
+    permissions.defaultMode = "bypassPermissions";
+    skipDangerousModePermissionPrompt = true;
+    plansDirectory = "./.private/plans";
+    attribution = {
+      commit = "";
+      pr = "";
+    };
+  };
 in
 {
   options.dog.programs.claude-code = {
@@ -34,6 +45,14 @@ in
   };
 
   config = mkIf cfg.enable {
+    home.activation.claudeCodeSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      settings="$HOME/.claude/settings.json"
+      mkdir -p "$(dirname "$settings")"
+      [ -f "$settings" ] || echo '{}' > "$settings"
+      tmp=$(mktemp)
+      ${pkgs.jq}/bin/jq --argjson d ${lib.escapeShellArg (builtins.toJSON defaultSettings)} '. * $d' "$settings" > "$tmp" && mv "$tmp" "$settings"
+    '';
+
     home.packages =
       let
         wrapIfNeeded = args: if cfg.bubblewrap.enable then bubblewrapAi args else args.package;
