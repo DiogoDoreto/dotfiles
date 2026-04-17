@@ -24,6 +24,8 @@
     (compile command)))
 
 (map! :leader :prefix ("C-SPC" . "lapdog host")
+      :desc "Start agent VM" :n "c" (cmd! (compile "start-agent-vm"))
+      :desc "Stop agent VM"  :n "C" (cmd! (compile "stop-agent-vm"))
       :leader :prefix ("C-SPC n" . " 󱄅 Nix")
       :desc "rebuild boot"        :n "b" (cmd! (dd--make-nix "make nixos-lapdog-boot"))
       :desc "rebuild switch"      :n "s" (cmd! (dd--make-nix "make nixos-lapdog-switch"))
