@@ -12,6 +12,7 @@ let
   cfg = config.dog.programs.claude-code;
   inherit (dog-lib) bubblewrapAi;
 
+  # REMINDER: removing a rule from here does not remove it from the settings file
   defaultSettings = {
     "\$schema" = "https://json.schemastore.org/claude-code-settings.json";
     permissions.defaultMode = "bypassPermissions";
@@ -20,6 +21,28 @@ let
     attribution = {
       commit = "";
       pr = "";
+    };
+    hooks = {
+      SessionStart = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "bash ${./claude-code-direnv.sh} || true";
+            }
+          ];
+        }
+      ];
+      CwdChanged = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "bash ${./claude-code-direnv.sh} || true";
+            }
+          ];
+        }
+      ];
     };
   };
 in
