@@ -111,7 +111,7 @@
   microvm = {
     hypervisor = "qemu";
     vcpu = 4;
-    mem = 4096;
+    mem = 16384;
 
     # Enable writable nix store overlay so nix-daemon works and
     # home-manager activation can write to the store.
