@@ -44,6 +44,7 @@ in
       ];
       ignores = [
         ".private/"
+        ".wt/"
         # emacs
         ".dir-locals.el"
         # direnv

@@ -154,6 +154,21 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
   :autoload (aw-select)
   :defer t)
 
+;;; Magit
+
+(after! magit
+  ;; improve worktrees by showing them on status page and defaulting to creating
+  ;; them inside the ".wt" subdirectory
+  (add-hook 'magit-status-sections-hook #'magit-insert-worktrees)
+  (setq magit-read-worktree-directory-function #'magit-read-worktree-directory-nested)
+  (advice-add #'magit-read-worktree-directory-nested
+              :around
+              (defun dd/magit-read-worktree-directory-nested--wt-subdir (orig-fn &rest args)
+                "Advise `magit-read-worktree-directory-nested' to default into `.wt/' subdir."
+                (let ((default-directory (expand-file-name ".wt/" default-directory)))
+                  (apply orig-fn args)))))
+
+
 ;;; Org-mode
 
 (setq org-directory (if (string= "lapdog" (system-name))
@@ -188,7 +203,25 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 (setq projectile-project-search-path '("~/projects"))
 
-(map! :leader :desc "Find related file" :n "f o" #'projectile-find-other-file)
+(defun dd/projectile-reset-known-projects ()
+  (interactive)
+  (projectile-reset-known-projects)
+  (dolist (search-path projectile-project-search-path)
+    (let* ((expanded (expand-file-name search-path))
+           (progress-reporter
+            (make-progress-reporter
+             (format "Projectile is discovering worktrees in %s..."
+                     (propertize search-path 'face 'font-lock-keyword-face))))
+           (cmd (format "fd --hidden --no-ignore --type d '^[.]wt$' %s --max-depth 2 --exec fd --hidden --type d --max-depth 1 . {}"
+                        (shell-quote-argument expanded)))
+           (output (shell-command-to-string cmd)))
+      (dolist (worktree (split-string output "\n" t))
+        (projectile-add-known-project worktree))
+      (progress-reporter-done progress-reporter))))
+
+(map! :leader
+      :desc "Find related file" :n "f o" #'projectile-find-other-file
+      :desc "Discover projects and WTs" :n "p D" #'dd/projectile-reset-known-projects)
 
 ;;; Snippets
 
