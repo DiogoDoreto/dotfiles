@@ -9,7 +9,8 @@
 
   (when (string= (system-name) "lapdog")
     (setopt agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config)
-            agent-shell-anthropic-claude-acp-command '("ssh" "lapdog-agent" "claude-agent-acp")))
+            ;; env var fixes init issue https://github.com/agentclientprotocol/claude-agent-acp/issues/575
+            agent-shell-anthropic-claude-acp-command '("ssh" "lapdog-agent" "CLAUDE_CODE_EXECUTABLE=/etc/profiles/per-user/dog/bin/claude" "claude-agent-acp")))
 
   (when (string= (system-name) "DT-5RHWB24")
     (setopt agent-shell-preferred-agent-config (agent-shell-opencode-make-agent-config)))
