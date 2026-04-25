@@ -56,11 +56,6 @@ in
           };
           containersForce = true;
           containers = {
-            Default = {
-              id = 0;
-              color = "toolbar";
-              icon = "circle";
-            };
             Google = {
               id = 1;
               color = "red";
