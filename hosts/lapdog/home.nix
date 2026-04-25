@@ -63,6 +63,11 @@ in
     ];
   };
 
+  xdg.autostart = {
+    enable = true;
+    entries = [ "${pkgs.onedrivegui}/share/applications/OneDriveGUI.desktop" ];
+  };
+
   home.file = {
     ".agents".source = dotfilesSymlink ".config/agents";
   };
