@@ -37,6 +37,11 @@
   # enable CUDA per-program that needs it
   # nixpkgs.config.cudaSupport = true;
 
+  # Early KMS: load i915 in initrd so Intel iGPU output is stable before SDDM starts.
+  # Without this, there's a race between driver init and the display manager that
+  # causes the HDMI signal to randomly drop on cold boot.
+  boot.initrd.kernelModules = [ "i915" ];
+
   # Intel (display) + NVIDIA (compute) via PRIME offload
   # Intel UHD 770 handles display; RTX 4090 is free for CUDA/compute workloads
   services.xserver.videoDrivers = [
