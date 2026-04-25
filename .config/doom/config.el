@@ -299,6 +299,7 @@ Based on the code of `doom/bump-package-at-point'"
 (load! "dd/javascript")
 (load! "dd/lsp")
 (load! "dd/nix")
+(load! "dd/pandoc")
 (load! "dd/terminal")
 (load! "dd/tree-sitter")
 
