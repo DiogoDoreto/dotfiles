@@ -175,6 +175,14 @@
         mountPoint = "/home/dog/.local/share/doomemacs/straight/repos";
         readOnly = true;
       }
+      # ~/.local/share/direnv/allow — direnv trust database (read-only)
+      {
+        proto = "virtiofs";
+        tag = "direnv-allow";
+        source = "/home/dog/.local/share/direnv/allow";
+        mountPoint = "/home/dog/.local/share/direnv/allow";
+        readOnly = true;
+      }
     ];
   };
 }
