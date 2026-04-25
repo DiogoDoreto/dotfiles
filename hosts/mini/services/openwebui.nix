@@ -29,7 +29,7 @@ in
     ];
     environment = {
       # llama-swap on chungus exposes an OpenAI-compatible API on port 8080
-      OPENAI_API_BASE_URL = "http://192.168.0.3:8080/v1";
+      OPENAI_API_BASE_URL = "https://llama.local.doreto.com.br/v1";
       OPENAI_API_KEY = "sk-dummy";
       # Trust Caddy's self-signed CA inside the container
       SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";

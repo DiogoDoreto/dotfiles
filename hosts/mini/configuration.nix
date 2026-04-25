@@ -27,6 +27,7 @@ in
     ./services/kokoro.nix
     ./services/searx.nix
     ./services/vscodium-web.nix
+    ./services/chungus-proxy.nix
   ];
 
   # TODO update kernel to use this:

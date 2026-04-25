@@ -122,9 +122,14 @@ in
           reverse_proxy localhost:${p.kokoro}
         '';
       };
+      "llama.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy http://chungus-proxy.home:${p.llama}
+        '';
+      };
       "invokeai.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy 192.168.0.3:${p.invokeai}
+          reverse_proxy http://chungus-proxy.home:${p.invokeai}
         '';
       };
       "www.local.doreto.com.br" = {

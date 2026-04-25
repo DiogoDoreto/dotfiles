@@ -10,6 +10,7 @@
     ./hardware.nix
     ./services/llama-swap.nix
     ./services/invokeai.nix
+    ./services/auto-suspend.nix
   ];
 
   nix.settings = {
@@ -83,6 +84,19 @@
 
   # Enable networking
   networking.networkmanager.enable = true;
+  networking.networkmanager.unmanaged = [ "interface-name:enp4s0" ];
+
+  networking.interfaces.enp4s0.ipv4.addresses = [
+    {
+      address = "192.168.0.3";
+      prefixLength = 24;
+    }
+  ];
+  networking.defaultGateway = {
+    address = "192.168.0.1";
+    interface = "enp4s0";
+  };
+  networking.nameservers = [ "192.168.0.2" ];
 
   security.pki.certificateFiles = [ ../mini/home-caddy.crt ];
 

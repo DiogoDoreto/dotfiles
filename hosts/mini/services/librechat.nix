@@ -12,7 +12,7 @@ let
         {
           name = "llama-swap";
           apiKey = "sk-dummy";
-          baseURL = "http://chungus.home:8080/v1";
+          baseURL = "https://llama.local.doreto.com.br/v1";
           models = {
             default = [ "qwen3.5-35b-a3b-coding" ];
             fetch = true;
