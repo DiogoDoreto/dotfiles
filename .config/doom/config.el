@@ -310,8 +310,10 @@ Based on the code of `doom/bump-package-at-point'"
 ;;; General mappings
 
 ;; navigate through visual lines by default
-(map! :nv "j" #'evil-next-visual-line
-      :nv "k" #'evil-previous-visual-line)
+(map! :nv "j"  #'evil-next-visual-line
+      :nv "k"  #'evil-previous-visual-line
+      :nv "gj" #'evil-next-line
+      :nv "gk" #'evil-previous-line)
 
 ;; Sane saving.
 (map! "C-s" #'save-buffer)
@@ -324,6 +326,10 @@ Based on the code of `doom/bump-package-at-point'"
 ;; use middle click to go-to-definition - the down event ensures we navigate to the target point
 (map! :n "<down-mouse-2>" #'evil-mouse-drag-region
       :n "<mouse-2>" #'+lookup/definition)
+
+(after! vertico
+  (require 'vertico-suspend)
+  (map! "C-'" #'vertico-suspend))
 
 (defun dd/insert-semicolon-and-return ()
   "Save the current position in the line, move to the end, insert a semicolon,
