@@ -38,7 +38,7 @@ let
   # between the last poll and now, exit 1 so autosuspend aborts and resets the
   # idle timer rather than racing into S3 under load.
   preSuspend = pkgs.writeShellScript "chungus-pre-suspend" ''
-    if ${chungusActivityCheck}; then
+    if ${chungusActivityCheck} || ${chungusScreenSaverCheck}; then
       exit 1
     fi
     systemctl suspend
