@@ -21,10 +21,12 @@ let
   chungusScreenSaverCheck = pkgs.writeShellScript "chungus-screensaver-check" ''
     # Exit 0 = ACTIVE (block suspend), exit 1 = idle (allow suspend)
     # GetActive returns "true" when screen is locked, "false" when a user is present.
+    # Must run qdbus as dog because the D-Bus session daemon rejects root connections.
     uid=$(id -u dog 2>/dev/null) || exit 1
     socket=/run/user/$uid/bus
     [ -S "$socket" ] || exit 1
-    result=$(DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=$socket \
+    result=$(runuser -u dog -- env \
+      DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=$socket \
       ${pkgs.kdePackages.qttools}/bin/qdbus \
       org.freedesktop.ScreenSaver /ScreenSaver \
       org.freedesktop.ScreenSaver.GetActive 2>/dev/null)
