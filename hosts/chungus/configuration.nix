@@ -48,6 +48,10 @@
   # Intel ACPI tables claim the SMBus by default, blocking i2c access to DIMMs.
   boot.kernelParams = [ "acpi_enforce_resources=lax" ];
 
+  # spd5118 claims the DDR5 SPD hubs (0x51/0x53), blocking OpenRGB's DIMM
+  # detection flow even though the RGB controllers themselves are accessible.
+  boot.blacklistedKernelModules = [ "spd5118" ];
+
   # Intel (display) + NVIDIA (compute) via PRIME offload
   # Intel UHD 770 handles display; RTX 4090 is free for CUDA/compute workloads
   services.xserver.videoDrivers = [
