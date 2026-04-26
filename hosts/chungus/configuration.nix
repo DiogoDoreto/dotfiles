@@ -28,7 +28,6 @@
 
   hardware.nvidia-container-toolkit = {
     enable = true;
-    mount-nvidia-executables = false;
   };
 
   # Basic Graphics Setup
