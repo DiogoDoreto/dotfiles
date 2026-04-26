@@ -22,9 +22,13 @@ in
   #   ];
   # };
 
+  users.groups.data = { };
+  users.users.dog.extraGroups = [ "data" ];
+
+  # setgid (2) ensures new files/dirs inherit the data group
   systemd.tmpfiles.rules = [
-    "d /data 0755 root root -"
-    # "d /data/.snapraid-content 0755 root root -"
+    "d /data 2775 root data -"
+    # "d /data/.snapraid-content 2775 root data -"
   ];
 
   environment.systemPackages = [ pkgs.btrfs-progs ];
