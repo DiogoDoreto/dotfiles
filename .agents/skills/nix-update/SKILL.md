@@ -82,6 +82,16 @@ helper would simplify multiple modules, add it to `dog-lib` here.
 | Reusable Nix helper function | `modules/home-manager/lib/default.nix` |
 | App config file (non-nix) | `.config/<app>/` tracked in the repo |
 
+### Adding Services on chungus
+
+When adding a long-running service on chungus that should not be interrupted
+(e.g. a compute job, media server, or persistent API), check
+`hosts/chungus/services/auto-suspend.nix` and consider adding a matching
+autosuspend check so the machine doesn't suspend while that service is active.
+Existing checks cover GPU utilisation, llama-server, AI ports (8080/9090), and
+remote SSH — add an `ActiveConnection`, `ExternalCommand`, or `Users` check as
+appropriate.
+
 ### Offer Reusable Modules
 
 When a change is host-specific but would clearly benefit other hosts, suggest
