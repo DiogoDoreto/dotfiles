@@ -1,5 +1,7 @@
 { pkgs, lib, ... }:
 
+# logs are available inside the container on /var/log/studio/access.log
+
 let
   vars = import ../_variables.nix;
 
@@ -32,6 +34,7 @@ in
     ];
     volumes = [
       "/data/unsloth/work:/workspace/work"
+      "/data/unsloth/auth:/home/unsloth/.unsloth/studio/auth"
       "/nix/store:/nix/store:ro"
       "${llama-server-gpu}:/home/unsloth/.unsloth/llama.cpp/build/bin/llama-server:ro"
     ];
@@ -50,6 +53,7 @@ in
 
   systemd.tmpfiles.rules = [
     "d /data/unsloth 0755 root root -"
+    "d /data/unsloth/auth 0755 root root -"
     "d /data/unsloth/work 0755 root root -"
   ];
 
