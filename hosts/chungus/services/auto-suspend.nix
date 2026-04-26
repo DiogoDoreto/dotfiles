@@ -25,7 +25,7 @@ let
     uid=$(id -u dog 2>/dev/null) || exit 1
     socket=/run/user/$uid/bus
     [ -S "$socket" ] || exit 1
-    result=$(runuser -u dog -- env \
+    result=$(${pkgs.util-linux}/bin/runuser -u dog -- env \
       DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=$socket \
       ${pkgs.kdePackages.qttools}/bin/qdbus \
       org.freedesktop.ScreenSaver /ScreenSaver \
