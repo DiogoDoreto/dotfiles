@@ -100,4 +100,9 @@ in
     "d /var/lib/llama-swap 0755 root root -"
     "d /var/lib/llama-swap/models 0755 root root -"
   ];
+
+  # After S3 resume the NVIDIA CUDA context held by llama-server is invalid.
+  # Restarting llama-swap after every resume brings the server back with a
+  # fresh CUDA context once nvidia-resume.service has restored GPU state.
+  powerManagement.resumeCommands = "systemctl restart llama-swap.service";
 }
