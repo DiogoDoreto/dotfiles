@@ -2,7 +2,12 @@
 
 let
   openrgb = pkgs.openrgb;
-  applyProfile = profile: "${openrgb}/bin/openrgb --server-host 127.0.0.1 --server-port 6742 --profile ${profile}";
+  applyProfile =
+    profile:
+    pkgs.writeShellScript "openrgb-apply-profile" ''
+      echo "Applying profile: ${profile}"
+      ${openrgb}/bin/openrgb --profile ${profile}
+    '';
 in
 {
   # Allow OpenRGB to access the SMBus for RAM RGB control.
@@ -33,9 +38,11 @@ in
     after = [ "openrgb.service" ];
     before = [ "sleep.target" ];
     wantedBy = [ "sleep.target" ];
+    unitConfig.StopWhenUnneeded = true;
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      WorkingDirectory = "/var/lib/OpenRGB";
       ExecStart = applyProfile "red";
       ExecStop = applyProfile "blue";
     };
