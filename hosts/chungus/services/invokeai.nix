@@ -1,5 +1,8 @@
 { ... }:
 
+let
+  vars = import ../_variables.nix;
+in
 {
   virtualisation.oci-containers.containers.invokeai = {
     # Check latest versions on https://github.com/invoke-ai/InvokeAI/releases
@@ -9,7 +12,7 @@
     #   sudo podman pull ghcr.io/invoke-ai/invokeai:latest
     #   sudo systemctl restart podman-invokeai.service
     image = "ghcr.io/invoke-ai/invokeai:latest";
-    ports = [ "9090:9090" ];
+    ports = [ "${toString vars.ports.invokeai}:${toString vars.ports.invokeai}" ];
     volumes = [
       "/var/lib/invokeai:/invokeai"
       "/var/cache/huggingface:/invokeai/.cache/huggingface"
@@ -28,5 +31,5 @@
     "d /var/cache/huggingface 0755 root root -"
   ];
 
-  networking.firewall.allowedTCPPorts = [ 9090 ];
+  networking.firewall.allowedTCPPorts = [ vars.ports.invokeai ];
 }

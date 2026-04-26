@@ -24,6 +24,17 @@
 }:
 
 let
+  vars = import ../_variables.nix;
+  aiPorts =
+    let
+      p = vars.ports;
+    in
+    lib.concatMapStringsSep ", " toString [
+      p.unslothApi
+      p.llama
+      p.unslothStudio
+      p.invokeai
+    ];
   chungusActivityCheck = pkgs.writeShellScript "chungus-activity-check" ''
     # Exit 0 = ACTIVE (block suspend), exit 1 = idle (allow suspend)
     if nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits \
@@ -92,7 +103,7 @@ in
       };
       AiPortConnections = {
         class = "ActiveConnection";
-        ports = "8080, 9090";
+        ports = aiPorts;
       };
       RemoteSSH = {
         class = "Users";

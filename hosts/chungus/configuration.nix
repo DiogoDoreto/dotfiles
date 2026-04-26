@@ -10,6 +10,7 @@
     ./hardware.nix
     ./services/llama-swap.nix
     ./services/invokeai.nix
+    ./services/unsloth-studio.nix
     ./services/auto-suspend.nix
     ./services/storage.nix
   ];

@@ -1,5 +1,9 @@
 { pkgs, lib, ... }:
 
+let
+  vars = import ../_variables.nix;
+in
+
 # Download the model with:
 #   hf download unsloth/Qwen3.5-35B-A3B-GGUF \
 #     --local-dir /tmp/qwen35 \
@@ -36,7 +40,7 @@ in
   services.llama-swap = {
     enable = true;
     listenAddress = "0.0.0.0";
-    port = 8080;
+    port = vars.ports.llama;
     openFirewall = true;
 
     settings = {
