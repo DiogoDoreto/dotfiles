@@ -44,6 +44,10 @@
   # causes the HDMI signal to randomly drop on cold boot.
   boot.initrd.kernelModules = [ "i915" ];
 
+  # Allow OpenRGB to access the SMBus for RAM RGB control.
+  # Intel ACPI tables claim the SMBus by default, blocking i2c access to DIMMs.
+  boot.kernelParams = [ "acpi_enforce_resources=lax" ];
+
   # Intel (display) + NVIDIA (compute) via PRIME offload
   # Intel UHD 770 handles display; RTX 4090 is free for CUDA/compute workloads
   services.xserver.videoDrivers = [
