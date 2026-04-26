@@ -11,6 +11,7 @@
     ./services/llama-swap.nix
     ./services/invokeai.nix
     ./services/auto-suspend.nix
+    ./services/storage.nix
   ];
 
   nix.settings = {
