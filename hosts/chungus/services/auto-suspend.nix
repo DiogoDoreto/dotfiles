@@ -89,6 +89,7 @@ in
 
   systemd.services.autosuspend.path = lib.mkAfter [
     pkgs.procps
+    pkgs.gawk
     config.hardware.nvidia.package.bin
     pkgs.kdePackages.qttools
   ];
