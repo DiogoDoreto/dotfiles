@@ -1,3 +1,21 @@
+# Automatic S3 suspend for chungus when the machine is genuinely idle.
+#
+# autosuspend polls every 60 s and suspends after 10 min of combined idleness
+# across all checks below. A pre-suspend hook re-runs the checks immediately
+# before issuing the suspend to avoid racing into sleep under sudden load.
+#
+# Checks (any active one blocks suspend):
+#   GpuActivity        — GPU utilisation > 5 % (nvidia-smi)
+#   AiPortConnections  — active TCP connections on ports 8080 / 9090
+#   RemoteSSH          — remote SSH sessions (pts/* from a numeric host)
+#   ScreenSaverInactive — KDE screensaver not active, i.e. a user is at the desk
+#
+# Manual setup required:
+#   The ScreenSaverInactive check only works correctly if KDE Screen Locking
+#   is configured to lock the screen after a short idle period. Set this in
+#   System Settings → Screen Locking → Lock screen automatically after <N> min.
+#   Without this, an unattended but unlocked desktop will never trigger the
+#   screensaver and autosuspend will never see it as idle.
 {
   config,
   pkgs,
