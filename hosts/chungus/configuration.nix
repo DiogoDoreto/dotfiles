@@ -152,6 +152,18 @@
     #media-session.enable = true;
   };
 
+  # RGB lighting control (RAM + GPU) via OpenRGB SDK server.
+  # Loads i2c-dev + i2c-i801 for SMBus RAM access; GPU RGB via USB.
+  # motherboard auto-detected as "intel" from hardware.cpu.intel.updateMicrocode.
+  # GUI: openrgb; save a profile then set startupProfile = "<name>" to auto-apply it.
+  services.hardware.openrgb = {
+    enable = true;
+    package = pkgs.openrgb.withPlugins [
+      pkgs.openrgb-plugin-effects
+      pkgs.openrgb-plugin-hardwaresync
+    ];
+  };
+
   # OpenTabletDriver is an open source, cross-platform, low latency, user-mode tablet driver.
   # hardware.opentabletdriver.enable = true;
 
