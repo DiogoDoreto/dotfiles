@@ -168,6 +168,9 @@
     ];
   };
 
+  # Grant userspace access to /dev/i2c-* so OpenRGB can reach RAM RGB controllers.
+  hardware.i2c.enable = true;
+
   # OpenTabletDriver is an open source, cross-platform, low latency, user-mode tablet driver.
   # hardware.opentabletdriver.enable = true;
 
@@ -181,6 +184,7 @@
     extraGroups = [
       "networkmanager"
       "wheel"
+      "i2c"
     ];
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
