@@ -8,6 +8,7 @@
   imports = [
     # Include the results of the hardware scan.
     ./hardware.nix
+    ./rgb.nix
     ./services/llama-swap.nix
     ./services/invokeai.nix
     ./services/unsloth-studio.nix
@@ -43,14 +44,6 @@
   # Without this, there's a race between driver init and the display manager that
   # causes the HDMI signal to randomly drop on cold boot.
   boot.initrd.kernelModules = [ "i915" ];
-
-  # Allow OpenRGB to access the SMBus for RAM RGB control.
-  # Intel ACPI tables claim the SMBus by default, blocking i2c access to DIMMs.
-  boot.kernelParams = [ "acpi_enforce_resources=lax" ];
-
-  # spd5118 claims the DDR5 SPD hubs (0x51/0x53), blocking OpenRGB's DIMM
-  # detection flow even though the RGB controllers themselves are accessible.
-  boot.blacklistedKernelModules = [ "spd5118" ];
 
   # Intel (display) + NVIDIA (compute) via PRIME offload
   # Intel UHD 770 handles display; RTX 4090 is free for CUDA/compute workloads
@@ -160,21 +153,6 @@
     #media-session.enable = true;
   };
 
-  # RGB lighting control (RAM + GPU) via OpenRGB SDK server.
-  # Loads i2c-dev + i2c-i801 for SMBus RAM access; GPU RGB via USB.
-  # motherboard auto-detected as "intel" from hardware.cpu.intel.updateMicrocode.
-  # GUI: openrgb; save a profile then set startupProfile = "<name>" to auto-apply it.
-  services.hardware.openrgb = {
-    enable = true;
-    package = pkgs.openrgb.withPlugins [
-      pkgs.openrgb-plugin-effects
-      pkgs.openrgb-plugin-hardwaresync
-    ];
-  };
-
-  # Grant userspace access to /dev/i2c-* so OpenRGB can reach RAM RGB controllers.
-  hardware.i2c.enable = true;
-
   # OpenTabletDriver is an open source, cross-platform, low latency, user-mode tablet driver.
   # hardware.opentabletdriver.enable = true;
 
@@ -188,7 +166,6 @@
     extraGroups = [
       "networkmanager"
       "wheel"
-      "i2c"
     ];
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFzvUuNy14x6avfx0mYrG3txTKgQZbTADajlZ7Sjk1bz dog@lapdog"
