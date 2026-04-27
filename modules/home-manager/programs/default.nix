@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./agent-vm.nix
     ./blueman.nix
     ./claude-code.nix
     ./cli-tools.nix
