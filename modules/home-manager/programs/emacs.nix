@@ -175,7 +175,6 @@ let
         enable = true;
         flags = [
           "+grip"
-          "+tree-sitter"
         ];
       };
       nix = {
