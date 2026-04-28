@@ -18,6 +18,77 @@ let
   cfg = config.dog.programs.agent-vm;
   vmNames = builtins.attrNames cfg.vms;
 
+  # Wrapper that fixes two issues with bare `nix run <flake>#<runner>`:
+  #
+  # 1. CWD fix: some flake inputs use relative paths in the lock file, which
+  #    nix resolves relative to the current working directory.  Systemd user
+  #    services default to $HOME as CWD, so those inputs resolve incorrectly.
+  #    cd-ing to the flake directory first gives nix the right base path.
+  #
+  # 2. virtiofsd: `nix run .#<vm>-runner` only invokes `microvm-run` (QEMU).
+  #    The runner package also ships `virtiofsd-run` (supervisord managing one
+  #    virtiofsd instance per share); QEMU cannot start until those sockets
+  #    exist.  This wrapper starts virtiofsd-run first, waits for the ro-store
+  #    socket to appear, then launches QEMU.
+  mkVmRunnerScript =
+    { runnerAttr, sockName }:
+    pkgs.writeShellScript "agent-${sockName}-run" ''
+      set -euo pipefail
+      cd ${escapeShellArg (toString cfg.flake)}
+      RUNNER=$(${pkgs.nix}/bin/nix build ".?submodules=1#${runnerAttr}" --no-link --print-out-paths)
+      WORKDIR="$XDG_RUNTIME_DIR/agent-vm-sockets/${sockName}"
+      mkdir -p "$WORKDIR"
+      cd "$WORKDIR"
+      "$RUNNER/bin/virtiofsd-run" &
+      VIRTIOFSD_PID=$!
+      _cleanup() { kill "$VIRTIOFSD_PID" 2>/dev/null || true; }
+      trap _cleanup EXIT
+      i=0
+      while [ "$i" -lt 150 ]; do
+        [ -S "${sockName}-virtiofs-ro-store.sock" ] && break
+        sleep 0.2
+        i=$(( i + 1 ))
+      done
+      if [ "$i" -ge 150 ]; then
+        echo "virtiofsd socket '${sockName}-virtiofs-ro-store.sock' did not appear after 30s" >&2
+        exit 1
+      fi
+      "$RUNNER/bin/microvm-run"
+    '';
+
+  # Generic VM runner: takes the VM name as $1 (injected via systemd %i).
+  # Cannot be generated per-VM because the template unit resolves %i at
+  # runtime, not at Nix evaluation time.
+  vmRunnerScript = pkgs.writeShellScript "agent-vm-run" ''
+    set -euo pipefail
+    NAME="$1"
+    cd ${escapeShellArg (toString cfg.flake)}
+    RUNNER=$(${pkgs.nix}/bin/nix build ".?submodules=1#agent-$NAME-runner" --no-link --print-out-paths)
+    WORKDIR="$XDG_RUNTIME_DIR/agent-vm-sockets/$NAME"
+    mkdir -p "$WORKDIR"
+    cd "$WORKDIR"
+    "$RUNNER/bin/virtiofsd-run" &
+    VIRTIOFSD_PID=$!
+    _cleanup() { kill "$VIRTIOFSD_PID" 2>/dev/null || true; }
+    trap _cleanup EXIT
+    i=0
+    while [ "$i" -lt 150 ]; do
+      [ -S "agent-$NAME-virtiofs-ro-store.sock" ] && break
+      sleep 0.2
+      i=$(( i + 1 ))
+    done
+    if [ "$i" -ge 150 ]; then
+      echo "virtiofsd socket 'agent-$NAME-virtiofs-ro-store.sock' did not appear after 30s" >&2
+      exit 1
+    fi
+    "$RUNNER/bin/microvm-run"
+  '';
+
+  routerRunnerScript = mkVmRunnerScript {
+    runnerAttr = "agent-router-runner";
+    sockName   = "agent-router";
+  };
+
   agentVmScript = pkgs.writeShellScriptBin "agent-vm" ''
     CMD="''${1:-help}"
     NAME="''${2:-}"
@@ -224,7 +295,7 @@ in
             if cfg.router.enable then [ "agent-vm-router.service" ] else [ "agent-vm-switch.service" ];
         };
         Service = {
-          ExecStart = "${pkgs.nix}/bin/nix run ${toString cfg.flake}?submodules=1#agent-%i-runner";
+          ExecStart = "${vmRunnerScript} %i";
           Restart = "no";
         };
       };
@@ -238,7 +309,7 @@ in
           Requires = [ "agent-vm-switch.service" ];
         };
         Service = {
-          ExecStart = "${pkgs.nix}/bin/nix run ${toString cfg.flake}?submodules=1#agent-router-runner";
+          ExecStart = toString routerRunnerScript;
           Restart = "no";
         };
       };
