@@ -224,11 +224,15 @@ and the `agent-home` share source path to
 
 Add to your home-manager config:
 ```nix
-dog.programs.agent-vm.vms.sandbox = { guestIp = "10.0.0.3"; };
+dog.programs.agent-vm.vms.sandbox = {
+  guestIp = "10.0.0.3";
+  runner  = inputs.self.packages.${pkgs.system}.agent-sandbox-runner;
+};
 ```
 
 Run `home-manager switch`.  The flake auto-discovers the new directory and
-builds `agent-sandbox-runner`.
+builds `agent-sandbox-runner`; the runner package is then referenced
+directly from the user systemd units (no runtime `nix build`).
 
 ---
 

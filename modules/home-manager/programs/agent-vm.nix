@@ -4,6 +4,11 @@
 # config stanzas.  No root or system-level changes are required at runtime
 # (one-time host setup of kvm module + kvm group is done manually once).
 #
+# Runners are built ahead of time and passed in via the `runner` option per
+# VM (and `router.runner`).  This avoids `nix build` at service start, gives
+# us proper GC roots via the home-manager generation, and lets the systemd
+# ExecStart point to a fully-resolved store path.
+#
 # See dotfiles-dog/modules/nixos/microvm-agent/README.md for the full picture.
 {
   config,
@@ -18,165 +23,145 @@ let
   cfg = config.dog.programs.agent-vm;
   vmNames = builtins.attrNames cfg.vms;
 
-  # Wrapper that fixes two issues with bare `nix run <flake>#<runner>`:
-  #
-  # 1. CWD fix: some flake inputs use relative paths in the lock file, which
-  #    nix resolves relative to the current working directory.  Systemd user
-  #    services default to $HOME as CWD, so those inputs resolve incorrectly.
-  #    cd-ing to the flake directory first gives nix the right base path.
-  #
-  # 2. virtiofsd: `nix run .#<vm>-runner` only invokes `microvm-run` (QEMU).
-  #    The runner package also ships `virtiofsd-run` (supervisord managing one
-  #    virtiofsd instance per share); QEMU cannot start until those sockets
-  #    exist.  This wrapper starts virtiofsd-run first, waits for the ro-store
-  #    socket to appear, then launches QEMU.
-  mkVmRunnerScript =
-    { runnerAttr, sockName }:
-    pkgs.writeShellScript "agent-${sockName}-run" ''
-      set -euo pipefail
-      cd ${escapeShellArg (toString cfg.flake)}
-      RUNNER=$(${pkgs.nix}/bin/nix build ".?submodules=1#${runnerAttr}" --no-link --print-out-paths)
-      WORKDIR="$XDG_RUNTIME_DIR/agent-vm-sockets/${sockName}"
-      mkdir -p "$WORKDIR"
-      cd "$WORKDIR"
-      "$RUNNER/bin/virtiofsd-run" &
-      VIRTIOFSD_PID=$!
-      _cleanup() { kill "$VIRTIOFSD_PID" 2>/dev/null || true; }
-      trap _cleanup EXIT
-      i=0
-      while [ "$i" -lt 150 ]; do
-        [ -S "${sockName}-virtiofs-ro-store.sock" ] && break
-        sleep 0.2
-        i=$(( i + 1 ))
+  # Wrap a microvm.declaredRunner so the embedded supervisord conf no longer
+  # contains `user=root` — that line is injected by microvm.nix and makes
+  # supervisord refuse to start when run from a non-root user systemd
+  # service.  All other binaries are passed through untouched, so callers
+  # use $out/bin/virtiofsd-run and $out/bin/microvm-run as usual.
+  mkPatchedRunner =
+    name: runner:
+    pkgs.runCommand "agent-vm-${name}-runner" { } ''
+      mkdir -p $out/bin
+      for f in ${runner}/bin/*; do
+        ln -s "$f" "$out/bin/$(basename "$f")"
       done
-      if [ "$i" -ge 150 ]; then
-        echo "virtiofsd socket '${sockName}-virtiofs-ro-store.sock' did not appear after 30s" >&2
-        exit 1
-      fi
-      "$RUNNER/bin/microvm-run"
+      rm "$out/bin/virtiofsd-run"
+
+      orig=${runner}/bin/virtiofsd-run
+      bin=$(sed -n '2s/^exec \([^ ]*\).*/\1/p' "$orig")
+      conf=$(sed -n '2s/.* --configuration \([^ ]*\).*/\1/p' "$orig")
+      sed '/^user=/d' "$conf" > "$out/virtiofsd-supervisord.conf"
+
+      cat > $out/bin/virtiofsd-run <<EOF
+      #!${pkgs.runtimeShell}
+      exec "$bin" --configuration "$out/virtiofsd-supervisord.conf" "\$@"
+      EOF
+      chmod +x $out/bin/virtiofsd-run
     '';
 
-  # Generic VM runner: takes the VM name as $1 (injected via systemd %i).
-  # Cannot be generated per-VM because the template unit resolves %i at
-  # runtime, not at Nix evaluation time.
-  vmRunnerScript = pkgs.writeShellScript "agent-vm-run" ''
-    set -euo pipefail
-    NAME="$1"
-    cd ${escapeShellArg (toString cfg.flake)}
-    RUNNER=$(${pkgs.nix}/bin/nix build ".?submodules=1#agent-$NAME-runner" --no-link --print-out-paths)
-    WORKDIR="$XDG_RUNTIME_DIR/agent-vm-sockets/$NAME"
-    mkdir -p "$WORKDIR"
-    cd "$WORKDIR"
-    "$RUNNER/bin/virtiofsd-run" &
-    VIRTIOFSD_PID=$!
-    _cleanup() { kill "$VIRTIOFSD_PID" 2>/dev/null || true; }
-    trap _cleanup EXIT
-    i=0
-    while [ "$i" -lt 150 ]; do
-      [ -S "agent-$NAME-virtiofs-ro-store.sock" ] && break
-      sleep 0.2
-      i=$(( i + 1 ))
-    done
-    if [ "$i" -ge 150 ]; then
-      echo "virtiofsd socket 'agent-$NAME-virtiofs-ro-store.sock' did not appear after 30s" >&2
-      exit 1
-    fi
-    "$RUNNER/bin/microvm-run"
-  '';
-
-  routerRunnerScript = mkVmRunnerScript {
-    runnerAttr = "agent-router-runner";
-    sockName   = "agent-router";
-  };
+  vmRunners = mapAttrs (name: vm: mkPatchedRunner name vm.runner) cfg.vms;
+  routerRunner = mkPatchedRunner "router" (cfg.router.runner or null);
 
   agentVmScript = pkgs.writeShellScriptBin "agent-vm" ''
+    set -euo pipefail
     CMD="''${1:-help}"
     NAME="''${2:-}"
 
-    _start_switch() {
-      systemctl --user start agent-vm-switch.service
+    list_vm_units() {
+      printf '%s\n' ${concatStringsSep " " (map (n: "agent-vm-${n}.service") vmNames)}
     }
 
-    _start_router() {
-      _start_switch
-      systemctl --user start agent-vm-router.service
+    start_infra() {
+      systemctl --user start agent-vm-switch.service
+      ${optionalString cfg.router.enable ''
+        systemctl --user start agent-vm-router.service
+      ''}
     }
 
     case "$CMD" in
       start)
         [ -z "$NAME" ] && { echo "Usage: agent-vm start <name>"; exit 1; }
-        _start_router
-        systemctl --user start "agent-vm@''${NAME}.service"
+        start_infra
+        if ! systemctl --user start "agent-vm-''${NAME}.service"; then
+          echo "Error: agent-''${NAME} failed to start."
+          echo "Logs:  agent-vm logs ''${NAME}"
+          exit 1
+        fi
         echo "agent-''${NAME} starting."
-        echo "SSH in once ready:  ssh agent-''${NAME}"
-        echo "Audit:              agent-vm logs --audit"
-        echo "Stop:               agent-vm stop ''${NAME}"
+        echo "SSH:    ssh agent-''${NAME}"
+        echo "Logs:   agent-vm logs ''${NAME}"
+        ${optionalString cfg.router.enable ''echo "Audit:  agent-vm logs --audit"''}
+        echo "Stop:   agent-vm stop ''${NAME}"
         ;;
 
       stop)
-        if [ "$NAME" = "--all" ] || [ -z "$NAME" ]; then
-          systemctl --user list-units 'agent-vm@*.service' --no-legend \
-            | awk '{print $1}' \
-            | xargs -r systemctl --user stop 2>/dev/null || true
-          systemctl --user stop agent-vm-router.service 2>/dev/null || true
+        if [ -z "$NAME" ] || [ "$NAME" = "--all" ]; then
+          list_vm_units | xargs -r systemctl --user stop 2>/dev/null || true
+          ${optionalString cfg.router.enable ''
+            systemctl --user stop agent-vm-router.service 2>/dev/null || true
+          ''}
           systemctl --user stop agent-vm-switch.service 2>/dev/null || true
         else
-          systemctl --user stop "agent-vm@''${NAME}.service"
+          systemctl --user stop "agent-vm-''${NAME}.service"
         fi
         ;;
 
       ssh)
         [ -z "$NAME" ] && { echo "Usage: agent-vm ssh <name>"; exit 1; }
-        exec ssh "agent-''${NAME}"
+        shift 2 || true
+        exec ssh "agent-''${NAME}" "$@"
         ;;
 
       status)
-        systemctl --user status agent-vm-switch.service agent-vm-router.service --no-pager || true
-        for name in ${escapeShellArgs vmNames}; do
-          systemctl --user status "agent-vm@''${name}.service" --no-pager || true
-        done
+        units=( agent-vm-switch.service )
+        ${optionalString cfg.router.enable ''units+=( agent-vm-router.service )''}
+        while IFS= read -r u; do units+=( "$u" ); done < <(list_vm_units)
+        systemctl --user status "''${units[@]}" --no-pager || true
         ;;
 
       logs)
-        LOGFLAG="''${2:-}"
-        if [ "$NAME" = "--audit" ] || [ "$LOGFLAG" = "--audit" ]; then
-          echo "==> DNS queries (router VM dnsmasq):"
-          ssh agent-router "journalctl -u dnsmasq -g 'query' --no-pager -n 50" 2>/dev/null \
-            || echo "  (router not reachable)"
-          echo ""
-          echo "==> Connection audit (router VM nftables [vm-agent]):"
-          ssh agent-router "journalctl -k -g '\[vm-agent\]' --no-pager -n 50" 2>/dev/null \
-            || echo "  (router not reachable)"
+        if [ "$NAME" = "--audit" ]; then
+          ${
+            if cfg.router.enable then
+              ''
+                echo "==> DNS queries (router VM dnsmasq):"
+                ssh agent-router "journalctl -u dnsmasq -g 'query' --no-pager -n 50" 2>/dev/null \
+                  || echo "  (router not reachable)"
+                echo ""
+                echo "==> Connection audit (router VM nftables [vm-agent]):"
+                ssh agent-router "journalctl -k -g '\\[vm-agent\\]' --no-pager -n 50" 2>/dev/null \
+                  || echo "  (router not reachable)"
+              ''
+            else
+              ''
+                echo "router VM is disabled (set dog.programs.agent-vm.router.enable = true)"
+                exit 1
+              ''
+          }
         elif [ -n "$NAME" ]; then
-          journalctl --user -u "agent-vm@''${NAME}.service" -f
+          journalctl --user -u "agent-vm-''${NAME}.service" -f
         else
-          journalctl --user -u agent-vm-router.service -f
+          echo "Usage: agent-vm logs <name|--audit>"
+          exit 1
         fi
         ;;
 
       nuke)
         [ -z "$NAME" ] && { echo "Usage: agent-vm nuke <name>"; exit 1; }
-        systemctl --user stop "agent-vm@''${NAME}.service" 2>/dev/null || true
-        home_dir="''${XDG_DATA_HOME:-$HOME/.local/share}/agent-vm/''${NAME}/home"
+        systemctl --user stop "agent-vm-''${NAME}.service" 2>/dev/null || true
+        home_dir="$HOME/.local/share/agent-vm/''${NAME}/home"
         rm -rf "$home_dir"
         mkdir -p "$home_dir"
         echo "Persistent home for ''${NAME} wiped and recreated."
         ;;
 
       *)
-        echo "agent-vm — manage isolated coding-agent VMs"
-        echo ""
-        echo "Usage: agent-vm <command> [name]"
-        echo ""
-        echo "Commands:"
-        echo "  start <name>            Start switch + router (if needed) + named VM"
-        echo "  stop [<name>|--all]     Stop one or all VMs"
-        echo "  ssh <name>              Open SSH session (ProxyJump via router)"
-        echo "  status                  Show systemd status for all units"
-        echo "  logs [<name>|--audit]   Stream logs; --audit shows DNS + connections"
-        echo "  nuke <name>             Wipe the VM's persistent home for a clean slate"
-        echo ""
-        echo "Known VMs: ${escapeShellArgs vmNames}"
+        cat <<'USAGE'
+    agent-vm — manage isolated coding-agent VMs
+
+    Usage: agent-vm <command> [name]
+
+    Commands:
+      start <name>            Start switch + router (if enabled) + named VM
+      stop [<name>|--all]     Stop one VM, or all VMs + infra
+      ssh <name> [args]       SSH into the VM (ProxyJump via router if enabled)
+      status                  Show systemd status for all units
+      logs <name>             Tail systemd logs for the VM
+      logs --audit            Show DNS queries + connection audit (router only)
+      nuke <name>             Wipe the VM's persistent home
+
+    USAGE
+        echo "Known VMs: ${concatStringsSep " " vmNames}"
         ;;
     esac
   '';
@@ -184,11 +169,6 @@ in
 {
   options.dog.programs.agent-vm = {
     enable = mkEnableOption "agent-vm manager";
-
-    flake = mkOption {
-      type = types.path;
-      description = "Absolute path to the repo root that contains the nixosConfigurations for the VMs.";
-    };
 
     router = {
       enable = mkOption {
@@ -200,6 +180,16 @@ in
         type = types.port;
         default = 2200;
         description = "Host-side port forwarded to the router VM's SSH.  Must match the value set in the router VM's dog.microvm-agent.router.sshPort option.";
+      };
+      identityFile = mkOption {
+        type = types.str;
+        default = "~/.ssh/id_agent_vm";
+        description = "SSH identity file used to log in to the router VM (and via ProxyJump for the agent VMs).";
+      };
+      runner = mkOption {
+        type = types.nullOr types.package;
+        default = null;
+        description = "microvm.declaredRunner package for the router VM.  Required when router.enable = true.";
       };
     };
 
@@ -218,6 +208,10 @@ in
                 default = "~/.ssh/id_agent_vm";
                 description = "SSH identity file for passwordless login to this VM.";
               };
+              runner = mkOption {
+                type = types.package;
+                description = "microvm.declaredRunner package for this VM (built ahead of time by the flake).";
+              };
             };
           }
         )
@@ -228,6 +222,13 @@ in
   };
 
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = !cfg.router.enable || cfg.router.runner != null;
+        message = "dog.programs.agent-vm.router.runner must be set when router.enable = true.";
+      }
+    ];
+
     home.packages = [
       agentVmScript
       pkgs.vde2
@@ -248,11 +249,7 @@ in
           extraOptions = {
             StrictHostKeyChecking = "no";
             UserKnownHostsFile = "/dev/null";
-            IdentityFile =
-              let
-                keys = mapAttrsToList (_: v: v.identityFile) cfg.vms;
-              in
-              if keys == [ ] then "~/.ssh/id_agent_vm" else head keys;
+            IdentityFile = cfg.router.identityFile;
           };
         };
       })
@@ -261,7 +258,7 @@ in
         nameValuePair "agent-${name}" {
           hostname = vmCfg.guestIp;
           user = "dog";
-          proxyJump = optionalString cfg.router.enable "agent-router";
+          proxyJump = if cfg.router.enable then "agent-router" else null;
           extraOptions = {
             StrictHostKeyChecking = "no";
             UserKnownHostsFile = "/dev/null";
@@ -275,44 +272,122 @@ in
       name: "d %h/.local/share/agent-vm/${name}/home 0755 - - -"
     ) vmNames;
 
-    systemd.user.services = {
-      # Userspace L2 switch shared by all VMs.
-      agent-vm-switch = {
-        Unit.Description = "VDE2 userspace switch for agent VM network";
-        Service = {
-          ExecStart = "${pkgs.vde2}/bin/vde_switch -s %t/agent-vm-net.sock";
-          Restart = "on-failure";
-        };
-      };
+    systemd.user.services =
+      let
+        # virtiofsd unit for one VM.  Type=notify works because the
+        # supervisord event handler embedded in the runner sends READY=1
+        # once all virtiofsd processes are RUNNING.  PartOf makes this unit
+        # stop whenever the VM unit stops.
+        mkVirtiofsdUnit =
+          {
+            name,
+            runner,
+            vmUnit,
+          }:
+          {
+            Unit = {
+              Description = "virtiofsd for agent VM ${name}";
+              After = [ "agent-vm-switch.service" ];
+              Requires = [ "agent-vm-switch.service" ];
+              PartOf = [ vmUnit ];
+            };
+            Service = {
+              Type = "notify";
+              NotifyAccess = "all";
+              ExecStart = "${runner}/bin/virtiofsd-run";
+              RuntimeDirectory = "agent-vm-sockets/${name}";
+              WorkingDirectory = "%t/agent-vm-sockets/${name}";
+              Restart = "no";
+            };
+          };
 
-      # Template unit: `systemctl --user start agent-vm@work.service`
-      # The %i specifier expands to the instance name at runtime.
-      "agent-vm@" = {
-        Unit = {
-          Description = "Agent VM %i";
-          After = if cfg.router.enable then [ "agent-vm-router.service" ] else [ "agent-vm-switch.service" ];
-          Requires =
-            if cfg.router.enable then [ "agent-vm-router.service" ] else [ "agent-vm-switch.service" ];
+        # QEMU unit for one VM.  The runner's microvm-run uses *relative*
+        # virtiofs socket paths, so WorkingDirectory must match the
+        # virtiofsd unit's RuntimeDirectory.  BindsTo causes the VM to be
+        # stopped if virtiofsd dies, avoiding zombie VMs with stale shares.
+        mkVmUnit =
+          {
+            name,
+            description,
+            runner,
+            extraAfter ? [ ],
+            extraRequires ? [ ],
+            extraBindsTo ? [ ],
+          }:
+          let
+            virtiofsdUnit = "agent-vm-virtiofsd-${name}.service";
+          in
+          {
+            Unit = {
+              Description = description;
+              After = [
+                "agent-vm-switch.service"
+                virtiofsdUnit
+              ] ++ extraAfter;
+              Requires = [ "agent-vm-switch.service" ] ++ extraRequires;
+              BindsTo = [ virtiofsdUnit ] ++ extraBindsTo;
+            };
+            Service = {
+              ExecStart = "${runner}/bin/microvm-run";
+              WorkingDirectory = "%t/agent-vm-sockets/${name}";
+              Restart = "no";
+            };
+          };
+
+        switchUnit = {
+          agent-vm-switch = {
+            Unit.Description = "VDE2 userspace switch for agent VM network";
+            Service = {
+              # vde_switch -f keeps the process in the foreground without
+              # reading stdin (no need for the sleep-infinity pipe trick).
+              ExecStart = "${pkgs.vde2}/bin/vde_switch -f -s %t/agent-vm-net.sock";
+              # Wait for the socket to actually appear before letting
+              # dependent units start, so the first VM start after boot
+              # doesn't race the switch.
+              ExecStartPost = "${pkgs.bash}/bin/bash -c 'until [ -S %t/agent-vm-net.sock ]; do sleep 0.05; done'";
+              Restart = "on-failure";
+            };
+          };
         };
-        Service = {
-          ExecStart = "${vmRunnerScript} %i";
-          Restart = "no";
+
+        agentVmUnits = lib.foldl' (
+          acc: name:
+          let
+            runner = vmRunners.${name};
+            extraAfter = optional cfg.router.enable "agent-vm-router.service";
+            extraRequires = optional cfg.router.enable "agent-vm-router.service";
+          in
+          acc
+          // {
+            "agent-vm-virtiofsd-${name}" = mkVirtiofsdUnit {
+              inherit name runner;
+              vmUnit = "agent-vm-${name}.service";
+            };
+            "agent-vm-${name}" = mkVmUnit {
+              inherit
+                name
+                runner
+                extraAfter
+                extraRequires
+                ;
+              description = "Agent VM ${name}";
+            };
+          }
+        ) { } vmNames;
+
+        routerUnits = optionalAttrs cfg.router.enable {
+          agent-vm-virtiofsd-router = mkVirtiofsdUnit {
+            name = "router";
+            runner = routerRunner;
+            vmUnit = "agent-vm-router.service";
+          };
+          agent-vm-router = mkVmUnit {
+            name = "router";
+            description = "Agent VM router (NAT gateway, DNS, audit)";
+            runner = routerRunner;
+          };
         };
-      };
-    }
-    # Router VM service (conditional on router.enable).
-    // optionalAttrs cfg.router.enable {
-      agent-vm-router = {
-        Unit = {
-          Description = "Agent VM router (NAT gateway, DNS, audit)";
-          After = [ "agent-vm-switch.service" ];
-          Requires = [ "agent-vm-switch.service" ];
-        };
-        Service = {
-          ExecStart = toString routerRunnerScript;
-          Restart = "no";
-        };
-      };
-    };
+      in
+      switchUnit // agentVmUnits // routerUnits;
   };
 }
