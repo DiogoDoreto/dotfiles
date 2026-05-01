@@ -74,6 +74,8 @@ in
           };
           # See https://nur.nix-community.org/repos/rycee/
           extensions.packages = with pkgs.nur.repos.rycee.firefox-addons; [
+            copy-as-markdown
+            copy-as-org-mode
             multi-account-containers
             privacy-badger
             raindropio
@@ -122,10 +124,12 @@ in
       in
       {
         enable = true;
+        configPath = ".mozilla/firefox";
         profiles.dog = base-profile // {
           id = 0;
         };
-      } // optionalAttrs cfg.devedition {
+      }
+      // optionalAttrs cfg.devedition {
         profiles.dev-edition-default = base-profile // {
           id = 1;
         };
