@@ -39,7 +39,6 @@ stdenv.mkDerivation (finalAttrs: {
         "/nix"
         "/run"
         "~/.config/git"
-        "~/.config/tmux"
         "~/.local/share/direnv"
         "~/.local/share/doomemacs/straight/repos"
       ];
@@ -52,10 +51,9 @@ stdenv.mkDerivation (finalAttrs: {
       wrapperScript = writeShellScript "${finalBinName}-bubblewrapped.sh" ''
         # Create isolated home directory (protects real home from YOLO mode)
         isolated_root=$(mktemp -dt ${finalBinName}.XXXXXXXXXX)
-        mkdir -p $isolated_root/{home,tmp,tmux}
+        mkdir -p $isolated_root/{home,tmp}
         inner_home=$isolated_root/home
         inner_tmp=$isolated_root/tmp
-        inner_tmux=$isolated_root/tmux
         at_exit() {
           rm -rf "$isolated_root"
         }
@@ -68,13 +66,11 @@ stdenv.mkDerivation (finalAttrs: {
           --bind "$inner_tmp" "/tmp"
           ${lib.concatMapStrings (path: "--ro-bind-try ${path} ${path}\n") readOnlyPaths}
           ${lib.concatMapStrings (path: "--bind-try ${path} ${path}\n") writablePaths}
-          --bind "$inner_tmux" "/run/user/1000/tmux-1000"
           --unshare-all
           --share-net
           --setenv HOME "$HOME"
           --setenv USER "$USER"
           --setenv PATH "$PATH"
-          --setenv TMUX_TMPDIR "/run/user/1000/tmux-1000"
           --setenv TMPDIR "/tmp"
           --setenv TEMPDIR "/tmp"
           --setenv TEMP "/tmp"
