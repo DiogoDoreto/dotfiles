@@ -2,7 +2,7 @@
 
 let
   vars = import ../_variables.nix;
-  nextcloudPkg = pkgs.nextcloud32;
+  nextcloudPkg = pkgs.nextcloud33;
 in
 
 {
@@ -13,6 +13,7 @@ in
     phpOptions = {
       # Use custom CA bundle that includes local Caddy certificate
       "openssl.cafile" = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+      "opcache.interned_strings_buffer" = "32";
     };
     settings = {
       trusted_domains = [
@@ -48,14 +49,17 @@ in
       # Map Authentik OIDC claims to NextCloud user attributes
       oidc_login_scope = "openid email profile";
       oidc_login_attributes = {
-        id = "preferred_username";  # Use readable username instead of UUID hash
-        name = "name";              # User's display name from Authentik
-        mail = "email";             # User's email from Authentik
+        id = "preferred_username"; # Use readable username instead of UUID hash
+        name = "name"; # User's display name from Authentik
+        mail = "email"; # User's email from Authentik
       };
       # Auto-promote specified users to admin on first login
       # Note: This may not work reliably with OIDC. If needed, use the occ CLI:
       #   nextcloud-occ group:adduser admin diogo
-      oidc_login_admin_users = ["diogo"];
+      oidc_login_admin_users = [ "diogo" ];
+
+      # Maintenance window starts at 6AM UTC
+      maintenance_window_start = 6;
     };
     # Manual step: create this file on the host with the Client Secret from Authentik step 1a:
     #   mkdir -p /etc/secrets/nextcloud

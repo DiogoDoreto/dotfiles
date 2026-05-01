@@ -34,6 +34,7 @@ in
       };
       "nextcloud.local.doreto.com.br" = {
         extraConfig = ''
+          header Strict-Transport-Security "max-age=15552000; includeSubDomains"
           reverse_proxy localhost:${p.nextcloud}
         '';
       };

@@ -16,18 +16,23 @@ in
     };
     firewall = {
       enable = true;
-      allowedTCPPorts = with vars.ports; [
-        dns
-        http
-        https
-        forgejoSsh
-      ] ++ vars.ports.haHomekitBridge;
+      allowedTCPPorts =
+        with vars.ports;
+        [
+          dns
+          http
+          https
+          forgejoSsh
+        ]
+        ++ vars.ports.haHomekitBridge;
       allowedUDPPorts = with vars.ports; [
         dns
         mdns
       ];
     };
   };
+
+  security.pki.certificateFiles = [ ./home-caddy.crt ];
 
   services.tailscale.enable = true;
 

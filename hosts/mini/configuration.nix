@@ -30,12 +30,12 @@ in
     ./services/chungus-proxy.nix
   ];
 
-  # TODO update kernel to use this:
-  # hardware.intelgpu.driver = "xe";
-
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+
+  # Use latest kernel.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # https://discourse.nixos.org/t/realtek-audio-sound-card-not-recognized-by-pipewire/36637/2
   boot.kernelParams = [ "snd_hda_intel.dmic_detect=0" ];

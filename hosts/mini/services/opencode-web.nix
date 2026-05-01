@@ -11,7 +11,7 @@ in
     after = [ "network.target" ];
     script = ''
       export PATH=/etc/profiles/per-user/dog/bin:/run/current-system/sw/bin:$PATH
-      opencode web --port ${toString vars.ports.opencode}
+      opencode serve --port ${toString vars.ports.opencode}
     '';
     serviceConfig = {
       Type = "simple";

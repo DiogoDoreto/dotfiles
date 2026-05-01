@@ -29,14 +29,13 @@
 
     mpv = {
       enable = true;
-      scripts = with pkgs.mpvScripts; [
-        uosc # Feature-rich minimalist proximity-based UI for MPV player
-        mpris # allows control of the player using standard media keys
-        # YouTube improvements
-        sponsorblock
-        quality-menu
-        youtube-upnext
-      ];
+      package = pkgs.mpv.override {
+        youtubeSupport = false;
+        scripts = with pkgs.mpvScripts; [
+          uosc # Feature-rich minimalist proximity-based UI for MPV player
+          mpris # allows control of the player using standard media keys
+        ];
+      };
     };
 
     nh = {
@@ -44,7 +43,11 @@
       flake = config.dog.dotfilesPath + "/hosts/mini";
     };
 
-    neovim.enable = true;
+    neovim = {
+      enable = true;
+      withPython3 = false;
+      withRuby = false;
+    };
   };
 
   dog.dotfilesPath = /home/dog/projects/dotfiles;
