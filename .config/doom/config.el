@@ -199,6 +199,10 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 (use-package org-block-capf
   :hook (org-mode-hook . org-block-capf-add-to-completion-at-point-functions))
 
+;;; markdown-mode
+
+(setopt markdown-indent-on-enter 'indent-and-new-item)
+
 ;;; Projectile
 
 (setq projectile-project-search-path '("~/projects"))
@@ -263,7 +267,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                  (straight-vc-git--encode-url upstream-repo upstream-host)))
+                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (message "Checking last commit...")
                      (cdr (doom-call-process
