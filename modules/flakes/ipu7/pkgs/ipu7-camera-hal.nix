@@ -76,6 +76,15 @@ stdenv.mkDerivation {
   postPatch = ''
     substituteInPlace src/platformdata/JsonParserBase.h \
       --replace-fail '<jsoncpp/json/json.h>' '<json/json.h>'
+    substituteInPlace CMakeLists.txt \
+      --replace-fail \
+        'set (CMAKE_CXX_STANDARD 11)' \
+        'set (CMAKE_CXX_STANDARD 17)'
+    substituteInPlace CMakeLists.txt \
+      --replace-fail \
+        'set(TARGET_LINK_LIBS ''${TARGET_LINK_LIBS} jsoncpp)' \
+        'find_package(jsoncpp REQUIRED)
+    set(TARGET_LINK_LIBS ''${TARGET_LINK_LIBS} jsoncpp_lib)'
   '';
 
   postInstall = ''

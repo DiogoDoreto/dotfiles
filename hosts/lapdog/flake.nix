@@ -81,7 +81,7 @@
           handy = inputs.handy.packages.${system}.default;
         })
       ]
-      ++ inputs.my-ipu7.outputs.overlays
+      ++ builtins.attrValues inputs.my-ipu7.outputs.overlays
       ++ inputs.my-niri.outputs.overlays;
 
       specialArgs = {
@@ -111,7 +111,7 @@
           inherit system specialArgs;
           modules =
             nixos-modules
-            ++ inputs.my-ipu7.outputs.nixosModules
+            ++ builtins.attrValues inputs.my-ipu7.outputs.nixosModules
             ++ inputs.my-niri.outputs.nixosModules
             ++ [
               inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
