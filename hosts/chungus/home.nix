@@ -44,7 +44,10 @@
     cli-tools.enable = true;
     git.enable = true;
     emacs.enable = true;
-    firefox.enable = true;
+    firefox = {
+      enable = true;
+      plasma-integration = true;
+    };
     ghostty.enable = true;
   };
 

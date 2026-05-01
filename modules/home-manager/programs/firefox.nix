@@ -14,6 +14,7 @@ in
   options.dog.programs.firefox = {
     enable = mkEnableOption "Firefox";
     devedition = mkEnableOption "Firefox Developer Edition";
+    plasma-integration = mkEnableOption "Plasma browser integration";
   };
 
   config = mkIf cfg.enable {
@@ -73,16 +74,19 @@ in
             };
           };
           # See https://nur.nix-community.org/repos/rycee/
-          extensions.packages = with pkgs.nur.repos.rycee.firefox-addons; [
-            copy-as-markdown
-            copy-as-org-mode
-            multi-account-containers
-            privacy-badger
-            raindropio
-            sidebery
-            ublock-origin
-            vimium
-          ];
+          extensions.packages =
+            with pkgs.nur.repos.rycee.firefox-addons;
+            [
+              copy-as-markdown
+              copy-as-org-mode
+              multi-account-containers
+              privacy-badger
+              raindropio
+              sidebery
+              ublock-origin
+              vimium
+            ]
+            ++ lib.optional cfg.plasma-integration plasma-integration;
           # updates ~/.mozilla/firefox/dog/prefs.js
           settings = {
             "app.shield.optoutstudies.enabled" = false;
@@ -124,6 +128,7 @@ in
       in
       {
         enable = true;
+        nativeMessagingHosts = lib.optional cfg.plasma-integration pkgs.kdePackages.plasma-browser-integration;
         configPath = ".mozilla/firefox";
         profiles.dog = base-profile // {
           id = 0;

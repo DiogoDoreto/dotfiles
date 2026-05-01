@@ -166,7 +166,10 @@ in
   dog.programs = {
     cli-tools.enable = true;
     git.enable = true;
-    firefox.enable = true;
+    firefox = {
+      enable = true;
+      plasma-integration = true;
+    };
     niri.enable = true;
     plasma-fix-taskbar-icons.enable = true;
     wezterm.enable = true;
