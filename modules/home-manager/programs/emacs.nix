@@ -148,14 +148,6 @@ let
       ai.enable = true;
     };
     lang = {
-      elixir = {
-        enable = true;
-        flags = [
-          "+lsp"
-          "+tree-sitter"
-        ];
-      };
-      elixir-extra.enable = true;
       emacs-lisp.enable = true;
       json = {
         enable = true;
@@ -189,14 +181,9 @@ let
         enable = true;
         flags = [ "+roam2" ];
       };
-      qt.enable = true;
       rest = {
         enable = true;
         flags = [ "+jq" ];
-      };
-      scheme = {
-        enable = true;
-        flags = [ "+guile" ];
       };
       sh.enable = true;
       web = {
@@ -207,9 +194,6 @@ let
         ];
       };
       yaml.enable = true;
-    };
-    app = {
-      rss.enable = true;
     };
     config = {
       default = {

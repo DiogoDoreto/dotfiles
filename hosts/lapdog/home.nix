@@ -197,7 +197,27 @@ in
     emacs = {
       enable = true;
       ghostel.enable = true;
-      doom.init.lang.common-lisp.enable = true;
+
+      doom.init = {
+        app = {
+          rss.enable = true;
+        };
+        lang = {
+          # common-lisp.enable = true;
+          # elixir = {
+          #   enable = true;
+          #   flags = [
+          #     "+lsp"
+          #     "+tree-sitter"
+          #   ];
+          # };
+          # elixir-extra.enable = true;
+          # scheme = {
+          #   enable = true;
+          #   flags = [ "+guile" ];
+          # };
+        };
+      };
     };
   };
 
