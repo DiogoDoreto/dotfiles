@@ -117,7 +117,11 @@
               inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
               inputs.musnix.nixosModules.musnix
               inputs.microvm.nixosModules.host
-              { home-manager.sharedModules = inputs.my-niri.outputs.homeModules; }
+              {
+                home-manager.sharedModules = inputs.my-niri.outputs.homeModules ++ [
+                  inputs.handy.homeManagerModules.default
+                ];
+              }
               ./configuration.nix
             ];
         };

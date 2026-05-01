@@ -42,7 +42,6 @@ in
       # blender
       # clonehero
       # freecad
-      handy
       imagemagick
       # llm-agents.agent-browser
       kdePackages.kdenlive
@@ -232,6 +231,8 @@ in
       program = "pinentry";
     };
   };
+
+  services.handy.enable = true;
 
   services.kdeconnect = {
     enable = true;
