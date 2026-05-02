@@ -9,13 +9,13 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "ipu7-camera-bins";
-  version = "unstable-2026-02-09";
+  version = "unstable-2026-04-23";
 
   src = fetchFromGitHub {
     repo = "ipu7-camera-bins";
     owner = "intel";
-    rev = "403c67db6b279dd02752f11db6a34552f31a3ac5";
-    hash = "sha256-Sj1jBOOegTk8tdmDN06MYEa7KmutnfSb5AEhXhoQkSc=";
+    rev = "cead7320d84ee9ade4f60d74e935b16b5a760945";
+    hash = "sha256-OFXAE3qoiIbnKH/qE1PlNqQYnUpbbOYCLhKrE1d2D+A=";
   };
 
   nativeBuildInputs = [

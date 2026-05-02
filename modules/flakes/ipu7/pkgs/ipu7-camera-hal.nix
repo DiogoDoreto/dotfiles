@@ -30,13 +30,13 @@ let
 in
 stdenv.mkDerivation {
   pname = "${ipuVersion}-camera-hal";
-  version = "unstable-2026-02-09";
+  version = "unstable-2026-04-23";
 
   src = fetchFromGitHub {
     owner = "intel";
     repo = "ipu7-camera-hal";
-    rev = "b1f6ebef12111fb5da0133b144d69dd9b001836c";
-    hash = "sha256-fz3ALh2F57NWYU6D1XuKfAzES2754GfZr1xQBwfkG3U=";
+    rev = "ef30767553685b83034e42325992a2442c5fcb2c";
+    hash = "sha256-6kg421WkY4ucPRevyV+2K1NU/mjkbN15NYQPWsbQ5ic=";
   };
 
   nativeBuildInputs = [

@@ -9,18 +9,14 @@
 
 stdenv.mkDerivation {
   pname = "ipu7-drivers";
-  version = "unstable-2025-11-12";
+  version = "unstable-2026-04-23";
 
   src = fetchFromGitHub {
     owner = "intel";
     repo = "ipu7-drivers";
-    rev = "fc335577f95bf6ca3afc706d1ceab8297db4f010";
-    hash = "sha256-tRljxzo/WsFBLi/1YqxVRtXpSZzHRqIy3RZ8/heu7mI=";
+    rev = "44bbc2de71fe5e7a5a7124d4c5e5900e70e13736";
+    hash = "sha256-e60eAzNJLyhvDUzE1GZBM2z4BscKH6qaYaar1V7EIqk=";
   };
-
-  patches = [
-    ./0001-media-ipu7-Stop-accessing-streams-configs-directly.patch
-  ];
 
   postPatch = ''
     cp --no-preserve=mode --recursive --verbose \
