@@ -20,10 +20,6 @@
       url = "github:doomemacs/doomemacs";
       flake = false;
     };
-    my-niri = {
-      url = "../../modules/flakes/niri";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     my-kwtype = {
       url = "../../modules/flakes/kwtype";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -81,8 +77,7 @@
           handy = inputs.handy.packages.${system}.default;
         })
       ]
-      ++ builtins.attrValues inputs.my-ipu7.outputs.overlays
-      ++ inputs.my-niri.outputs.overlays;
+      ++ builtins.attrValues inputs.my-ipu7.outputs.overlays;
 
       specialArgs = {
         inherit inputs self;
@@ -112,13 +107,12 @@
           modules =
             nixos-modules
             ++ builtins.attrValues inputs.my-ipu7.outputs.nixosModules
-            ++ inputs.my-niri.outputs.nixosModules
             ++ [
               inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
               inputs.musnix.nixosModules.musnix
               inputs.microvm.nixosModules.host
               {
-                home-manager.sharedModules = inputs.my-niri.outputs.homeModules ++ [
+                home-manager.sharedModules = [
                   inputs.handy.homeManagerModules.default
                 ];
               }

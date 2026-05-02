@@ -169,7 +169,6 @@ in
       enable = true;
       plasma-integration = true;
     };
-    niri.enable = true;
     plasma-fix-taskbar-icons.enable = true;
     wezterm.enable = true;
 
