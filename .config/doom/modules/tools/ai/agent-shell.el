@@ -7,6 +7,7 @@
   (setopt agent-shell-session-strategy 'prompt
           agent-shell-show-usage-at-turn-end t
           agent-shell-context-sources '(files region error)
+          agent-shell-busy-indicator-frames 'dots-block
           agent-shell-agent-configs (list (agent-shell-anthropic-make-claude-code-config)
                                           (agent-shell-opencode-make-agent-config)))
 
@@ -18,8 +19,27 @@
   (when (string= (system-name) "DT-5RHWB24")
     (setopt agent-shell-opencode-acp-command '("opencode" "acp" "--attach" "http://localhost:4242")))
 
-  ;; from https://github.com/xenodium/agent-shell/issues/259
-  (add-hook 'agent-shell-mode-hook (lambda () (setq-local doom-real-buffer-p t)))
+  (defun +dd/agent-shell--on-idle (event)
+    "Send an OS notification when agent is idle"
+    (let* ((buf (map-nested-elt event '(:data :buffer)))
+           (win (get-buffer-window buf))
+           (frame (and win (window-frame win))))
+      (message "agent-shell IDLE")
+      (unless (and frame (eq (frame-focus-state frame) t))
+        (let ((msg (format "%s is waiting" (buffer-name buf))))
+          (start-process "notify" nil "notify-send"
+                         "--icon=emacs" "Agent Shell" msg)))))
+
+  (add-hook 'agent-shell-mode-hook
+            (lambda ()
+              ;; from https://github.com/xenodium/agent-shell/issues/259
+              (setq-local doom-real-buffer-p t)
+              (agent-shell-subscribe-to
+               :shell-buffer (current-buffer)
+               :event 'idle
+               :on-event #'+dd/agent-shell--on-idle)))
+
+
 
   ;; Evil state-specific RET behavior: insert mode = newline, normal mode = send
   (evil-define-key 'insert agent-shell-mode-map (kbd "RET") #'newline)
