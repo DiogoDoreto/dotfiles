@@ -107,6 +107,7 @@ in
             "extensions.formautofill.creditCards.enabled" = false;
             "font.name.monospace.x-western" = "VictorMono Nerd Font Mono";
             "media.eme.enabled" = true;
+            "media.webrtc.camera.allow-pipewire" = true;
             "privacy.donottrackheader.enabled" = true;
             "privacy.globalprivacycontrol.enabled" = true;
             "signon.rememberSignons" = false;
