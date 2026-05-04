@@ -104,7 +104,7 @@ let
 
       status)
         units=( agent-vm-switch.service )
-        ${optionalString cfg.router.enable ''units+=( agent-vm-router.service )''}
+        ${optionalString cfg.router.enable "units+=( agent-vm-router.service )"}
         while IFS= read -r u; do units+=( "$u" ); done < <(list_vm_units)
         systemctl --user status "''${units[@]}" --no-pager || true
         ;;
@@ -323,7 +323,8 @@ in
               After = [
                 "agent-vm-switch.service"
                 virtiofsdUnit
-              ] ++ extraAfter;
+              ]
+              ++ extraAfter;
               Requires = [ "agent-vm-switch.service" ] ++ extraRequires;
               BindsTo = [ virtiofsdUnit ] ++ extraBindsTo;
             };
@@ -338,13 +339,13 @@ in
           agent-vm-switch = {
             Unit.Description = "VDE2 userspace switch for agent VM network";
             Service = {
-              # vde_switch -f keeps the process in the foreground without
-              # reading stdin (no need for the sleep-infinity pipe trick).
-              ExecStart = "${pkgs.vde2}/bin/vde_switch -f -s %t/agent-vm-net.sock";
-              # Wait for the socket to actually appear before letting
-              # dependent units start, so the first VM start after boot
-              # doesn't race the switch.
-              ExecStartPost = "${pkgs.bash}/bin/bash -c 'until [ -S %t/agent-vm-net.sock ]; do sleep 0.05; done'";
+              # vde_switch runs in the foreground by default (no -d flag).
+              # --nostdin prevents it from reading stdin without daemonizing.
+              ExecStart = "${pkgs.vde2}/bin/vde_switch --nostdin -s %t/agent-vm-net.sock";
+              # VDE2 creates a *directory* named agent-vm-net.sock/ containing
+              # the actual sockets (ctl, etc.).  Wait for the ctl socket inside
+              # that directory before letting dependent units start.
+              ExecStartPost = "${pkgs.bash}/bin/bash -c 'until [ -S %t/agent-vm-net.sock/ctl ]; do sleep 0.05; done'";
               Restart = "on-failure";
             };
           };
