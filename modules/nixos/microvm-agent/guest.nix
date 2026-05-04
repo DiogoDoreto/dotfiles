@@ -5,7 +5,12 @@
 # router.nix *in addition* when building the router VM.
 #
 # See README.md in this directory for the full architecture description.
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -38,21 +43,35 @@ in
     };
 
     shares = mkOption {
-      type = types.listOf (types.submodule {
-        options = {
-          tag       = mkOption { type = types.str; };
-          source    = mkOption { type = types.str; description = "Absolute path on the HOST."; };
-          mountPoint = mkOption { type = types.str; description = "Absolute path inside the guest."; };
-          readOnly  = mkOption { type = types.bool; default = false; };
-        };
-      });
+      type = types.listOf (
+        types.submodule {
+          options = {
+            tag = mkOption { type = types.str; };
+            source = mkOption {
+              type = types.str;
+              description = "Absolute path on the HOST.";
+            };
+            mountPoint = mkOption {
+              type = types.str;
+              description = "Absolute path inside the guest.";
+            };
+            readOnly = mkOption {
+              type = types.bool;
+              default = false;
+            };
+          };
+        }
+      );
       default = [ ];
       description = "Extra virtiofs shares beyond the mandatory ro-store. Order matters: shares are mounted in sequence during guest boot.";
     };
 
     net = {
       backend = mkOption {
-        type = types.enum [ "vde" "tap" ];
+        type = types.enum [
+          "vde"
+          "tap"
+        ];
         default = "vde";
         description = ''
           "vde" — userspace VDE2 switch; no host privileges required (Ubuntu default).
@@ -86,7 +105,7 @@ in
       vdeSocket = mkOption {
         type = types.str;
         default = "/run/user/1000/agent-vm-net.sock";
-        description = "Path to the vde_switch socket on the host (created by the agent-vm-switch user service).";
+        description = "Path to the vde_switch socket on the host (created by the agent-vm-switch user service). Must match the actual XDG_RUNTIME_DIR of the host user (i.e. /run/user/<uid>/agent-vm-net.sock).";
       };
 
       # tap-specific (lapdog / NixOS hosts)
@@ -115,11 +134,11 @@ in
       networks."10-vm-int" = {
         matchConfig.Name = "vm-int";
         networkConfig = {
-          Address              = cfg.net.address;
-          Gateway              = cfg.net.gateway;
-          DNS                  = cfg.net.dns;
-          LinkLocalAddressing  = "no";
-          DHCP                 = "no";
+          Address = cfg.net.address;
+          Gateway = cfg.net.gateway;
+          DNS = cfg.net.dns;
+          LinkLocalAddressing = "no";
+          DHCP = "no";
         };
       };
     };
@@ -128,57 +147,64 @@ in
       enable = true;
       settings = {
         PasswordAuthentication = false;
-        PermitRootLogin        = "no";
+        PermitRootLogin = "no";
       };
     };
 
     users.groups.${cfg.guestUser}.gid = cfg.uid;
     users.users.${cfg.guestUser} = {
       isNormalUser = true;
-      uid          = cfg.uid;
-      group        = cfg.guestUser;
-      home         = "/home/${cfg.guestUser}";
+      uid = cfg.uid;
+      group = cfg.guestUser;
+      home = "/home/${cfg.guestUser}";
       # Home directory is provided by the "agent-home" virtiofs share; do not
       # create it here (the share must be mounted first, which happens at boot).
-      createHome   = false;
-      extraGroups  = [ "wheel" ];
+      createHome = false;
+      extraGroups = [ "wheel" ];
       openssh.authorizedKeys.keys = cfg.sshAuthorizedKeys;
     };
 
     security.sudo.wheelNeedsPassword = false;
 
-    environment.systemPackages = with pkgs; [ curl wget git ];
+    environment.systemPackages = with pkgs; [
+      curl
+      wget
+      git
+    ];
 
-    nix.settings.experimental-features = [ "nix-command" "flakes" ];
+    nix.settings.experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
 
     # Only needed when a "claude-share" virtiofs tag is present (the host
     # bind-mounts ~/.claude.json into a staging directory so the single file
     # can be shared).  By default each VM carries its own .claude.json inside
     # its persistent home and no symlink is required.
-    systemd.tmpfiles.rules =
-      mkIf (any (s: s.tag == "claude-share") cfg.shares) [
-        "L+ /home/${cfg.guestUser}/.claude.json - - - - /run/claude-share/.claude.json"
-      ];
+    systemd.tmpfiles.rules = mkIf (any (s: s.tag == "claude-share") cfg.shares) [
+      "L+ /home/${cfg.guestUser}/.claude.json - - - - /run/claude-share/.claude.json"
+    ];
 
     microvm = {
-      hypervisor          = "qemu";
+      hypervisor = "qemu";
       writableStoreOverlay = "/nix/.rw-store";
 
       shares = [
         # Host /nix/store shared read-only; writable overlay above handles
         # writes from nix-daemon and home-manager activation inside the guest.
         {
-          proto      = "virtiofs";
-          tag        = "ro-store";
-          source     = "/nix/store";
+          proto = "virtiofs";
+          tag = "ro-store";
+          source = "/nix/store";
           mountPoint = "/nix/.ro-store";
         }
-      ] ++ map (s: {
-        proto      = "virtiofs";
-        tag        = s.tag;
-        source     = s.source;
+      ]
+      ++ map (s: {
+        proto = "virtiofs";
+        tag = s.tag;
+        source = s.source;
         mountPoint = s.mountPoint;
-        readOnly   = s.readOnly;
+        readOnly = s.readOnly;
       }) cfg.shares;
 
       # TAP backend: use the microvm.interfaces option (handled natively).
@@ -187,14 +213,18 @@ in
       interfaces = mkIf (cfg.net.backend == "tap") [
         {
           type = "tap";
-          id   = assert cfg.net.tapId != null; cfg.net.tapId;
-          mac  = cfg.net.mac;
+          id =
+            assert cfg.net.tapId != null;
+            cfg.net.tapId;
+          mac = cfg.net.mac;
         }
       ];
 
       qemu.extraArgs = mkIf (cfg.net.backend == "vde") [
-        "-netdev" "vde,id=net0,sock=${cfg.net.vdeSocket}"
-        "-device" "virtio-net-pci,netdev=net0,mac=${cfg.net.mac}"
+        "-netdev"
+        "vde,id=net0,sock=${cfg.net.vdeSocket}"
+        "-device"
+        "virtio-net-pci,netdev=net0,mac=${cfg.net.mac}"
       ];
     };
 
@@ -203,9 +233,9 @@ in
     # the mount unit is not torn down before other units have stopped.
     systemd.mounts = [
       {
-        what              = "store";
-        where             = "/nix/store";
-        overrideStrategy  = "asDropin";
+        what = "store";
+        where = "/nix/store";
+        overrideStrategy = "asDropin";
         unitConfig.DefaultDependencies = false;
       }
     ];

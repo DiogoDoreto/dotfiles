@@ -14,7 +14,12 @@
 # Audit:
 #   journalctl -u dnsmasq -g 'query'          # DNS lookups
 #   journalctl -k -g '\[vm-agent\]'            # new connections
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -24,23 +29,23 @@ in
 {
   options.dog.microvm-agent.router = {
     sshPort = mkOption {
-      type        = types.port;
-      default     = 2200;
+      type = types.port;
+      default = 2200;
       description = "Host-side TCP port forwarded to the router VM's SSH (22). Used as the ProxyJump gateway for all agent VMs.";
     };
 
     slirpMac = mkOption {
-      type        = types.str;
-      default     = "02:00:00:ff:ff:02";
+      type = types.str;
+      default = "02:00:00:ff:ff:02";
       description = "MAC address for the SLIRP (internet uplink) NIC inside the router VM.";
     };
 
     dnsForwarders = mkOption {
-      type        = types.listOf types.str;
+      type = types.listOf types.str;
       # 10.0.2.3 is QEMU SLIRP's built-in alias for the host's resolver.
       # Forwarding here means the guest uses whatever DNS the host has
       # configured — including VPN-pushed nameservers.
-      default     = [ "10.0.2.3" ];
+      default = [ "10.0.2.3" ];
       description = "Upstream DNS servers for dnsmasq. Default proxies the host's resolver via SLIRP so VPN DNS is honoured automatically.";
     };
   };
@@ -59,12 +64,12 @@ in
     # Rename the SLIRP NIC for predictable nftables references.
     systemd.network.links."10-vm-slirp" = {
       matchConfig.MACAddress = cfg.router.slirpMac;
-      linkConfig.Name        = "vm-slirp";
+      linkConfig.Name = "vm-slirp";
     };
 
     # vm-slirp gets an address from QEMU's built-in DHCP (10.0.2.0/24 range).
     systemd.network.networks."20-vm-slirp" = {
-      matchConfig.Name   = "vm-slirp";
+      matchConfig.Name = "vm-slirp";
       networkConfig.DHCP = "yes";
     };
 
@@ -103,18 +108,26 @@ in
     # DNS resolver for agent VMs.  Listens only on the internal vde interface
     # so it doesn't interfere with the SLIRP-side name resolution.
     services.dnsmasq = {
-      enable              = true;
+      enable = true;
       resolveLocalQueries = false;
       settings = {
-        interface       = "vm-int";
-        listen-address  = "10.0.0.1";
+        interface = "vm-int";
+        listen-address = "10.0.0.1";
         bind-interfaces = true;
-        log-queries     = true;
-        no-resolv       = true;
-        server          = cfg.router.dnsForwarders;
+        log-queries = true;
+        no-resolv = true;
+        server = cfg.router.dnsForwarders;
       };
     };
 
-    environment.systemPackages = with pkgs; [ nftables iproute2 tcpdump ];
+    environment.systemPackages = with pkgs; [
+      nftables
+      iproute2
+      tcpdump
+    ];
+
+    # The router has no virtiofs home share, so create the home directory
+    # directly in the (ephemeral) guest filesystem to avoid SSH login warnings.
+    users.users.${cfg.guestUser}.createHome = lib.mkForce true;
   };
 }
