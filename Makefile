@@ -38,14 +38,17 @@ hm-dog-chungus-switch:
 
 .PHONY: nixos-chungus-boot
 nixos-chungus-boot:
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Chungus boot" -- \
 	sudo -A nixos-rebuild --flake ./hosts/chungus boot
 
 .PHONY: nixos-chungus-build
 nixos-chungus-build:
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Chungus build" -- \
 	nixos-rebuild --flake ./hosts/chungus build
 
 .PHONY: nixos-chungus-switch
 nixos-chungus-switch:
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Chungus switch" -- \
 	sudo -A nixos-rebuild --flake ./hosts/chungus switch
 
 .PHONY: gc
