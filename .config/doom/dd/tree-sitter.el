@@ -61,6 +61,5 @@ prevent eager expansion."
 
   (after! which-key
     (setq which-key-allow-multiple-replacements t)
-    (pushnew!
-     which-key-replacement-alist
-     '(("" . "\\`+?evil-textobj-tree-sitter-function--\\(.*\\)\\(?:.inner\\|.outer\\)") . (nil . "\\1")))))
+    (add-to-list 'which-key-replacement-alist
+                 '(("" . "\\`+?\\(?:evil-textobj-tree-sitter-function-\\|goto-previous\\|goto\\)-\\(.*\\)\\(?:.inner\\|.outer\\)") . (nil . "\\1")))))
