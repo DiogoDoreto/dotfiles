@@ -49,7 +49,6 @@ in
       krita
       kwtype
       libreoffice
-      nodejs_24
       obs-studio
       pinentry-emacs
       podman-compose

@@ -5,7 +5,6 @@
     packages = with pkgs; [
       calibre
       keepassxc
-      nodejs_24
       onedrivegui
       pods # podman GUI
       ungoogled-chromium

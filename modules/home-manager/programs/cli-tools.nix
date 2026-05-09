@@ -21,6 +21,7 @@ in
       eza # ls replacement
       htop
       libnotify
+      nodejs
       nixd # nix lsp server
       nixfmt
       nix-prefetch-git
