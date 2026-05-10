@@ -43,9 +43,15 @@ in
     ];
   };
 
+  # sudo mkfs.xfs -f -L "snapraid-pa1" /dev/sdX
   fileSystems."/mnt/snapraid-parity1" = {
     device = "/dev/disk/by-uuid/${parityDiskUuid}";
-    fsType = "ext4";
+    fsType = "xfs";
+    options = [
+      "defaults"
+      "noatime"
+      "nofail"
+    ];
   };
 
   users.groups.data = { };
@@ -58,6 +64,8 @@ in
 
   environment.systemPackages = with pkgs; [
     btrfs-progs
+    xfsprogs
+
     smartmontools
     snapraid-btrfs
     snapraid-btrfs-runner
