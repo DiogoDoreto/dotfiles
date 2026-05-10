@@ -32,6 +32,16 @@ remote-mini-boot:
 	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Mini boot" -- \
 	'nh os boot --target-host dogdot -H dogdot --elevation-strategy passwordless ./hosts/mini/ && ssh dogdot reboot'
 
+.PHONY: remote-chungus-switch
+remote-chungus-switch:
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Chungus switch" -- \
+	'nh os switch --build-host chungus --target-host chungus -H chungus ./hosts/chungus/'
+
+.PHONY: remote-chungus-boot
+remote-chungus-boot:
+	./run-and-notify.sh --app-name=Nix -t 0 --icon=nix-snowflake "Chungus boot" -- \
+	'nh os boot --build-host chungus --target-host chungus -H chungus ./hosts/chungus/'
+
 .PHONY: hm-dog-chungus-switch
 hm-dog-chungus-switch:
 	home-manager --flake .#dog@chungus switch
