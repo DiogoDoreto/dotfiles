@@ -8,6 +8,7 @@
 # NOTES: btrfs submodules must be created through the CLI before mounting them
 
 let
+  inherit (import ../_variables.nix) ports;
   dataDiskUuid = "cb74725c-0296-4ae5-86cd-743c4ce7c492";
   parityDiskUuid = "0106c07d-4ed7-4a7c-9698-098cdcd35880";
 in
@@ -166,6 +167,6 @@ in
     '';
   };
 
-  networking.firewall.allowedTCPPorts = [ 2049 ];
-  networking.firewall.allowedUDPPorts = [ 2049 ];
+  networking.firewall.allowedTCPPorts = [ ports.nfs ];
+  networking.firewall.allowedUDPPorts = [ ports.nfs ];
 }

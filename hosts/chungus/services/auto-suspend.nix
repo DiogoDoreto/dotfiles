@@ -25,7 +25,7 @@
 
 let
   vars = import ../_variables.nix;
-  aiPorts =
+  networkPorts =
     let
       p = vars.ports;
     in
@@ -101,9 +101,9 @@ in
         class = "ExternalCommand";
         command = toString chungusActivityCheck;
       };
-      AiPortConnections = {
+      NetworkConnections = {
         class = "ActiveConnection";
-        ports = aiPorts;
+        ports = networkPorts;
       };
       RemoteSSH = {
         class = "Users";
