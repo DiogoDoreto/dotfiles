@@ -9,6 +9,7 @@
     # Include the results of the hardware scan.
     ./hardware.nix
     ./rgb.nix
+    ./services/immich.nix
     ./services/llama-swap.nix
     ./services/invokeai.nix
     ./services/unsloth-studio.nix

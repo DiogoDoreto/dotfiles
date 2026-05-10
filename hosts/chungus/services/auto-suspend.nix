@@ -30,6 +30,7 @@ let
       p = vars.ports;
     in
     lib.concatMapStringsSep ", " toString [
+      p.immich
       p.unslothApi
       p.llama
       p.unslothStudio
