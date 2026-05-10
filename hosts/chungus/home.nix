@@ -51,6 +51,11 @@
     ghostty.enable = true;
   };
 
+  services.kdeconnect = {
+    enable = true;
+    indicator = true;
+  };
+
   services.podman = {
     enable = true;
     containers = {
