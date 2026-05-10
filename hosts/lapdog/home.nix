@@ -58,6 +58,7 @@ in
       ungoogled-chromium
       onedrivegui
       forgejo-cli
+      wl-clipboard
     ];
   };
 
