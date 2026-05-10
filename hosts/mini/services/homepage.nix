@@ -29,6 +29,13 @@ in
       {
         Media = [
           {
+            "Photos" = rec {
+              icon = "immich.png";
+              href = "https://photos.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
             "FreshRSS" = rec {
               icon = "freshrss.png";
               href = "https://freshrss.local.doreto.com.br";

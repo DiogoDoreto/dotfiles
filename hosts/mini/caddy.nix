@@ -123,6 +123,11 @@ in
           reverse_proxy localhost:${p.kokoro}
         '';
       };
+      "photos.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy http://chungus-proxy.home:${p.immich}
+        '';
+      };
       "llama.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy http://chungus-proxy.home:${p.llama}

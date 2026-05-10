@@ -41,6 +41,10 @@ let
 
   proxied = [
     {
+      name = "immich";
+      port = 2283;
+    }
+    {
       name = "llama";
       port = 8080;
     }
@@ -99,5 +103,5 @@ in
   );
 
   # Open proxied ports so Caddy and containers can reach the macvlan interface.
-  networking.firewall.allowedTCPPorts = [ 8080 9090 ];
+  networking.firewall.allowedTCPPorts = [ 2283 8080 9090 ];
 }

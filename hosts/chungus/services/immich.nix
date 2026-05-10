@@ -7,6 +7,7 @@ in
   services.immich = {
     enable = true;
     port = vars.ports.immich;
+    host = "0.0.0.0";
     mediaLocation = "/data/immich";
     openFirewall = true;
     # null = allow all devices (needed for NVIDIA CUDA in ML and hardware transcoding)
