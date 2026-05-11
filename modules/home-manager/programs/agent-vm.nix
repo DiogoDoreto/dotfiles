@@ -248,7 +248,7 @@ in
           user = "dog";
           extraOptions = {
             StrictHostKeyChecking = "no";
-            UserKnownHostsFile = "/dev/null";
+            UserKnownHostsFile = "~/.ssh/known_hosts_agent_vms";
             IdentityFile = cfg.router.identityFile;
           };
         };
@@ -261,7 +261,7 @@ in
           proxyJump = if cfg.router.enable then "agent-router" else null;
           extraOptions = {
             StrictHostKeyChecking = "no";
-            UserKnownHostsFile = "/dev/null";
+            UserKnownHostsFile = "~/.ssh/known_hosts_agent_vms";
             IdentityFile = vmCfg.identityFile;
           };
         }
