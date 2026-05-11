@@ -45,8 +45,9 @@
   (evil-define-key 'insert agent-shell-mode-map (kbd "RET") #'newline)
   (evil-define-key 'normal agent-shell-mode-map (kbd "RET") #'comint-send-input)
   (map! :localleader :map agent-shell-mode-map
-        :desc "New session"  "n"   #'agent-shell-restart
-        :desc "Fork session" "f"   #'agent-shell-fork
-        :desc "Paste image"  "i"   #'agent-shell-send-clipboard-image
-        :desc "Set Mode"     "TAB" #'agent-shell-set-session-mode
-        :desc "Set Model"    "m"   #'agent-shell-set-session-model))
+        :desc "New session"   "n"   #'agent-shell-restart
+        :desc "Fork session"  "f"   #'agent-shell-fork
+        :desc "Rename buffer" "r"   #'agent-shell-rename-buffer
+        :desc "Paste image"   "i"   #'agent-shell-send-clipboard-image
+        :desc "Set Mode"      "TAB" #'agent-shell-set-session-mode
+        :desc "Set Model"     "m"   #'agent-shell-set-session-model))
