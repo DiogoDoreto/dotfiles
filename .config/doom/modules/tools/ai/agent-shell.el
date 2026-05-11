@@ -37,13 +37,15 @@
               (agent-shell-subscribe-to
                :shell-buffer (current-buffer)
                :event 'idle
-               :on-event #'+dd/agent-shell--on-idle)))
+               :on-event #'+dd/agent-shell--on-idle)
+              ;; evil-local-set-key has highest priority (buffer-local state map,
+              ;; above aux keymaps). Bind both (kbd "RET")="\r" and [return] so
+              ;; these work in both terminal and GUI Emacs.
+              (evil-local-set-key 'insert (kbd "RET") #'newline)
+              (evil-local-set-key 'insert [return] #'newline)
+              (evil-local-set-key 'normal (kbd "RET") #'comint-send-input)
+              (evil-local-set-key 'normal [return] #'comint-send-input)))
 
-
-
-  ;; Evil state-specific RET behavior: insert mode = newline, normal mode = send
-  (evil-define-key 'insert agent-shell-mode-map (kbd "RET") #'newline)
-  (evil-define-key 'normal agent-shell-mode-map (kbd "RET") #'comint-send-input)
   (map! :localleader :map agent-shell-mode-map
         :desc "New session"   "n"   #'agent-shell-restart
         :desc "Fork session"  "f"   #'agent-shell-fork
