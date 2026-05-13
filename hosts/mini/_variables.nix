@@ -36,5 +36,12 @@
     searx = 8888;
     sonarr = 8989;
     vscodium = 32849;
+
+    # monitoring
+    victoriametrics = 8428;
+    victorialogs = 9428;
+    nodeExporter = 9100;
+    systemdExporter = 9558;
+    nvidiaExporter = 9835;
   };
 }

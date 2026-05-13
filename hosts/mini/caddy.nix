@@ -144,6 +144,16 @@ in
           file_server browse
         '';
       };
+      "metrics.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy localhost:${p.victoriametrics}
+        '';
+      };
+      "logs.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy localhost:${p.victorialogs}
+        '';
+      };
     };
   };
 }
