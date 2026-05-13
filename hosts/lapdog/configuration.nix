@@ -175,6 +175,36 @@
 
   services.fwupd.enable = true;
 
+  # Monitoring: expose node metrics for VictoriaMetrics on mini to scrape.
+  # Since lapdog gets a dynamic LAN IP, add it to mini's scrape config manually
+  # once its IP is known (or add a static DHCP lease in mini's dnsmasq).
+  services.prometheus.exporters.node = {
+    enable = true;
+    listenAddress = "0.0.0.0";
+    port = 9100;
+    enabledCollectors = [
+      "cpu"
+      "diskstats"
+      "filesystem"
+      "loadavg"
+      "meminfo"
+      "netdev"
+      "systemd"
+      "time"
+      "uname"
+    ];
+  };
+
+  # Ship lapdog's journal to mini's VictoriaLogs
+  services.journald.upload = {
+    enable = true;
+    settings.Upload = {
+      URL = "http://192.168.0.2:9428/insert/journald";
+    };
+  };
+
+  networking.firewall.allowedTCPPorts = [ 9100 ];
+
   services.tailscale.enable = true;
 
   # Keyboard remaping
