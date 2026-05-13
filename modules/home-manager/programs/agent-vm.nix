@@ -237,11 +237,30 @@ in
     # Ensure SSH config is active so the matchBlocks below take effect.
     programs.ssh.enable = mkDefault true;
 
+    # Opt out of home-manager's legacy programs.ssh defaults (deprecated);
+    # mirror the upstream-recommended values into matchBlocks."*" below.
+    programs.ssh.enableDefaultConfig = false;
+
     # SSH stanzas:
-    #   agent-router — direct via SLIRP hostfwd on localhost:<sshPort>
-    #   agent-<name> — via ProxyJump through agent-router
+    #   *             — replicates the previous home-manager defaults
+    #   agent-router  — direct via SLIRP hostfwd on localhost:<sshPort>
+    #   agent-<name>  — via ProxyJump through agent-router
     programs.ssh.matchBlocks =
-      (optionalAttrs cfg.router.enable {
+      {
+        "*" = {
+          forwardAgent = false;
+          addKeysToAgent = "no";
+          compression = false;
+          serverAliveInterval = 0;
+          serverAliveCountMax = 3;
+          hashKnownHosts = false;
+          userKnownHostsFile = "~/.ssh/known_hosts";
+          controlMaster = "no";
+          controlPath = "~/.ssh/master-%r@%n:%p";
+          controlPersist = "no";
+        };
+      }
+      // (optionalAttrs cfg.router.enable {
         "agent-router" = {
           hostname = "127.0.0.1";
           port = cfg.router.sshPort;
