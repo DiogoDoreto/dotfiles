@@ -15,6 +15,7 @@
     ./services/unsloth-studio.nix
     ./services/auto-suspend.nix
     ./services/storage.nix
+    ./services/monitoring.nix
   ];
 
   nix.settings = {
