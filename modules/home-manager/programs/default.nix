@@ -15,6 +15,7 @@
     ./plasma-fix-taskbar-icons.nix
     ./opencode.nix
     ./pi.nix
+    ./playwright-cli.nix
     ./podman.nix
     ./polybar.nix
     ./rofi.nix
