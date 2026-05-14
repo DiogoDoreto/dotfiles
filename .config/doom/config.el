@@ -524,3 +524,8 @@ Saves to a temp file and puts the filename in the kill ring."
           (dolist (prop dd--strip-text-properties)
             (remove-text-properties 0 (length string) (list prop nil) string))
           string)))
+
+(defun dd/unfill-buffer ()
+  (interactive)
+  (let ((fill-column most-positive-fixnum))
+    (fill-region (point-min) (point-max))))
