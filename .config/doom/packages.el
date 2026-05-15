@@ -7,9 +7,9 @@
 (package! tts
   :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
-(package! modus-themes :pin "ed36e34132bacaf8e87c7310837f57757a43b0c9")
+(package! modus-themes :pin "c8925cd23b8af5d84975fa33431f58a59c630bfc")
 
-(package! ef-themes :pin "c3b27eb726e571a6fde96da44f9c4f959028552e")
+(package! ef-themes :pin "d58cd17212a51e100c185b5fc75e829c2b39f497")
 
 (package! dts-mode :pin "cd1847d0e7162c1ecab772c6ca7ef4f3c5d2214d")
 
@@ -17,13 +17,13 @@
 
 (package! magit-delta :pin "5fc7dbddcfacfe46d3fd876172ad02a9ab6ac616")
 
-(package! git-link :pin "d9b375f79e6071a9926bf73bba64111adfc93bf5")
+(package! git-link :pin "ca1a170343448c6d5d265ec12f934d865f7e0aee")
 
 (package! fancy-compilation :pin "502d36e0fb4c4daedc16ea5d732dcbc8285d6fb1")
 
 (package! info-rename-buffer :pin "87fb263b18717538fd04878e3358e1e720415db8")
 
-(package! ct :pin "66fb78baf83525ca068c3ddd156ef0989a65bf9d") ;; Color Tools
+(package! ct :pin "d47271cc1b5ef55cf74a3e25ac45a187b36910d5") ;; Color Tools
 
 (package! devdocs-browser :pin "f6c3b96748cb4e6d3022a2cece15d0d0fc437cd6")
 
@@ -37,7 +37,7 @@
 
 (package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")
 
-(package! jinx :pin "75e8e4805fe6f4ab256bd59bec71464edbc23887")
+(package! jinx :pin "b08ec1cde1b67bb153b7d27942f2b0edce8ede82")
 
 (package! elfeed-protocol :pin "4f5e77a28c501db686ac06a2ea250a7b37d5420c")
 
