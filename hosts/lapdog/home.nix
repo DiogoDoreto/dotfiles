@@ -198,6 +198,11 @@ in
       ];
     };
 
+    playwright-cli = {
+      enable = true;
+      installClaudeSkill = true;
+    };
+
     emacs = {
       enable = true;
       ghostel.enable = true;
