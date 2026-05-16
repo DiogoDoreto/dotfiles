@@ -179,8 +179,9 @@ let
       nix-extras.enable = true;
       org = {
         enable = true;
-        flags = [ "+roam2" ];
+        flags = [ "+dragndrop" ];
       };
+      org-extra.enable = true;
       rest = {
         enable = true;
         flags = [ "+jq" ];
@@ -320,9 +321,7 @@ in
 
       "doom/dd".source = dotfilesSymlink ".config/doom/dd";
 
-      "doom/modules/lang/elixir-extra".source = dotfilesSymlink ".config/doom/modules/lang/elixir-extra";
-
-      "doom/modules/tools/ai".source = dotfilesSymlink ".config/doom/modules/tools/ai";
+      "doom/modules".source = dotfilesSymlink ".config/doom/modules";
     };
   };
 }

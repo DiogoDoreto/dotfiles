@@ -29,10 +29,6 @@
 
 (package! daemons :pin "4900fe1ec64ab339da29082e8fd4545fc6e48ec4")
 
-(package! org-block-capf
-  :recipe (:host github :repo "xenodium/org-block-capf")
-  :pin "080cfd2ed630a6739633b07a8ab6b896a1b5ef4a")
-
 (package! hnreader :pin "a56f67a99a855ca656da1c1985e09f44509e4bbb")
 
 (package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")

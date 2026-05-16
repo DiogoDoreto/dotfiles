@@ -78,6 +78,12 @@
 
 (setq display-line-numbers-type 'relative)
 
+(setq calendar-date-style 'european
+      calendar-week-start-day 1
+      calendar-weekend-days '(0 5 6))
+
+(add-hook 'eww-mode-hook (lambda () (setq-local doom-real-buffer-p t)))
+
 ;;; Flymake / Flycheck diagnostics
 
 (setq flymake-show-diagnostics-at-end-of-line t)
@@ -167,37 +173,6 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
                 "Advise `magit-read-worktree-directory-nested' to default into `.wt/' subdir."
                 (let ((default-directory (expand-file-name ".wt/" default-directory)))
                   (apply orig-fn args)))))
-
-
-;;; Org-mode
-
-(setq org-directory (if (string= "lapdog" (system-name))
-                        "~/Nextcloud/Notes/"
-                      "~/org/"))
-
-(setq org-roam-directory (expand-file-name "roam/" org-directory))
-
-(map! :map evil-org-mode-map :n "z g" #'+org/play-gif-at-point)
-
-(map! :localleader :map org-mode-map
-      :ni "a m" #'yank-media) ; Paste image from clipboard
-
-(defun dd/scan-org-agenda-files ()
-  (interactive)
-  (setq org-agenda-files (directory-files-recursively org-directory "\\.org$")))
-
-(dd/scan-org-agenda-files)
-
-(map! :leader :desc "Scan org agenda files" "nU" #'dd/scan-org-agenda-files)
-
-(add-hook 'org-mode-hook 'auto-fill-mode)
-
-(use-package ol-eww :after org)
-
-(add-hook 'eww-mode-hook (lambda () (setq-local doom-real-buffer-p t)))
-
-(use-package org-block-capf
-  :hook (org-mode-hook . org-block-capf-add-to-completion-at-point-functions))
 
 ;;; markdown-mode
 
