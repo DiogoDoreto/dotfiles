@@ -77,6 +77,12 @@ in
     };
   };
 
+  # Authentik setup:
+  # - Setup App with OAuth2/OpenID Provider in Authentik
+  # - Go to https://audiobook.local.doreto.com.br/audiobookshelf/config/authentication
+  # - Set issuer to https://auth.local.doreto.com.br/application/o/audiobookshelf/ and auto populate the other fields
+  # - Then copy client ID and client secret from Authentik
+  # ref: https://www.audiobookshelf.org/guides/oidc_authentication/
   services.audiobookshelf = {
     enable = true;
     port = vars.ports.audiobookshelf;
