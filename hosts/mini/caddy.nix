@@ -70,6 +70,17 @@ in
       };
       "calibre.local.doreto.com.br" = {
         extraConfig = ''
+          request_header X-Forwarded-Host {http.request.host}
+
+          @outpost path /outpost.goauthentik.io/*
+          reverse_proxy @outpost http://localhost:${p.authentik}
+
+          forward_auth * http://localhost:${p.authentik} {
+            uri /outpost.goauthentik.io/auth/caddy
+            copy_headers X-Authentik-Username
+            trusted_proxies private_ranges
+          }
+
           reverse_proxy localhost:${p.calibre}
         '';
       };

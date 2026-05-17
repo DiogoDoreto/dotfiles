@@ -56,6 +56,11 @@ in
 
   services.jellyfin.enable = true;
 
+  # Authentik setup (manual, one-time):
+  # 1. Create a Proxy Provider (Forward auth / Single application) for https://calibre.local.doreto.com.br
+  # 2. Create an Application bound to that provider
+  # 3. Assign the application to the embedded outpost (localhost:9000)
+  # 4. Ensure the calibre-web user account name matches the Authentik username (e.g. "diogo")
   services.calibre-web = {
     enable = true;
     listen.port = vars.ports.calibre;
@@ -65,6 +70,10 @@ in
       enableBookConversion = true;
       enableKepubify = true;
       enableBookUploading = true;
+      reverseProxyAuth = {
+        enable = true;
+        header = "X-Authentik-Username";
+      };
     };
   };
 
