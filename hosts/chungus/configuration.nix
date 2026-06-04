@@ -47,6 +47,18 @@
   # causes the HDMI signal to randomly drop on cold boot.
   boot.initrd.kernelModules = [ "i915" ];
 
+  # Gigabyte Z790 UD: ACPI claims the IT8689E SuperIO I/O ports before
+  # the driver can access them, preventing fan speed readings. This relaxes
+  # that enforcement so the driver can read fan headers.
+  boot.kernelParams = [ "acpi_enforce_resources=lax" ];
+
+  # Out-of-tree it87 module supports the ITE IT8689E SuperIO found on this
+  # board; the mainline kernel it87 does not recognise the 0x8689 device ID.
+  boot.extraModulePackages = [ config.boot.kernelPackages.it87 ];
+  boot.kernelModules = [ "it87" ];
+
+  programs.coolercontrol.enable = true;
+
   # Intel (display) + NVIDIA (compute) via PRIME offload
   # Intel UHD 770 handles display; RTX 4090 is free for CUDA/compute workloads
   services.xserver.videoDrivers = [
