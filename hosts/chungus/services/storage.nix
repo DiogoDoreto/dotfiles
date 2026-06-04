@@ -10,7 +10,7 @@
 let
   inherit (import ../_variables.nix) ports;
   dataDiskUuid = "cb74725c-0296-4ae5-86cd-743c4ce7c492";
-  parityDiskUuid = "0106c07d-4ed7-4a7c-9698-098cdcd35880";
+  parityDiskUuid = "facdb380-5373-477f-84f0-86f31f57b57c";
 in
 {
   nixpkgs.overlays = [
