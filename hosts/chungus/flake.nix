@@ -19,6 +19,10 @@
       url = "github:doomemacs/doomemacs";
       flake = false;
     };
+    llm-agents = {
+      url = "github:numtide/llm-agents.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -31,6 +35,7 @@
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
+        inputs.llm-agents.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
           llama-cpp = inputs.llama-cpp.packages.${system}.cuda;
