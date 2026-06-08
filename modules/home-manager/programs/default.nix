@@ -19,6 +19,7 @@
     ./podman.nix
     ./polybar.nix
     ./rofi.nix
+    ./websearch.nix
     ./wezterm.nix
   ];
 }

@@ -166,6 +166,7 @@ in
   dog.programs = {
     cli-tools.enable = true;
     git.enable = true;
+    websearch.enable = true;
     firefox = {
       enable = true;
       plasma-integration = true;
