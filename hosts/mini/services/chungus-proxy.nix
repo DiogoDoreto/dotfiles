@@ -64,13 +64,16 @@ in
         value = {
           description = "WoL proxy socket → chungus:${toString port}";
           wantedBy = [ "sockets.target" ];
-          requires = [ "chungus-proxy-iface.service" ];
-          after = [ "chungus-proxy-iface.service" ];
           socketConfig = {
             ListenStream = "192.168.0.4:${toString port}";
             Accept = true;
             NoDelay = true;
             KeepAlive = true;
+            # FreeBind lets systemd create this socket before the dummy
+            # interface (192.168.0.4) exists, breaking the ordering cycle:
+            # sockets.target → socket → chungus-proxy-iface →
+            # network-online → basic.target → sockets.target.
+            FreeBind = true;
           };
         };
       }
