@@ -43,6 +43,16 @@ let
           ];
         }
       ];
+      Stop = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "${pkgs.libnotify}/bin/notify-send --icon=dialog-information 'Claude' 'Turn complete'";
+            }
+          ];
+        }
+      ];
     };
   };
 in
