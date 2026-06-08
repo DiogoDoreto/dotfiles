@@ -61,6 +61,11 @@ in
   # 2. Create an Application bound to that provider
   # 3. Assign the application to the embedded outpost (localhost:9000)
   # 4. Ensure the calibre-web user account name matches the Authentik username (e.g. "diogo")
+  #
+  # OPDS setup (for access in e-readers):
+  # 1. Admin page > Edit Basic configuration
+  # 2. Feature Configuration > Enable anonymous browsing
+  # 3. Return to admin page and edit the Guest user to allow downloads
   services.calibre-web = {
     enable = true;
     listen.port = vars.ports.calibre;

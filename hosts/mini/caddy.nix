@@ -75,7 +75,8 @@ in
           @outpost path /outpost.goauthentik.io/*
           reverse_proxy @outpost http://localhost:${p.authentik}
 
-          forward_auth * http://localhost:${p.authentik} {
+          @protected not path /opds*
+          forward_auth @protected http://localhost:${p.authentik} {
             uri /outpost.goauthentik.io/auth/caddy
             copy_headers X-Authentik-Username
             trusted_proxies private_ranges
