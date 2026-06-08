@@ -1,6 +1,6 @@
 ---
 description: returns a git commit title for the currently staged changes
-model: github-copilot/gpt-5-mini
+model: localhost/gemma-4-E4B
 agent: title
 ---
 

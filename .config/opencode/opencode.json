@@ -4,6 +4,18 @@
   "small_model": "github-copilot/gpt-5-mini",
   "autoupdate": false,
   "provider": {
+    "localhost": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Localhost",
+      "options": {
+        "baseURL": "http://127.0.0.1:8080/v1"
+      },
+      "models": {
+        "gemma-4-E4B": {
+          "name": "gemma-4-E4B"
+        }
+      }
+    },
     "myprovider": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Chungus",
