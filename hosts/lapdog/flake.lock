@@ -88,16 +88,18 @@
       "flake": false,
       "locked": {
         "lastModified": 1781054931,
-        "narHash": "sha256-GcLz+EgORfPozMGcVOveCjiK4qplvZIV4mNnptVTB7U=",
-        "owner": "doomemacs",
-        "repo": "doomemacs",
+        "narHash": "sha256-NsjmyVAQPwYXqtBM3vw+XnW9DMoCWOhGI5ALXeEF7aA=",
+        "ref": "refs/heads/master",
         "rev": "bcfc0db7e71f99bfcebf05cab1cf2934bb5a334c",
-        "type": "github"
+        "revCount": 21000,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/doomemacs/doomemacs"
       },
       "original": {
-        "owner": "doomemacs",
-        "repo": "doomemacs",
-        "type": "github"
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/doomemacs/doomemacs"
       }
     },
     "flake-parts": {
