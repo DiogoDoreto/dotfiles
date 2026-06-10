@@ -185,6 +185,16 @@ in
       };
     };
 
+    codex = {
+      enable = true;
+      bubblewrap = {
+        enable = true;
+        extraWritablePaths = [
+          "~/projects/"
+        ];
+      };
+    };
+
     opencode = {
       enable = true;
       extraWritablePaths = [

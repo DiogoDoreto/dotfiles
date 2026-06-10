@@ -5,6 +5,7 @@
     ./blueman.nix
     ./claude-code.nix
     ./cli-tools.nix
+    ./codex.nix
     ./emacs.nix
     ./firefox.nix
     ./flameshot.nix
