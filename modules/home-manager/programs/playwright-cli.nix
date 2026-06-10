@@ -34,12 +34,17 @@ in
     };
 
     installClaudeSkill = mkEnableOption "symlinking the upstream playwright-cli skill into ~/.claude/skills/";
+    installCodexSkill = mkEnableOption "symlinking the upstream playwright-cli skill into ~/.codex/skills/";
   };
 
   config = mkIf cfg.enable {
     home.packages = [ playwright-cli ];
 
     home.file.".claude/skills/playwright-cli" = mkIf cfg.installClaudeSkill {
+      source = "${playwrightCliRepo}/skills/playwright-cli";
+    };
+
+    home.file.".codex/skills/playwright-cli" = mkIf cfg.installCodexSkill {
       source = "${playwrightCliRepo}/skills/playwright-cli";
     };
   };

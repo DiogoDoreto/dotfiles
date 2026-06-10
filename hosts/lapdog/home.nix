@@ -210,6 +210,7 @@ in
     playwright-cli = {
       enable = true;
       installClaudeSkill = true;
+      installCodexSkill = true;
     };
 
     emacs = {
