@@ -53,7 +53,7 @@ in
       pinentry-emacs
       podman-compose
       pods # podman GUI
-      pureref
+      # pureref
       sshfs
       ungoogled-chromium
       onedrivegui
