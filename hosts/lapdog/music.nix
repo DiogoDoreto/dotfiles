@@ -10,8 +10,7 @@
       '';
     }))
 
-    # wineWow
-    wineWowPackages.yabridge
+    wineWow64Packages.yabridge
     yabridge
     yabridgectl
   ];

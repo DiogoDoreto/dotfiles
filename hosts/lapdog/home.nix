@@ -101,38 +101,38 @@ in
     ssh = {
       enable = true;
       enableDefaultConfig = false;
-      matchBlocks = {
+      settings = {
         "*" = {
-          forwardAgent = false;
-          addKeysToAgent = "no";
-          compression = false;
-          serverAliveInterval = 0;
-          serverAliveCountMax = 3;
-          hashKnownHosts = false;
-          userKnownHostsFile = "~/.ssh/known_hosts";
-          controlMaster = "no";
-          controlPath = "~/.ssh/master-%r@%n:%p";
-          controlPersist = "no";
+          ForwardAgent = false;
+          AddKeysToAgent = "no";
+          Compression = false;
+          ServerAliveInterval = 0;
+          ServerAliveCountMax = 3;
+          HashKnownHosts = false;
+          UserKnownHostsFile = "~/.ssh/known_hosts";
+          ControlMaster = "no";
+          ControlPath = "~/.ssh/master-%r@%n:%p";
+          ControlPersist = "no";
         };
         "dogdot" = {
-          hostname = "192.168.0.2";
-          port = 17098;
-          user = "root";
-          addKeysToAgent = "yes";
-          identityFile = "~/.ssh/id_ed25519_dogdot";
+          HostName = "192.168.0.2";
+          Port = 17098;
+          User = "root";
+          AddKeysToAgent = "yes";
+          IdentityFile = "~/.ssh/id_ed25519_dogdot";
         };
         "dogdot-ts" = {
-          hostname = "100.117.142.110";
-          port = 17098;
-          user = "root";
-          addKeysToAgent = "yes";
-          identityFile = "~/.ssh/id_ed25519_dogdot";
+          HostName = "100.117.142.110";
+          Port = 17098;
+          User = "root";
+          AddKeysToAgent = "yes";
+          IdentityFile = "~/.ssh/id_ed25519_dogdot";
         };
         "chungus" = {
-          hostname = "192.168.0.3";
-          user = "dog";
-          addKeysToAgent = "yes";
-          identityFile = "~/.ssh/id_ed25519_dogdot";
+          HostName = "192.168.0.3";
+          User = "dog";
+          AddKeysToAgent = "yes";
+          IdentityFile = "~/.ssh/id_ed25519_dogdot";
         };
         # Ephemeral coding-agent MicroVM (started with `nix run
         # ~/projects/dotfiles/hosts/lapdog#lapdog-agent`).
@@ -141,14 +141,12 @@ in
         # Coding-agent MicroVM on the vm0 bridge.
         # Start with: start-agent-vm
         "lapdog-agent" = {
-          hostname = "10.0.100.2";
-          user = "dog";
-          identityFile = "~/.ssh/id_ed25519_dogdot";
+          HostName = "10.0.100.2";
+          User = "dog";
+          IdentityFile = "~/.ssh/id_ed25519_dogdot";
           # Host key changes every run (ephemeral VM) — skip verification.
-          extraOptions = {
-            StrictHostKeyChecking = "no";
-            UserKnownHostsFile = "/dev/null";
-          };
+          StrictHostKeyChecking = "no";
+          UserKnownHostsFile = "/dev/null";
         };
       };
     };
