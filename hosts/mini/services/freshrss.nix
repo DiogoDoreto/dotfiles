@@ -3,22 +3,6 @@
 {
   services.freshrss = {
     enable = true;
-    # Patch: Caddy (like any CGI-compliant server) sets REMOTE_USER="" as a FastCGI
-    # parameter for unauthenticated requests. FreshRSS 1.28.1's httpAuthUser() uses
-    # array_unique() to detect multiple auth headers but doesn't filter empty strings
-    # first. This causes it to see both REMOTE_USER="" and HTTP_REMOTE_USER="diogo" as
-    # two distinct auth headers and abort. The fix adds array_filter() to strip empties.
-    # Remove when fixed: https://github.com/FreshRSS/FreshRSS/issues/7720
-    package = pkgs.freshrss.overrideAttrs (old: {
-      postPatch = (old.postPatch or "") + ''
-        sed -i \
-          's/\$auths = array_unique(/$auths = array_filter(array_unique(/' \
-          app/Utils/httpUtil.php
-        sed -i \
-          '/array_intersect_key(\$_SERVER,/{n; s/^\(\s*\));$/\1));/}' \
-          app/Utils/httpUtil.php
-      '';
-    });
     webserver = "caddy";
     virtualHost = "freshrss.local.doreto.com.br";
     baseUrl = "https://freshrss.local.doreto.com.br";
