@@ -3,6 +3,27 @@
 let
   vars = import ./_variables.nix;
   chungusProxyIp = "192.168.0.4"; # dummy interface dedicated to chungus proxy
+  lanGateway = "192.168.0.1";
+  lanInterface = "wlo1";
+  dnsUpstreams = [
+    "1.1.1.1"
+    "1.0.0.1"
+  ];
+  keepDnsOffVpn = pkgs.writeShellScript "keep-dns-off-vpn" ''
+    set -eu
+
+    action="$1"
+    for upstream in ${builtins.concatStringsSep " " dnsUpstreams}; do
+      case "$action" in
+        up)
+          ${pkgs.iproute2}/bin/ip route replace "$upstream/32" via ${lanGateway} dev ${lanInterface}
+          ;;
+        down)
+          ${pkgs.iproute2}/bin/ip route del "$upstream/32" via ${lanGateway} dev ${lanInterface} 2>/dev/null || true
+          ;;
+      esac
+    done
+  '';
 in
 
 {
@@ -40,10 +61,14 @@ in
     vpn-es = {
       config = "config /home/dog/.vpn/es-mad.prod.surfshark.comsurfshark_openvpn_udp.ovpn";
       autoStart = true;
+      up = "${keepDnsOffVpn} up";
+      down = "${keepDnsOffVpn} down";
     };
     vpn-br = {
       config = "config /home/dog/.vpn/br-sao.prod.surfshark.comsurfshark_openvpn_udp.ovpn";
       autoStart = false;
+      up = "${keepDnsOffVpn} up";
+      down = "${keepDnsOffVpn} down";
     };
   };
 
@@ -78,10 +103,7 @@ in
         # Do not send addresses without dot to upstream servers
         domain-needed = true;
         # Upstream DNS servers
-        server = [
-          "1.1.1.1"
-          "1.0.0.1"
-        ];
+        server = dnsUpstreams;
         # Log DNS queries
         log-queries = true;
 
