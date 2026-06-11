@@ -16,6 +16,10 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    llama-cpp = {
+      url = "github:ggml-org/llama.cpp/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     doomemacs = {
       url = "git+https://github.com/doomemacs/doomemacs?submodules=1";
       flake = false;
@@ -75,6 +79,7 @@
           inherit (inputs.home-manager.packages.${system}) home-manager;
           inherit (inputs.forgejo-cli.packages.${system}) forgejo-cli;
           handy = inputs.handy.packages.${system}.default;
+          llama-cpp = inputs.llama-cpp.packages.${system}.vulkan;
         })
       ]
       ++ builtins.attrValues inputs.my-ipu7.outputs.overlays;

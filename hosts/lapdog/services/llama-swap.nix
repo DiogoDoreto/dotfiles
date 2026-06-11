@@ -7,8 +7,7 @@
 #     --local-dir /var/lib/llama-swap/models/gemma4
 
 let
-  llama-cpp = pkgs.llama-cpp.override { vulkanSupport = true; };
-  llama-server = lib.getExe' llama-cpp "llama-server";
+  llama-server = lib.getExe' pkgs.llama-cpp "llama-server";
   modelDir = "/var/lib/llama-swap/models";
 
   mkCmd = flags: "${llama-server} ${lib.concatStringsSep " " flags}";
