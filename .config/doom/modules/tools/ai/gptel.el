@@ -1,7 +1,12 @@
 ;;; gptel.el -*- lexical-binding: t; -*-
 
-;; (load! "mcp.el")
+;;; Bootstrap
+
 (load! "gptel-oneshot.el")
+
+(declare-function +gptel-openrouter-refresh-model-metadata "gptel-openrouter")
+
+;;; Package configuration
 
 (use-package gptel-agent
   :defer t)
@@ -47,6 +52,8 @@
       :key #'gptel-api-key-from-auth-source
       :models '(moonshotai/kimi-k2.7-code
                 minimax/minimax-m3))
+    (load! "gptel-openrouter.el")
+    (+gptel-openrouter-refresh-model-metadata)
 
     (setq gptel-model 'gemma-4-E4B
           gptel-backend (gptel-make-openai "LLM:Local"
@@ -55,6 +62,8 @@
                           :endpoint "/v1/chat/completions"
                           :stream t
                           :models '(gemma-4-E4B)))))
+
+;;; Model selection
 
 (defun +gptel--read-backend-model ()
   "Read a gptel backend/model pair using `gptel--infix-provider' candidates."
@@ -115,5 +124,3 @@ GLOBAL, set the global defaults instead."
              (if (and gptel-mode (not global)) "locally" "globally")
              (gptel-backend-name backend)
              (gptel--model-name model))))
-
-;; TODO how to retrieve the latest pricing data from OpenRouter?
