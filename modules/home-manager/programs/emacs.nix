@@ -35,6 +35,10 @@ let
 
   doomInitMacroFile = doomInit: ''
     ;;; init.el -*- lexical-binding: t; -*-
+
+    ;; Restore evil-collection's default before Doom initializes evil-collection.
+    (setq evil-collection-repl-submit-state 'normal)
+
     (doom!
     ${concatStringsSep "\n" (map (makeDoomMacroCategories doomInit) cfg.doom.initOrder)}
     )

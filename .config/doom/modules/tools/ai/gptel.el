@@ -34,11 +34,7 @@
 
   (add-hook 'gptel-mode-hook
             (lambda ()
-              (setq-local doom-real-buffer-p t)
-              (evil-local-set-key 'insert (kbd "RET") #'newline)
-              (evil-local-set-key 'insert [return] #'newline)
-              (evil-local-set-key 'normal (kbd "RET") #'gptel-send)
-              (evil-local-set-key 'normal [return] #'gptel-send)))
+              (setq-local doom-real-buffer-p t)))
 
   (setq gptel-system-prompt (alist-get 'assistant gptel-directives)
         gptel-default-mode 'org-mode
