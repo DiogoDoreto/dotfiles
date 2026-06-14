@@ -109,6 +109,7 @@ in
           package = pkgs.llm-agents.codex-acp;
           extraReadOnlyPaths = cfg.bubblewrap.extraReadOnlyPaths;
         })
+        pkgs.bubblewrap # needed by codex-acp
       ];
   };
 }
