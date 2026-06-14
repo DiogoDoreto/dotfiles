@@ -43,6 +43,13 @@ in
             };
           }
           {
+            "Readeck" = rec {
+              icon = "readeck.png";
+              href = "https://readeck.local.doreto.com.br";
+              ping = href;
+            };
+          }
+          {
             "Jellyfin" = rec {
               icon = "jellyfin.png";
               href = "https://jellyfin.local.doreto.com.br";

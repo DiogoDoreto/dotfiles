@@ -25,6 +25,7 @@ in
     ./services/librechat.nix
     # ./services/openwebui.nix
     ./services/kokoro.nix
+    ./services/readeck.nix
     ./services/searx.nix
     ./services/vscodium-web.nix
     ./services/chungus-proxy.nix

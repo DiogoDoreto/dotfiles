@@ -33,6 +33,7 @@
     prowlarr = 9696;
     qbittorrent = 8079;
     radarr = 7878;
+    readeck = 18084;
     searx = 8888;
     sonarr = 8989;
     vscodium = 32849;

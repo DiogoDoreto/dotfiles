@@ -40,6 +40,9 @@
       "- /var/lib/open-webui/data/cache"
       "+ /var/lib/open-webui/data"
 
+      "+ /var/lib/readeck/data"
+      "+ /var/lib/private/readeck/data"
+
       "+ /var/lib/radarr/.config/Radarr/config.xml"
       "+ /var/lib/radarr/.config/Radarr/radarr.db"
 
