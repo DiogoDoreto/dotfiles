@@ -7,7 +7,8 @@
   (setopt agent-shell-session-strategy 'prompt
           agent-shell-show-usage-at-turn-end t
           agent-shell-context-sources '(files region error)
-          agent-shell-busy-indicator-frames 'dots-block)
+          agent-shell-busy-indicator-frames 'dots-block
+          agent-shell-session-restore-verbosity 'full)
 
   (when (string= (system-name) "lapdog")
     (setopt agent-shell-agent-configs (list (agent-shell-openai-make-codex-config)
@@ -40,6 +41,13 @@
                :shell-buffer (current-buffer)
                :event 'idle
                :on-event #'+dd/agent-shell--on-idle)))
+
+  (map! :map agent-shell-mode-map
+        :n "g h" #'agent-shell-ui-backward-block
+        :n "g l" #'agent-shell-ui-forward-block
+        :n "<return>" (cmds! (agent-shell-ui--enclosing-fragment-position)
+                             #'agent-shell-ui-toggle-fragment
+                             #'shell-maker-submit))
 
   (map! :localleader :map agent-shell-mode-map
         :desc "New session"       "n"   #'agent-shell-restart
