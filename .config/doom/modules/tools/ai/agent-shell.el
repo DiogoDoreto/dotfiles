@@ -7,17 +7,19 @@
   (setopt agent-shell-session-strategy 'prompt
           agent-shell-show-usage-at-turn-end t
           agent-shell-context-sources '(files region error)
-          agent-shell-busy-indicator-frames 'dots-block
-          agent-shell-agent-configs (list (agent-shell-anthropic-make-claude-code-config)
-                                          (agent-shell-opencode-make-agent-config)))
+          agent-shell-busy-indicator-frames 'dots-block)
 
   (when (string= (system-name) "lapdog")
-    (setopt agent-shell-preferred-agent-config (car agent-shell-agent-configs)
+    (setopt agent-shell-agent-configs (list (agent-shell-openai-make-codex-config)
+                                            (agent-shell-opencode-make-agent-config))
+            agent-shell-preferred-agent-config (car agent-shell-agent-configs)
             ;; env var fixes init issue https://github.com/agentclientprotocol/claude-agent-acp/issues/575
             agent-shell-anthropic-claude-acp-command '("ssh" "lapdog-agent" "CLAUDE_CODE_EXECUTABLE=/etc/profiles/per-user/dog/bin/claude" "claude-agent-acp")))
 
   (when (string= (system-name) "DT-5RHWB24")
-    (setopt agent-shell-opencode-acp-command '("opencode" "acp" "--attach" "http://localhost:4242")))
+    (setopt agent-shell-agent-configs (list (agent-shell-anthropic-make-claude-code-config)
+                                            (agent-shell-opencode-make-agent-config))
+            agent-shell-opencode-acp-command '("opencode" "acp" "--attach" "http://localhost:4242")))
 
   (defun +dd/agent-shell--on-idle (event)
     "Send an OS notification when agent is idle"
@@ -47,10 +49,11 @@
               (evil-local-set-key 'normal [return] #'comint-send-input)))
 
   (map! :localleader :map agent-shell-mode-map
-        :desc "New session"   "n"   #'agent-shell-restart
-        :desc "Fork session"  "f"   #'agent-shell-fork
-        :desc "Rename buffer" "r"   #'agent-shell-rename-buffer
-        :desc "Put shell cmd" "x"   #'agent-shell-insert-shell-command-output
-        :desc "Paste image"   "i"   #'agent-shell-send-clipboard-image
-        :desc "Set Mode"      "TAB" #'agent-shell-set-session-mode
-        :desc "Set Model"     "m"   #'agent-shell-set-session-model))
+        :desc "New session"       "n"   #'agent-shell-restart
+        :desc "Fork session"      "f"   #'agent-shell-fork
+        :desc "Rename buffer"     "r"   #'agent-shell-rename-buffer
+        :desc "Put shell cmd"     "x"   #'agent-shell-insert-shell-command-output
+        :desc "Paste image"       "i"   #'agent-shell-send-clipboard-image
+        :desc "Set Mode"          "TAB" #'agent-shell-set-session-mode
+        :desc "Set Model"         "m"   #'agent-shell-set-session-model
+        :desc "Set Thought Level" "l"   #'agent-shell-set-session-thought-level))
