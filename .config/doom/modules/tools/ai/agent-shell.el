@@ -45,6 +45,7 @@
   (map! :map agent-shell-mode-map
         :n "g h" #'agent-shell-ui-backward-block
         :n "g l" #'agent-shell-ui-forward-block
+        :n "g s" nil
         :n "<return>" (cmds! (agent-shell-ui--enclosing-fragment-position)
                              #'agent-shell-ui-toggle-fragment
                              #'shell-maker-submit))
