@@ -36,8 +36,7 @@ let
   doomInitMacroFile = doomInit: ''
     ;;; init.el -*- lexical-binding: t; -*-
 
-    ;; Restore evil-collection's default before Doom initializes evil-collection.
-    (setq evil-collection-repl-submit-state 'normal)
+    ${cfg.doom.preInit}
 
     (doom!
     ${concatStringsSep "\n" (map (makeDoomMacroCategories doomInit) cfg.doom.initOrder)}
@@ -241,6 +240,16 @@ in
         default = defaultDoomInit;
       };
 
+    doom.preInit = mkOption {
+      type = types.lines;
+      default = "";
+      description = ''
+        Elisp snippets to insert at the top of init.el, before the (doom!) macro.
+        Multiple definitions are concatenated, so additional modules can append
+        their own setup without overriding existing entries.
+      '';
+    };
+
     doom.initOrder = mkOption {
       type = types.listOf types.str;
       description = "The order in which the init categories will be written to the init.el file";
@@ -263,6 +272,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    dog.programs.emacs.doom.preInit = ''
+      ;; Restore evil-collection's default before Doom initializes evil-collection.
+      (setq evil-collection-repl-submit-state 'normal)
+    '';
+
     programs.emacs = {
       enable = true;
       package = pkgs.emacs30;
