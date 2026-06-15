@@ -144,6 +144,11 @@ in
   # List packages installed in system profile.
   environment.systemPackages = with pkgs; [
     home-manager
+
+    fd
+    htop
+    jq
+    ripgrep
     vim
   ];
 
