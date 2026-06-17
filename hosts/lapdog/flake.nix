@@ -95,6 +95,7 @@
 
       nixos-modules = [
         (import ../../nix-config.nix inputs)
+        ../../modules/nixos
         home-manager.nixosModules.home-manager
         {
           nixpkgs = { inherit overlays; };
