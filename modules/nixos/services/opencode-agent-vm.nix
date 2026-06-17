@@ -91,10 +91,10 @@ let
 
   publicKeyScript = pkgs.writeShellScriptBin "opencode-agent-vm-public-key" ''
     set -euo pipefail
-    if [ ! -f ${cfg.stateDir}/ssh/guest/vm_outbound.pub ]; then
+    if [ ! -f ${cfg.stateDir}/ssh/host/vm_outbound.pub ]; then
       sudo ${initCommand}
     fi
-    ${pkgs.coreutils}/bin/cat ${cfg.stateDir}/ssh/guest/vm_outbound.pub
+    ${pkgs.coreutils}/bin/cat ${cfg.stateDir}/ssh/host/vm_outbound.pub
   '';
 
   logsScript = pkgs.writeShellScriptBin "opencode-agent-vm-logs" ''
@@ -417,16 +417,17 @@ in
         script = ''
           set -euo pipefail
 
+          host_group="$(${pkgs.coreutils}/bin/id -gn ${cfg.controlUser})"
+
           ${pkgs.coreutils}/bin/install -d -m 0755 -o root -g root ${cfg.stateDir}
           ${pkgs.coreutils}/bin/install -d -m 0755 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/home
-          ${pkgs.coreutils}/bin/install -d -m 0700 -o ${cfg.controlUser} -g users ${cfg.stateDir}/ssh/host
+          ${pkgs.coreutils}/bin/install -d -m 0700 -o ${cfg.controlUser} -g "$host_group" ${cfg.stateDir}/ssh/host
           ${pkgs.coreutils}/bin/install -d -m 0700 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/ssh/guest
 
           if [ ! -f ${cfg.stateDir}/ssh/host/host_to_vm ]; then
             ${pkgs.openssh}/bin/ssh-keygen -t ed25519 -N "" -C "${cfg.vmName}-host-to-vm" -f ${cfg.stateDir}/ssh/host/host_to_vm
           fi
 
-          host_group="$(${pkgs.coreutils}/bin/id -gn ${cfg.controlUser})"
           ${pkgs.coreutils}/bin/chown ${cfg.controlUser}:"$host_group" ${cfg.stateDir}/ssh/host/host_to_vm ${cfg.stateDir}/ssh/host/host_to_vm.pub
           ${pkgs.coreutils}/bin/chmod 0600 ${cfg.stateDir}/ssh/host/host_to_vm
           ${pkgs.coreutils}/bin/chmod 0644 ${cfg.stateDir}/ssh/host/host_to_vm.pub
@@ -442,6 +443,9 @@ in
           ${pkgs.coreutils}/bin/chown ${toString cfg.guestUid}:${toString cfg.guestGid} ${cfg.stateDir}/ssh/guest/vm_outbound ${cfg.stateDir}/ssh/guest/vm_outbound.pub
           ${pkgs.coreutils}/bin/chmod 0600 ${cfg.stateDir}/ssh/guest/vm_outbound
           ${pkgs.coreutils}/bin/chmod 0644 ${cfg.stateDir}/ssh/guest/vm_outbound.pub ${cfg.stateDir}/ssh/guest/host_to_vm.pub
+          ${pkgs.coreutils}/bin/install -m 0644 -o ${cfg.controlUser} -g "$host_group" \
+            ${cfg.stateDir}/ssh/guest/vm_outbound.pub \
+            ${cfg.stateDir}/ssh/host/vm_outbound.pub
         '';
       };
 
