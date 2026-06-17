@@ -1,4 +1,6 @@
 {
+# Keep ./opencode-agent-vm.md up to date when changing this module's behavior.
+
   config,
   lib,
   options,
