@@ -175,6 +175,18 @@
             ./microvm-guest.nix
           ];
         };
+
+        opencode-agent-vm = nixpkgs.lib.nixosSystem {
+          inherit system specialArgs;
+          modules = nixos-modules ++ [
+            inputs.microvm.nixosModules.microvm
+            {
+              dog.services.opencode-agent-vm = opencodeAgentVm // {
+                guest.enable = true;
+              };
+            }
+          ];
+        };
       };
     };
 }

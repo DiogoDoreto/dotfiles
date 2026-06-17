@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   self ? null,
   ...
@@ -52,6 +53,9 @@ let
 
   dnsServers = (map (zone: "/${zone.domain}/${zone.server}") cfg.dnsForwardZones) ++ cfg.dnsUpstreams;
 
+  hasHostMicrovmModule = options ? microvm && options.microvm ? vms;
+  hasGuestMicrovmModule = options ? microvm && options.microvm ? shares;
+
   startCommand = "${pkgs.systemd}/bin/systemctl start microvm@${cfg.vmName}.service";
   stopCommand = "${pkgs.systemd}/bin/systemctl stop microvm@${cfg.vmName}.service";
   initCommand = "${pkgs.systemd}/bin/systemctl start ${cfg.vmName}-init.service";
@@ -100,6 +104,26 @@ let
       -u ${cfg.vmName}-proxy.service \
       "$@"
   '';
+
+  persistentHomeShare = {
+    proto = "virtiofs";
+    tag = "agent-home";
+    source = "${cfg.stateDir}/home";
+    mountPoint = "/home/${cfg.guestUser}";
+  };
+
+  guestSshShare = {
+    proto = "virtiofs";
+    tag = "agent-ssh";
+    source = "${cfg.stateDir}/ssh/guest";
+    mountPoint = "/run/opencode-agent-vm/ssh";
+    readOnly = true;
+  };
+
+  userShareToMicrovmShare = share: {
+    proto = "virtiofs";
+    inherit (share) tag source mountPoint readOnly;
+  };
 in
 {
   options.dog.services.opencode-agent-vm = {
@@ -289,7 +313,7 @@ in
   };
 
   config = mkMerge [
-    (mkIf cfg.enable {
+    (mkIf cfg.enable ({
       assertions = [
         {
           assertion = cfg.flake != null;
@@ -298,6 +322,10 @@ in
         {
           assertion = cfg.shares != [ ];
           message = "dog.services.opencode-agent-vm.shares must explicitly list every shared host directory.";
+        }
+        {
+          assertion = hasHostMicrovmModule;
+          message = "dog.services.opencode-agent-vm.enable requires microvm.nixosModules.host.";
         }
       ];
 
@@ -308,11 +336,6 @@ in
         publicKeyScript
         logsScript
       ];
-
-      microvm.vms.${cfg.vmName} = {
-        autostart = false;
-        flake = cfg.flake;
-      };
 
       boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
 
@@ -485,15 +508,191 @@ in
           reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.hostLocalPort}
         '';
       };
-    })
+    } // optionalAttrs hasHostMicrovmModule {
+      microvm.vms.${cfg.vmName} = {
+        autostart = false;
+        flake = cfg.flake;
+      };
+    }))
 
-    (mkIf cfg.guest.enable {
+    (mkIf cfg.guest.enable ({
       assertions = [
         {
           assertion = cfg.shares != [ ];
           message = "dog.services.opencode-agent-vm.shares must be passed to the guest configuration.";
         }
+        {
+          assertion = hasGuestMicrovmModule;
+          message = "dog.services.opencode-agent-vm.guest.enable requires microvm.nixosModules.microvm.";
+        }
       ];
-    })
+
+      system.stateVersion = "25.05";
+
+      networking = {
+        hostName = cfg.guestHostname;
+        useNetworkd = true;
+        firewall = {
+          enable = true;
+          allowedTCPPorts = [
+            22
+            cfg.opencodePort
+          ];
+        };
+      };
+
+      systemd.network = {
+        enable = true;
+        networks."10-opencode-agent-eth" = {
+          matchConfig.Type = "ether";
+          networkConfig = {
+            Address = "${cfg.guestAddress}/${toString cfg.prefixLength}";
+            Gateway = cfg.hostAddress;
+            DNS = cfg.hostAddress;
+          };
+        };
+      };
+
+      services.openssh = {
+        enable = true;
+        settings = {
+          PasswordAuthentication = false;
+          PermitRootLogin = "no";
+        };
+      };
+
+      users.groups.${cfg.guestUser}.gid = cfg.guestGid;
+      users.users.${cfg.guestUser} = {
+        isNormalUser = true;
+        uid = cfg.guestUid;
+        group = cfg.guestUser;
+        home = "/home/${cfg.guestUser}";
+        createHome = false;
+        extraGroups = [ "wheel" ];
+      };
+
+      security.sudo.wheelNeedsPassword = false;
+
+      environment.systemPackages = with pkgs; [
+        curl
+        fd
+        git
+        jq
+        neovim
+        openssh
+        ripgrep
+        wget
+      ];
+
+      nix.settings.experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+
+      systemd.tmpfiles.rules = [
+        "d /workspace 0755 root root -"
+      ];
+
+      systemd.services."${cfg.vmName}-guest-ssh-setup" = {
+        description = "Configure SSH material for ${cfg.guestUser} inside ${cfg.vmName}";
+        wantedBy = [ "multi-user.target" ];
+        before = [
+          "sshd.service"
+          "${cfg.vmName}-opencode.service"
+        ];
+        after = [ "local-fs.target" ];
+        serviceConfig.Type = "oneshot";
+        script = ''
+          set -euo pipefail
+          ${pkgs.coreutils}/bin/install -d -m 0700 -o ${cfg.guestUser} -g ${cfg.guestUser} /home/${cfg.guestUser}/.ssh
+          ${pkgs.coreutils}/bin/install -m 0600 -o ${cfg.guestUser} -g ${cfg.guestUser} \
+            /run/opencode-agent-vm/ssh/host_to_vm.pub \
+            /home/${cfg.guestUser}/.ssh/authorized_keys
+          ${pkgs.coreutils}/bin/ln -sfn /run/opencode-agent-vm/ssh/vm_outbound /home/${cfg.guestUser}/.ssh/id_ed25519
+          ${pkgs.coreutils}/bin/ln -sfn /run/opencode-agent-vm/ssh/vm_outbound.pub /home/${cfg.guestUser}/.ssh/id_ed25519.pub
+          ${pkgs.coreutils}/bin/chown -h ${cfg.guestUser}:${cfg.guestUser} \
+            /home/${cfg.guestUser}/.ssh/id_ed25519 \
+            /home/${cfg.guestUser}/.ssh/id_ed25519.pub
+        '';
+      };
+
+      systemd.services."${cfg.vmName}-opencode" = {
+        description = "OpenCode web UI inside ${cfg.vmName}";
+        wantedBy = [ "multi-user.target" ];
+        wants = [ "network-online.target" ];
+        after = [
+          "network-online.target"
+          "${cfg.vmName}-guest-ssh-setup.service"
+        ];
+        serviceConfig = {
+          Type = "simple";
+          User = cfg.guestUser;
+          WorkingDirectory = cfg.workingDirectory;
+          Environment = [
+            "HOME=/home/${cfg.guestUser}"
+            "USER=${cfg.guestUser}"
+          ];
+          ExecStart = "${pkgs.llm-agents.opencode}/bin/opencode serve --hostname ${cfg.guestAddress} --port ${toString cfg.opencodePort}";
+          Restart = "on-failure";
+          RestartSec = "2s";
+        };
+      };
+
+      home-manager = {
+        useGlobalPkgs = true;
+        useUserPackages = true;
+        users.${cfg.guestUser} = { pkgs, ... }: {
+          home = {
+            username = cfg.guestUser;
+            homeDirectory = "/home/${cfg.guestUser}";
+            stateVersion = "25.05";
+            packages = with pkgs; [
+              llm-agents.opencode
+            ];
+          };
+
+          targets.genericLinux.enable = true;
+
+          programs = {
+            git.enable = true;
+            ssh.enable = true;
+          };
+        };
+      };
+
+      systemd.mounts = [
+        {
+          what = "store";
+          where = "/nix/store";
+          overrideStrategy = "asDropin";
+          unitConfig.DefaultDependencies = false;
+        }
+      ];
+
+    } // optionalAttrs hasGuestMicrovmModule {
+      microvm = {
+        hypervisor = "qemu";
+        vcpu = cfg.vcpu;
+        mem = cfg.mem;
+        writableStoreOverlay = "/nix/.rw-store";
+        interfaces = [
+          {
+            type = "tap";
+            id = cfg.tapName;
+            mac = cfg.guestMac;
+          }
+        ];
+        shares = [
+          {
+            proto = "virtiofs";
+            tag = "ro-store";
+            source = "/nix/store";
+            mountPoint = "/nix/.ro-store";
+          }
+          persistentHomeShare
+          guestSshShare
+        ] ++ map userShareToMicrovmShare cfg.shares;
+      };
+    }))
   ];
 }
