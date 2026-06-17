@@ -337,7 +337,7 @@ in
         logsScript
       ];
 
-      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+      boot.kernel.sysctl."net.ipv4.ip_forward" = mkDefault 1;
 
       networking = {
         networkmanager.unmanaged = mkAfter [
