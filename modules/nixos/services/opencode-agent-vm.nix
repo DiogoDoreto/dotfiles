@@ -402,8 +402,14 @@ in
 
       systemd.services."${cfg.vmName}-init" = {
         description = "Initialize OpenCode agent VM state and SSH keys";
-        before = [ "microvm@${cfg.vmName}.service" ];
-        wantedBy = [ "microvm@${cfg.vmName}.service" ];
+        before = [
+          "microvm@${cfg.vmName}.service"
+          "microvm-virtiofsd@${cfg.vmName}.service"
+        ];
+        requiredBy = [
+          "microvm@${cfg.vmName}.service"
+          "microvm-virtiofsd@${cfg.vmName}.service"
+        ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
@@ -688,6 +694,7 @@ in
             tag = "ro-store";
             source = "/nix/store";
             mountPoint = "/nix/.ro-store";
+            readOnly = true;
           }
           persistentHomeShare
           guestSshShare
