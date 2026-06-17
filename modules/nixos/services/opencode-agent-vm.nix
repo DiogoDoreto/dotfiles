@@ -49,6 +49,57 @@ let
       };
     };
   };
+
+  dnsServers = (map (zone: "/${zone.domain}/${zone.server}") cfg.dnsForwardZones) ++ cfg.dnsUpstreams;
+
+  startCommand = "${pkgs.systemd}/bin/systemctl start microvm@${cfg.vmName}.service";
+  stopCommand = "${pkgs.systemd}/bin/systemctl stop microvm@${cfg.vmName}.service";
+  initCommand = "${pkgs.systemd}/bin/systemctl start ${cfg.vmName}-init.service";
+
+  startScript = pkgs.writeShellScriptBin "start-opencode-agent-vm" ''
+    set -euo pipefail
+    sudo ${initCommand}
+    sudo ${startCommand}
+    echo "OpenCode agent VM starting: microvm@${cfg.vmName}.service"
+    echo ""
+    echo "Web UI:              http://${cfg.hostLocalAddress}:${toString cfg.hostLocalPort}"
+    echo "SSH:                 opencode-agent-vm-ssh"
+    echo "VM public key:       opencode-agent-vm-public-key"
+    echo "DNS audit:           journalctl -u dnsmasq -g 'query'"
+    echo "Connection audit:    journalctl -k -g '[${cfg.vmName}]'"
+    echo "Stop:                stop-opencode-agent-vm"
+  '';
+
+  stopScript = pkgs.writeShellScriptBin "stop-opencode-agent-vm" ''
+    set -euo pipefail
+    sudo ${stopCommand}
+    echo "OpenCode agent VM stopped."
+  '';
+
+  sshScript = pkgs.writeShellScriptBin "opencode-agent-vm-ssh" ''
+    set -euo pipefail
+    exec ${pkgs.openssh}/bin/ssh \
+      -i ${cfg.stateDir}/ssh/host/host_to_vm \
+      -o StrictHostKeyChecking=no \
+      -o UserKnownHostsFile=/dev/null \
+      ${cfg.guestUser}@${cfg.guestAddress} "$@"
+  '';
+
+  publicKeyScript = pkgs.writeShellScriptBin "opencode-agent-vm-public-key" ''
+    set -euo pipefail
+    if [ ! -f ${cfg.stateDir}/ssh/guest/vm_outbound.pub ]; then
+      sudo ${initCommand}
+    fi
+    ${pkgs.coreutils}/bin/cat ${cfg.stateDir}/ssh/guest/vm_outbound.pub
+  '';
+
+  logsScript = pkgs.writeShellScriptBin "opencode-agent-vm-logs" ''
+    exec ${pkgs.systemd}/bin/journalctl \
+      -u ${cfg.vmName}-init.service \
+      -u microvm@${cfg.vmName}.service \
+      -u ${cfg.vmName}-proxy.service \
+      "$@"
+  '';
 in
 {
   options.dog.services.opencode-agent-vm = {
@@ -249,6 +300,191 @@ in
           message = "dog.services.opencode-agent-vm.shares must explicitly list every shared host directory.";
         }
       ];
+
+      environment.systemPackages = [
+        startScript
+        stopScript
+        sshScript
+        publicKeyScript
+        logsScript
+      ];
+
+      microvm.vms.${cfg.vmName} = {
+        autostart = false;
+        flake = cfg.flake;
+      };
+
+      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+
+      networking = {
+        networkmanager.unmanaged = mkAfter [
+          "interface-name:${cfg.bridgeName}"
+          "interface-name:${cfg.tapName}"
+        ];
+
+        bridges.${cfg.bridgeName}.interfaces = [ ];
+
+        interfaces.${cfg.bridgeName}.ipv4.addresses = [
+          {
+            address = cfg.hostAddress;
+            prefixLength = cfg.prefixLength;
+          }
+        ];
+
+        firewall.interfaces.${cfg.bridgeName} = {
+          allowedUDPPorts = [ 53 ];
+          allowedTCPPorts = [ 53 ];
+        };
+
+        firewall.extraForwardRules = ''
+          iifname "${cfg.bridgeName}" accept
+          oifname "${cfg.bridgeName}" ct state related,established accept
+        '';
+
+        nftables.enable = true;
+        nftables.tables."${cfg.vmName}-nat" = {
+          family = "ip";
+          content = ''
+            chain postrouting {
+              type nat hook postrouting priority srcnat;
+              ip saddr ${cfg.networkCidr} oifname != "${cfg.bridgeName}" masquerade
+            }
+          '';
+        };
+
+        nftables.tables."${cfg.vmName}-audit" = mkIf cfg.audit.enable {
+          family = "inet";
+          content = ''
+            chain vm-forward-log {
+              type filter hook forward priority filter - 1;
+              iifname "${cfg.bridgeName}" ip protocol tcp ct state new log prefix "[${cfg.vmName}] " level info
+              iifname "${cfg.bridgeName}" ip protocol udp ct state new log prefix "[${cfg.vmName}] " level info
+            }
+          '';
+        };
+      };
+
+      services.dnsmasq = {
+        enable = true;
+        resolveLocalQueries = cfg.dnsmasqResolveLocalQueries;
+        settings = {
+          interface = mkAfter [ cfg.bridgeName ];
+          listen-address = mkAfter [ cfg.hostAddress ];
+          bind-interfaces = true;
+          log-queries = cfg.audit.enable;
+          no-resolv = true;
+          server = mkAfter dnsServers;
+        };
+      };
+
+      systemd.services."${cfg.vmName}-init" = {
+        description = "Initialize OpenCode agent VM state and SSH keys";
+        before = [ "microvm@${cfg.vmName}.service" ];
+        wantedBy = [ "microvm@${cfg.vmName}.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          set -euo pipefail
+
+          ${pkgs.coreutils}/bin/install -d -m 0755 -o root -g root ${cfg.stateDir}
+          ${pkgs.coreutils}/bin/install -d -m 0755 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/home
+          ${pkgs.coreutils}/bin/install -d -m 0700 -o ${cfg.controlUser} -g users ${cfg.stateDir}/ssh/host
+          ${pkgs.coreutils}/bin/install -d -m 0700 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/ssh/guest
+
+          if [ ! -f ${cfg.stateDir}/ssh/host/host_to_vm ]; then
+            ${pkgs.openssh}/bin/ssh-keygen -t ed25519 -N "" -C "${cfg.vmName}-host-to-vm" -f ${cfg.stateDir}/ssh/host/host_to_vm
+          fi
+
+          host_group="$(${pkgs.coreutils}/bin/id -gn ${cfg.controlUser})"
+          ${pkgs.coreutils}/bin/chown ${cfg.controlUser}:"$host_group" ${cfg.stateDir}/ssh/host/host_to_vm ${cfg.stateDir}/ssh/host/host_to_vm.pub
+          ${pkgs.coreutils}/bin/chmod 0600 ${cfg.stateDir}/ssh/host/host_to_vm
+          ${pkgs.coreutils}/bin/chmod 0644 ${cfg.stateDir}/ssh/host/host_to_vm.pub
+
+          ${pkgs.coreutils}/bin/install -m 0644 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} \
+            ${cfg.stateDir}/ssh/host/host_to_vm.pub \
+            ${cfg.stateDir}/ssh/guest/host_to_vm.pub
+
+          if [ ! -f ${cfg.stateDir}/ssh/guest/vm_outbound ]; then
+            ${pkgs.openssh}/bin/ssh-keygen -t ed25519 -N "" -C "${cfg.vmName}-outbound" -f ${cfg.stateDir}/ssh/guest/vm_outbound
+          fi
+
+          ${pkgs.coreutils}/bin/chown ${toString cfg.guestUid}:${toString cfg.guestGid} ${cfg.stateDir}/ssh/guest/vm_outbound ${cfg.stateDir}/ssh/guest/vm_outbound.pub
+          ${pkgs.coreutils}/bin/chmod 0600 ${cfg.stateDir}/ssh/guest/vm_outbound
+          ${pkgs.coreutils}/bin/chmod 0644 ${cfg.stateDir}/ssh/guest/vm_outbound.pub ${cfg.stateDir}/ssh/guest/host_to_vm.pub
+        '';
+      };
+
+      systemd.services."microvm-bridge-${cfg.vmName}" = {
+        description = "Attach ${cfg.tapName} TAP to ${cfg.bridgeName} bridge for ${cfg.vmName}";
+        after = [ "microvm-tap-interfaces@${cfg.vmName}.service" ];
+        before = [ "microvm@${cfg.vmName}.service" ];
+        partOf = [ "microvm@${cfg.vmName}.service" ];
+        wantedBy = [ "microvm@${cfg.vmName}.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          set -euo pipefail
+          ${pkgs.iproute2}/bin/ip link set ${cfg.tapName} master ${cfg.bridgeName}
+        '';
+        preStop = ''
+          ${pkgs.iproute2}/bin/ip link set ${cfg.tapName} nomaster 2>/dev/null || true
+        '';
+      };
+
+      systemd.services."${cfg.vmName}-proxy" = {
+        description = "Local-only proxy to OpenCode inside ${cfg.vmName}";
+        after = [ "microvm@${cfg.vmName}.service" ];
+        partOf = [ "microvm@${cfg.vmName}.service" ];
+        wantedBy = [ "microvm@${cfg.vmName}.service" ];
+        serviceConfig = {
+          Type = "simple";
+          Restart = "always";
+          RestartSec = "2s";
+          ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:${toString cfg.hostLocalPort},bind=${cfg.hostLocalAddress},fork,reuseaddr TCP:${cfg.guestAddress}:${toString cfg.opencodePort}";
+        };
+      };
+
+      security.sudo.extraRules = [
+        {
+          users = [ cfg.controlUser ];
+          commands = [
+            {
+              command = initCommand;
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = startCommand;
+              options = [ "NOPASSWD" ];
+            }
+            {
+              command = stopCommand;
+              options = [ "NOPASSWD" ];
+            }
+          ];
+        }
+      ];
+
+      services.caddy.virtualHosts.${cfg.caddy.hostName} = mkIf cfg.caddy.enable {
+        extraConfig = ''
+          request_header X-Forwarded-Host {http.request.host}
+
+          @outpost path /outpost.goauthentik.io/*
+          reverse_proxy @outpost ${cfg.caddy.authentikUrl}
+
+          @protected not path /outpost.goauthentik.io/*
+          forward_auth @protected ${cfg.caddy.authentikUrl} {
+            uri /outpost.goauthentik.io/auth/caddy
+            copy_headers X-Authentik-Username
+            trusted_proxies private_ranges
+          }
+
+          reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.hostLocalPort}
+        '';
+      };
     })
 
     (mkIf cfg.guest.enable {

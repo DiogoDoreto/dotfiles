@@ -84,8 +84,46 @@
       ]
       ++ builtins.attrValues inputs.my-ipu7.outputs.overlays;
 
+      opencodeAgentVm = {
+        vmName = "opencode-agent-vm";
+        stateDir = "/var/lib/opencode-agent-vm";
+        controlUser = "dog";
+        bridgeName = "opencode-vm0";
+        tapName = "opencode-agent0";
+        hostAddress = "10.0.101.1";
+        guestAddress = "10.0.101.2";
+        networkCidr = "10.0.101.0/24";
+        prefixLength = 24;
+        guestHostname = "opencode-agent-vm";
+        guestMac = "02:00:00:00:01:02";
+        vcpu = 4;
+        mem = 16384;
+        opencodePort = 32859;
+        hostLocalAddress = "127.0.0.1";
+        hostLocalPort = 32860;
+        workingDirectory = "/workspace/projects";
+        dnsForwardZones = [
+          {
+            domain = "local.doreto.com.br";
+            server = "192.168.0.2";
+          }
+          {
+            domain = "home";
+            server = "192.168.0.2";
+          }
+        ];
+        shares = [
+          {
+            tag = "projects";
+            source = "/home/dog/projects";
+            mountPoint = "/workspace/projects";
+            readOnly = false;
+          }
+        ];
+      };
+
       specialArgs = {
-        inherit inputs self;
+        inherit inputs self opencodeAgentVm;
         pkgs-unstable = import nixpkgs {
           inherit system overlays;
           config.allowUnfree = true;

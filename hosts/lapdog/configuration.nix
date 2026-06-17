@@ -2,7 +2,12 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ pkgs, self, ... }:
+{
+  pkgs,
+  self,
+  opencodeAgentVm,
+  ...
+}:
 
 {
   imports = [
@@ -322,6 +327,11 @@
     flake = self;
   };
 
+  dog.services.opencode-agent-vm = opencodeAgentVm // {
+    enable = true;
+    flake = self;
+  };
+
   # ── MicroVM: DNS logging via dnsmasq ──────────────────────────────────────
   # dnsmasq runs only on the vm0 bridge so it doesn't interfere with the
   # host's own DNS (systemd-resolved on 127.0.0.53).  All queries from the
@@ -334,10 +344,10 @@
     enable = true;
     resolveLocalQueries = false; # don't touch host DNS resolution
     settings = {
-      interface = "vm0";
+      interface = [ "vm0" ];
       # explicit bind — prevents dnsmasq from
       # falling back to 0.0.0.0:53 if vm0 is late
-      listen-address = "10.0.100.1";
+      listen-address = [ "10.0.100.1" ];
       bind-interfaces = true;
       log-queries = true;
       # Forward to Cloudflare; change to "no-resolv = false" to use the
