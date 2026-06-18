@@ -43,6 +43,9 @@
                :on-event #'+dd/agent-shell--on-idle)))
 
   (map! :map agent-shell-mode-map
+        :ni "<up>" #'previous-line
+        :ni "<down>" #'next-line
+        :i "C-u" #'evil-delete-back-to-indentation
         :n "g h" #'agent-shell-ui-backward-block
         :n "g l" #'agent-shell-ui-forward-block
         :n "g s" nil
