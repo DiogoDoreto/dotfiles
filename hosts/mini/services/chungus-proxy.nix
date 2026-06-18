@@ -106,5 +106,9 @@ in
   );
 
   # Open proxied ports so Caddy and containers can reach the macvlan interface.
-  networking.firewall.allowedTCPPorts = [ 2283 8080 9090 ];
+  networking.firewall.allowedTCPPorts = [
+    2283
+    8080
+    9090
+  ];
 }

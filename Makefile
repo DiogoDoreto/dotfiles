@@ -71,3 +71,7 @@ nixos-delete-generations:
 	sudo -A nix-collect-garbage --delete-older-than 40d
 	sudo -A /nix/var/nix/profiles/system/bin/switch-to-configuration switch
 	nix store optimise
+
+.PHONY: format-nix
+format-nix:
+	git ls-files -z '*.nix' | xargs -0 -r nixfmt

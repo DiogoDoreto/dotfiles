@@ -102,6 +102,11 @@ user if they want to share it.
 
 Always validate changes before reporting them as done.
 
+After any `.nix` file change, format the Nix files before validation:
+```sh
+make format-nix
+```
+
 **Check a specific host flake:**
 ```sh
 nix flake check ./hosts/<hostname>/

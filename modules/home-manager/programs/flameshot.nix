@@ -1,11 +1,17 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
 let
   cfg = config.dog.programs.flameshot;
   colors = import ../../colorschemes/colors-beach.nix;
-in {
+in
+{
   options.dog.programs.flameshot = {
     enable = mkEnableOption "FlameShot";
   };
@@ -29,11 +35,13 @@ in {
       };
     };
 
-    xsession.windowManager.i3.config.keybindings = let
-      flameshot = getExe pkgs.flameshot;
-    in lib.mkOptionDefault {
-      "Print" = "exec --no-startup-id ${flameshot} gui";
-      "Shift+Print" = "exec --no-startup-id ${flameshot} gui --delay 3000";
-    };
+    xsession.windowManager.i3.config.keybindings =
+      let
+        flameshot = getExe pkgs.flameshot;
+      in
+      lib.mkOptionDefault {
+        "Print" = "exec --no-startup-id ${flameshot} gui";
+        "Shift+Print" = "exec --no-startup-id ${flameshot} gui --delay 3000";
+      };
   };
 }

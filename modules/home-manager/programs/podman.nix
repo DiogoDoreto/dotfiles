@@ -1,10 +1,16 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
 let
   cfg = config.dog.programs.podman;
-in {
+in
+{
   options.dog.programs.podman = {
     enable = mkEnableOption "Podman";
   };
@@ -22,7 +28,7 @@ in {
       enable = true;
       settings = {
         policy = {
-          default = [{ type = "insecureAcceptAnything"; }];
+          default = [ { type = "insecureAcceptAnything"; } ];
         };
       };
     };

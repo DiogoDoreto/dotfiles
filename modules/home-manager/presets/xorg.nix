@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -16,9 +21,9 @@ in
     home = {
       file = {
         ".Xresources".text = ''
-        Xft.dpi: 110
-        Xcursor*size: ${toString config.home.pointerCursor.size}
-      '';
+          Xft.dpi: 110
+          Xcursor*size: ${toString config.home.pointerCursor.size}
+        '';
       };
 
       packages = with pkgs; [

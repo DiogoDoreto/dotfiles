@@ -46,7 +46,10 @@ in
   # CacheDirectory creates /var/cache/llama-swap owned by the DynamicUser;
   # XDG_CACHE_HOME points Mesa there so Vulkan shader cache is writable.
   systemd.services.llama-swap.serviceConfig = {
-    SupplementaryGroups = [ "render" "video" ];
+    SupplementaryGroups = [
+      "render"
+      "video"
+    ];
     CacheDirectory = "llama-swap";
     Environment = "XDG_CACHE_HOME=/var/cache/llama-swap";
   };

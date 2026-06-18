@@ -1,4 +1,8 @@
-{ lib, buildGoModule, fetchFromGitHub }:
+{
+  lib,
+  buildGoModule,
+  fetchFromGitHub,
+}:
 
 buildGoModule rec {
   pname = "bitbucket-cli";
@@ -16,7 +20,8 @@ buildGoModule rec {
   subPackages = [ "cmd/bkt" ];
 
   ldflags = [
-    "-s" "-w"
+    "-s"
+    "-w"
     "-X github.com/avivsinai/bitbucket-cli/internal/build.versionFromLdflags=${version}"
     "-X github.com/avivsinai/bitbucket-cli/internal/build.commitFromLdflags=${src.rev}"
   ];

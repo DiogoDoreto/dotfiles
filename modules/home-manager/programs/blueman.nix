@@ -1,10 +1,16 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
 let
   cfg = config.dog.programs.blueman;
-in {
+in
+{
   options.dog.programs.blueman = {
     enable = mkEnableOption "blueman";
   };
