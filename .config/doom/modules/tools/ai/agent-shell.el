@@ -42,6 +42,12 @@
                :event 'idle
                :on-event #'+dd/agent-shell--on-idle)))
 
+  (defun +dd/agent-shell-submit ()
+    (interactive)
+    (shell-maker-submit)
+    (comint-previous-prompt 1)
+    (recenter 0))
+
   (map! :map agent-shell-mode-map
         :ni "<up>" #'previous-line
         :ni "<down>" #'next-line
@@ -51,7 +57,7 @@
         :n "g s" nil
         :n "<return>" (cmds! (agent-shell-ui--enclosing-fragment-position)
                              #'agent-shell-ui-toggle-fragment
-                             #'shell-maker-submit))
+                             #'+dd/agent-shell-submit))
 
   (map! :localleader :map agent-shell-mode-map
         :desc "New session"       "n"   #'agent-shell-restart

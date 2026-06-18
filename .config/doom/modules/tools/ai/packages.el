@@ -6,6 +6,6 @@
 
 (package! shell-maker :pin "43ee9e1862994cbaa89715d324edb7a424181f22")
 (package! acp :pin "3ddfa907eb7f17949a4a8e731ea5c5241e6cbcb4")
-(package! agent-shell :pin "7fdd9aa93f60a21805454f0c0c03f8abb391a7a9")
+(package! agent-shell :pin "66afc5787f5a5bbe8ef21f4fc6cd5ff084aa6a1a")
 
 (package! copilot :pin "ab5c58bc969f52f6d75e972658f2c3381c70b4fa")
