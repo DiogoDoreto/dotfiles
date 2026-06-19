@@ -23,6 +23,19 @@ let
           titleModel = "qwen3.5-35b-a3b-coding";
           modelDisplayLabel = "llama-swap";
         }
+        {
+          name = "OpenRouter";
+          apiKey = "\${OPENROUTER_KEY}";
+          baseURL = "https://openrouter.ai/api/v1";
+          models = {
+            default = [ "openrouter/auto" ];
+            fetch = true;
+          };
+          titleConvo = true;
+          titleModel = "deepseek/deepseek-v4-flash";
+          dropParams = [ "stop" ];
+          modelDisplayLabel = "OpenRouter";
+        }
       ];
     };
   };
@@ -39,6 +52,7 @@ in
   #        sudo tee -a /etc/secrets/librechat/env <<EOF
   #        OPENID_CLIENT_ID=<client id>
   #        OPENID_CLIENT_SECRET=<client secret>
+  #        OPENROUTER_KEY=<openrouter key>
   #        EOF
   #      (OPENID_SESSION_SECRET and crypto keys are already present from initial setup)
   #
