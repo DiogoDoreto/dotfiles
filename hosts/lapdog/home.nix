@@ -49,7 +49,6 @@ in
       sshfs
       ungoogled-chromium
       onedrivegui
-      forgejo-cli
       wl-clipboard
     ];
   };
@@ -181,6 +180,11 @@ in
       extraWritablePaths = [
         "~/projects/"
       ];
+    };
+
+    forgejo-cli = {
+      enable = true;
+      host = "https://git.local.doreto.com.br";
     };
 
     playwright-cli = {

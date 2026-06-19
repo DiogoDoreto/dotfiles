@@ -9,13 +9,14 @@
     ./emacs.nix
     ./firefox.nix
     ./flameshot.nix
-    ./git.nix
+    ./forgejo-cli.nix
     ./ghostty.nix
+    ./git.nix
     ./gromit-mpx.nix
     ./i3.nix
-    ./plasma-fix-taskbar-icons.nix
     ./opencode.nix
     ./pi.nix
+    ./plasma-fix-taskbar-icons.nix
     ./playwright-cli.nix
     ./podman.nix
     ./polybar.nix

@@ -624,7 +624,6 @@ in
         environment.systemPackages = with pkgs; [
           curl
           fd
-          forgejo-cli
           gh
           git
           jq
@@ -703,6 +702,10 @@ in
             dog.programs = {
               cli-tools.enable = true;
               git.enable = true;
+              forgejo-cli = {
+                enable = true;
+                host = "https://git.local.doreto.com.br";
+              };
               playwright-cli = {
                 enable = true;
                 installAgentsSkill = true;
