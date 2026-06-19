@@ -9,6 +9,9 @@ let
   configFile = (pkgs.formats.yaml { }).generate "librechat.yaml" {
     version = "1.3.6";
     cache = true;
+    webSearch = {
+      searchProvider = "searxng";
+    };
     endpoints = {
       custom = [
         {
@@ -53,6 +56,7 @@ in
   #        OPENID_CLIENT_ID=<client id>
   #        OPENID_CLIENT_SECRET=<client secret>
   #        OPENROUTER_KEY=<openrouter key>
+  #        FIRECRAWL_API_KEY=<firecrawl key>
   #        EOF
   #      (OPENID_SESSION_SECRET and crypto keys are already present from initial setup)
   #
@@ -161,6 +165,7 @@ in
       OPENID_BUTTON_LABEL = "Login with Authentik";
       OPENID_IMAGE_URL = "https://cdn.jsdelivr.net/gh/selfhst/icons/png/authentik.png";
       OPENID_USE_END_SESSION_ENDPOINT = "true";
+      SEARXNG_INSTANCE_URL = "https://search.local.doreto.com.br";
     };
     # CREDS_KEY, CREDS_IV, JWT_SECRET, JWT_REFRESH_SECRET (and API keys) come from here
     environmentFiles = [ "/etc/secrets/librechat/env" ];
