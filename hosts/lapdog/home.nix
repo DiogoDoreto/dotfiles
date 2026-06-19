@@ -7,6 +7,17 @@
 
 let
   inherit (dog-lib) dotfilesSymlink;
+  inherit (pkgs.lib) filterAttrs listToAttrs nameValuePair;
+
+  agentSkillNames = builtins.attrNames (
+    filterAttrs (_: type: type == "directory") (builtins.readDir ../../.config/agents/skills)
+  );
+  agentSkillFiles = listToAttrs (
+    map (
+      name:
+      nameValuePair ".agents/skills/${name}" { source = dotfilesSymlink ".config/agents/skills/${name}"; }
+    ) agentSkillNames
+  );
 in
 {
   imports = [
@@ -67,9 +78,7 @@ in
     entries = [ "${pkgs.onedrivegui}/share/applications/OneDriveGUI.desktop" ];
   };
 
-  home.file = {
-    ".agents".source = dotfilesSymlink ".config/agents";
-  };
+  home.file = agentSkillFiles;
 
   programs = {
     mpv = {
@@ -210,7 +219,7 @@ in
     playwright-cli = {
       enable = true;
       installClaudeSkill = true;
-      installCodexSkill = true;
+      installAgentsSkill = true;
     };
 
     emacs = {

@@ -3,6 +3,17 @@
 
 let
   inherit (dog-lib) dotfilesSymlink;
+  inherit (pkgs.lib) filterAttrs listToAttrs nameValuePair;
+
+  agentSkillNames = builtins.attrNames (
+    filterAttrs (_: type: type == "directory") (builtins.readDir ../../.config/agents/skills)
+  );
+  agentSkillFiles = listToAttrs (
+    map (
+      name:
+      nameValuePair ".agents/skills/${name}" { source = dotfilesSymlink ".config/agents/skills/${name}"; }
+    ) agentSkillNames
+  );
 in
 {
   home = {
@@ -14,9 +25,7 @@ in
       claude-agent-acp
     ];
 
-    file = {
-      ".agents".source = dotfilesSymlink ".config/agents";
-    };
+    file = agentSkillFiles;
   };
 
   targets.genericLinux.enable = true;
