@@ -148,18 +148,6 @@
             ];
         };
 
-        # Coding-agent MicroVM guest OS definition.
-        # The lapdog host's microvm.nixosModules.host picks this up via
-        # microvm.vms."lapdog-agent".flake = self in configuration.nix.
-        # Manage with: systemctl start/stop microvm@lapdog-agent
-        lapdog-agent = nixpkgs.lib.nixosSystem {
-          inherit system specialArgs;
-          modules = nixos-modules ++ [
-            inputs.microvm.nixosModules.microvm
-            ./microvm-guest.nix
-          ];
-        };
-
         opencode-agent-vm = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
           modules = nixos-modules ++ [

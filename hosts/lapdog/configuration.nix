@@ -4,7 +4,6 @@
 
 {
   pkgs,
-  self,
   opencodeAgentVm,
   ...
 }:
@@ -36,77 +35,12 @@
 
   networking = {
     hostName = "lapdog";
-    networkmanager = {
-      enable = true;
-      # Keep NetworkManager away from the microvm bridge and its TAP devices.
-      unmanaged = [
-        "interface-name:vm0"
-        "interface-name:vm-*"
-      ];
-    };
+    networkmanager.enable = true;
     firewall = {
       enable = true;
       allowedTCPPorts = [ ];
       allowedUDPPorts = [ ];
-      # Open DNS on the vm0 bridge so the VM can reach the dnsmasq instance
-      # at 10.0.100.1:53.  Without this the input chain's default DROP policy
-      # silently discards DNS queries and the VM can't resolve any hostnames.
-      interfaces.vm0 = {
-        allowedUDPPorts = [ 53 ];
-        allowedTCPPorts = [ 53 ]; # TCP DNS for large responses / DNSSEC
-      };
-      # Allow forwarding between the vm0 bridge and the outside world.
-      # These rules only take effect if filterForward = true; kept for clarity.
-      extraForwardRules = ''
-        iifname "vm0" accept
-        oifname "vm0" ct state related,established accept
-      '';
     };
-
-    # Bridge for the coding-agent MicroVM.
-    # VM gets static 10.0.100.2/24; this host is the gateway at 10.0.100.1.
-    # Services bound only to 127.0.0.1 are not reachable from the VM —
-    # the loopback address is not routable via this bridge.
-    bridges.vm0.interfaces = [ ];
-    interfaces.vm0.ipv4.addresses = [
-      {
-        address = "10.0.100.1";
-        prefixLength = 24;
-      }
-    ];
-  };
-
-  # IP forwarding is required to route packets between vm0 and the LAN/internet.
-  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
-
-  # ── MicroVM audit logging via nftables ────────────────────────────────────
-  # Log every new TCP/UDP connection the VM initiates.  Connection records go
-  # to journald (kernel facility) and are readable with:
-  #   journalctl -k -g '\[vm-agent\]'
-  # DNS hostnames are captured separately by dnsmasq below, which is more
-  # readable for auditing than raw IP:port pairs.
-  networking.nftables.enable = true;
-  # NAT/masquerade for vm0 bridge traffic — must be ip family (not inet)
-  # because masquerade is IPv4-only.
-  networking.nftables.tables."vm-agent-nat" = {
-    family = "ip";
-    content = ''
-      chain postrouting {
-        type nat hook postrouting priority srcnat;
-        ip saddr 10.0.100.0/24 oifname != "vm0" masquerade
-      }
-    '';
-  };
-  networking.nftables.tables."vm-agent-audit" = {
-    family = "inet";
-    content = ''
-      chain vm-forward-log {
-        type filter hook forward priority filter - 1;
-        # Log new outbound connections (TCP + UDP; skip ICMP to reduce noise).
-        iifname "vm0" ip protocol tcp  ct state new log prefix "[vm-agent] " level info
-        iifname "vm0" ip protocol udp  ct state new log prefix "[vm-agent] " level info
-      }
-    '';
   };
 
   security.pki.certificateFiles = [ ../mini/home-caddy.crt ];
@@ -316,149 +250,8 @@
 
   virtualisation.podman.enable = true;
 
-  # ── MicroVM: agent VM declaration ─────────────────────────────────────────
-  # The host module (microvm.nixosModules.host, loaded in flake.nix) reads
-  # this and creates microvm@lapdog-agent.service which runs as root and
-  # handles TAP interface creation automatically.
-  microvm.vms."lapdog-agent" = {
-    # Don't start on boot — launch manually when you need an agent session.
-    autostart = false;
-    # Pull the guest NixOS config from this flake's nixosConfigurations.
-    flake = self;
-  };
-
   dog.services.opencode-agent-vm = opencodeAgentVm // {
     enable = true;
-  };
-
-  # ── MicroVM: DNS logging via dnsmasq ──────────────────────────────────────
-  # dnsmasq runs only on the vm0 bridge so it doesn't interfere with the
-  # host's own DNS (systemd-resolved on 127.0.0.53).  All queries from the
-  # VM are logged to journald with hostnames, making audits readable:
-  #   journalctl -u dnsmasq -g 'query'
-  #
-  # To block a host after auditing, add to dnsmasq.settings in this file:
-  #   address = [ "/unwanted.example.com/#" ];
-  services.dnsmasq = {
-    enable = true;
-    resolveLocalQueries = false; # don't touch host DNS resolution
-    settings = {
-      interface = [ "vm0" ];
-      # explicit bind — prevents dnsmasq from
-      # falling back to 0.0.0.0:53 if vm0 is late
-      listen-address = [ "10.0.100.1" ];
-      bind-interfaces = true;
-      log-queries = true;
-      # Forward to Cloudflare; change to "no-resolv = false" to use the
-      # host's resolv.conf instead.
-      no-resolv = true;
-      server = [
-        # Local domains resolved exclusively by mini's dnsmasq.
-        # Syntax: /domain/upstream — only that server is queried for the domain.
-        "/local.doreto.com.br/192.168.0.2"
-        "/home/192.168.0.2"
-        # Everything else goes to Cloudflare.
-        "1.1.1.1"
-        "1.0.0.1"
-      ];
-    };
-  };
-
-  # ── MicroVM: attach TAP interface to bridge ───────────────────────────────
-  # microvm.nix creates the TAP (vm-agent0) via microvm-tap-interfaces@lapdog-agent
-  # but does NOT enslave it to a bridge.  This service runs after the TAP exists
-  # and before the VM starts, wiring it into vm0 so that 10.0.100.0/24 routing
-  # and nftables rules work correctly.
-  systemd.services."microvm-bridge-lapdog-agent" = {
-    description = "Attach vm-agent0 TAP to vm0 bridge for lapdog-agent VM";
-    after = [ "microvm-tap-interfaces@lapdog-agent.service" ];
-    before = [ "microvm@lapdog-agent.service" ];
-    partOf = [ "microvm@lapdog-agent.service" ];
-    wantedBy = [ "microvm@lapdog-agent.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.iproute2}/bin/ip link set vm-agent0 master vm0";
-      ExecStop = "${pkgs.iproute2}/bin/ip link set vm-agent0 nomaster";
-    };
-  };
-
-  # Allow dog to start/stop the agent VM without a password prompt.
-  security.sudo.extraRules = [
-    {
-      users = [ "dog" ];
-      commands = [
-        {
-          command = "${pkgs.systemd}/bin/systemctl start microvm@lapdog-agent.service";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "${pkgs.systemd}/bin/systemctl stop microvm@lapdog-agent.service";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
-
-  # ── MicroVM: share ~/.claude.json with the agent VM ───────────────────────
-  # virtiofsd can only share *directories*, not individual files.  We create
-  # a small staging dir and bind-mount ~/.claude.json into it at runtime;
-  # the VM then sees it via the "claude-share" virtiofs tag.
-  systemd.tmpfiles.settings."lapdog-agent-claude" = {
-    "/var/lib/lapdog-agent" = {
-      d = {
-        mode = "0755";
-        user = "root";
-        group = "root";
-      };
-    };
-    "/var/lib/lapdog-agent/claude-share" = {
-      d = {
-        mode = "0700";
-        user = "dog";
-        group = "users";
-      };
-    };
-    # Placeholder file that the bind mount will overlay at runtime.
-    "/var/lib/lapdog-agent/claude-share/.claude.json" = {
-      f = {
-        mode = "0600";
-        user = "dog";
-        group = "users";
-      };
-    };
-  };
-
-  systemd.services."lapdog-agent-bind-claude-json" = {
-    description = "Bind-mount ~/.claude.json into lapdog-agent virtiofs share dir";
-    wantedBy = [ "multi-user.target" ];
-    after = [
-      "systemd-tmpfiles-setup.service"
-      "local-fs.target"
-    ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = pkgs.writeShellScript "lapdog-agent-bind-start" ''
-        src=/home/dog/.claude.json
-        dst=/var/lib/lapdog-agent/claude-share/.claude.json
-        # Create the file on first run so claude-code inside the VM can
-        # write its auth token back to the host even before the first
-        # host-side login.
-        if [ ! -f "$src" ]; then
-          install -m 600 -o dog -g users /dev/null "$src"
-        fi
-        if ! ${pkgs.util-linux}/bin/mountpoint -q "$dst"; then
-          ${pkgs.util-linux}/bin/mount --bind "$src" "$dst"
-        fi
-      '';
-      ExecStop = pkgs.writeShellScript "lapdog-agent-bind-stop" ''
-        dst=/var/lib/lapdog-agent/claude-share/.claude.json
-        if ${pkgs.util-linux}/bin/mountpoint -q "$dst"; then
-          ${pkgs.util-linux}/bin/umount "$dst"
-        fi
-      '';
-    };
   };
 
   # This value determines the NixOS release from which the default

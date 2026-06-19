@@ -167,8 +167,6 @@ dog.services.opencode-agent-vm = opencodeAgentVm // {
 };
 ```
 
-The existing `lapdog-agent` VM remains separate and unchanged.
-
 ## Mini Integration
 
 `hosts/mini/flake.nix` imports `../../modules/nixos`, adds `microvm.nix`, defines `opencodeAgentVm`, and exposes `nixosConfigurations.opencode-agent-vm` for the guest. `hosts/mini/configuration.nix` enables the host side.

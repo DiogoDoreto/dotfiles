@@ -26,25 +26,6 @@ in
 
   home = {
     packages = with pkgs; [
-      # Start the ephemeral coding-agent MicroVM and print SSH instructions.
-      # Usage: start-agent-vm [extra qemu args…]
-      (pkgs.writeShellScriptBin "start-agent-vm" ''
-        set -euo pipefail
-        mkdir -p /home/dog/.local/share/lapdog-agent/home
-        sudo ${pkgs.systemd}/bin/systemctl start microvm@lapdog-agent.service
-        echo "VM starting (systemctl start microvm@lapdog-agent)."
-        echo ""
-        echo "SSH in once it's ready:"
-        echo "  ssh lapdog-agent"
-        echo ""
-        echo "Audit DNS queries:    journalctl -u dnsmasq -g 'query'"
-        echo "Audit connections:    journalctl -k -g '\[vm-agent\]'"
-        echo "Stop:                 stop-agent-vm"
-      '')
-      (pkgs.writeShellScriptBin "stop-agent-vm" ''
-        sudo ${pkgs.systemd}/bin/systemctl stop microvm@lapdog-agent.service
-        echo "VM stopped."
-      '')
       # (dog-lib.bubblewrapAi {
       #   # useful to verify bwrap script
       #   package = fish;
@@ -142,20 +123,6 @@ in
           User = "dog";
           AddKeysToAgent = "yes";
           IdentityFile = "~/.ssh/id_ed25519_dogdot";
-        };
-        # Ephemeral coding-agent MicroVM (started with `nix run
-        # ~/projects/dotfiles/hosts/lapdog#lapdog-agent`).
-        # The VM is throwaway — skip host-key verification since the key
-        # regenerates each run.
-        # Coding-agent MicroVM on the vm0 bridge.
-        # Start with: start-agent-vm
-        "lapdog-agent" = {
-          HostName = "10.0.100.2";
-          User = "dog";
-          IdentityFile = "~/.ssh/id_ed25519_dogdot";
-          # Host key changes every run (ephemeral VM) — skip verification.
-          StrictHostKeyChecking = "no";
-          UserKnownHostsFile = "/dev/null";
         };
       };
     };
