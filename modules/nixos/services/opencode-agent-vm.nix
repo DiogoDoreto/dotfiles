@@ -143,6 +143,12 @@ in
       description = "Name of the declarative microVM and systemd microvm@ unit.";
     };
 
+    autostart = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to start the MicroVM automatically at boot.";
+    };
+
     flake = mkOption {
       type = types.nullOr types.unspecified;
       default = self;
@@ -267,7 +273,7 @@ in
     shares = mkOption {
       type = types.listOf shareType;
       default = [ ];
-      description = "Explicit host directories shared into the guest.";
+      description = "Additional explicit host directories shared into the guest, beyond the VM-owned persistent home and SSH key shares.";
     };
 
     dnsUpstreams = mkOption {
@@ -291,6 +297,18 @@ in
       description = "Whether this module should let dnsmasq alter host local DNS resolution.";
     };
 
+    dnsmasqBindBridgeInterface = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to add the VM bridge as an explicit dnsmasq interface.";
+    };
+
+    dnsmasqBindInterfaces = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to make dnsmasq bind only explicitly configured interfaces and listen addresses.";
+    };
+
     audit.enable = mkOption {
       type = types.bool;
       default = true;
@@ -312,7 +330,7 @@ in
 
       authentikUrl = mkOption {
         type = types.str;
-        default = "http://localhost:9000";
+        default = "http://127.0.0.1:9000";
         description = "Base URL for the Authentik outpost used by Caddy forward_auth.";
       };
     };
@@ -325,10 +343,6 @@ in
           {
             assertion = cfg.flake != null;
             message = "dog.services.opencode-agent-vm.flake must be set when the host side is enabled.";
-          }
-          {
-            assertion = cfg.shares != [ ];
-            message = "dog.services.opencode-agent-vm.shares must explicitly list every shared host directory.";
           }
           {
             assertion = hasHostMicrovmModule;
@@ -398,12 +412,16 @@ in
           enable = true;
           resolveLocalQueries = cfg.dnsmasqResolveLocalQueries;
           settings = {
-            interface = mkAfter [ cfg.bridgeName ];
             listen-address = mkAfter [ cfg.hostAddress ];
-            bind-interfaces = true;
             log-queries = cfg.audit.enable;
             no-resolv = true;
             server = mkAfter dnsServers;
+          }
+          // optionalAttrs cfg.dnsmasqBindInterfaces {
+            bind-interfaces = true;
+          }
+          // optionalAttrs cfg.dnsmasqBindBridgeInterface {
+            interface = mkAfter [ cfg.bridgeName ];
           };
         };
 
@@ -528,7 +546,7 @@ in
       }
       // optionalAttrs hasHostMicrovmModule {
         microvm.vms.${cfg.vmName} = {
-          autostart = false;
+          autostart = cfg.autostart;
           flake = cfg.flake;
         };
       }
@@ -537,10 +555,6 @@ in
     (mkIf cfg.guest.enable (
       {
         assertions = [
-          {
-            assertion = cfg.shares != [ ];
-            message = "dog.services.opencode-agent-vm.shares must be passed to the guest configuration.";
-          }
           {
             assertion = hasGuestMicrovmModule;
             message = "dog.services.opencode-agent-vm.guest.enable requires microvm.nixosModules.microvm.";

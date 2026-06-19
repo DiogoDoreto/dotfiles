@@ -125,11 +125,6 @@ in
           reverse_proxy localhost:${p.vscodium}
         '';
       };
-      "opencode.local.doreto.com.br" = {
-        extraConfig = ''
-          reverse_proxy localhost:${p.opencode}
-        '';
-      };
       "tts.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy localhost:${p.kokoro}

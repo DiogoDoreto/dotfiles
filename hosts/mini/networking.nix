@@ -83,7 +83,13 @@ in
       {
         # interface = "wlo1";
         # bind-interfaces = true;
-        listen-address = "::1,127.0.0.1,${static-ip},${chungusProxyIp},${tailscale-ip}";
+        listen-address = [
+          "::1"
+          "127.0.0.1"
+          static-ip
+          chungusProxyIp
+          tailscale-ip
+        ];
         address = [
           "/${config.networking.hostName}.home/${static-ip}"
           "/${config.networking.hostName}.home/${tailscale-ip}"

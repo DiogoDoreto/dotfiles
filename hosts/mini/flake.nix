@@ -22,10 +22,15 @@
       url = "path:/home/dog/projects/nextcloud-org-notes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    microvm = {
+      url = "github:astro/microvm.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     {
+      self,
       nixpkgs,
       home-manager,
       nixos-hardware,
@@ -48,8 +53,16 @@
           allowUnfreePredicate = _: true;
         };
       };
+      opencodeAgentVm = {
+        autostart = true;
+        workingDirectory = "/home/agent";
+        dnsmasqBindBridgeInterface = false;
+        dnsmasqBindInterfaces = false;
+        dnsUpstreams = [ ];
+        caddy.enable = true;
+      };
       specialArgs = {
-        inherit inputs;
+        inherit inputs self opencodeAgentVm;
         pkgs-unstable = pkgs;
       };
       home-manager-modules = [
@@ -57,6 +70,7 @@
       ];
       nixos-modules = [
         (import ../../nix-config.nix inputs)
+        ../../modules/nixos
         home-manager.nixosModules.home-manager
         {
           home-manager.extraSpecialArgs = specialArgs;
@@ -91,7 +105,20 @@
           modules = nixos-modules ++ [
             nixos-hardware.nixosModules.common-cpu-intel
             inputs.authentik-nix.nixosModules.default
+            inputs.microvm.nixosModules.host
             ./configuration.nix
+          ];
+        };
+
+        opencode-agent-vm = nixpkgs.lib.nixosSystem {
+          inherit system specialArgs;
+          modules = nixos-modules ++ [
+            inputs.microvm.nixosModules.microvm
+            {
+              dog.services.opencode-agent-vm = opencodeAgentVm // {
+                guest.enable = true;
+              };
+            }
           ];
         };
       };

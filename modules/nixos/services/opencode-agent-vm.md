@@ -1,12 +1,12 @@
 # OpenCode Agent VM
 
-`opencode-agent-vm.nix` defines a reusable NixOS service for running OpenCode in an isolated MicroVM. The VM starts `opencode serve` on boot, exposes the web UI through a host-local proxy, and only sees host paths explicitly configured as shares.
+`opencode-agent-vm.nix` defines a reusable NixOS service for running OpenCode in an isolated MicroVM. The VM starts `opencode serve` on boot, exposes the web UI through a host-local proxy, and only sees VM-owned state plus any extra host paths explicitly configured as shares.
 
 ## Motivation
 
-The goal is to give an LLM coding agent more freedom inside its own machine without giving it implicit access to the host user's home directory, SSH agent, OpenCode state, Claude state, or secrets. The isolation boundary is the MicroVM plus an explicit share list.
+The goal is to give an LLM coding agent more freedom inside its own machine without giving it implicit access to the host user's home directory, SSH agent, OpenCode state, Claude state, or secrets. The isolation boundary is the MicroVM plus its explicit share list.
 
-The first deployment target is `lapdog`, where the VM is used locally. The module is written so `mini` can later enable the same service with different shares and a Caddy/Authentik frontend.
+The first deployment target was `lapdog`, where the VM is used locally. `mini` also enables the same service with its own host flake guest configuration and a Caddy/Authentik frontend.
 
 ## Operating It
 
@@ -20,7 +20,7 @@ opencode-agent-vm-public-key
 opencode-agent-vm-logs
 ```
 
-`start-opencode-agent-vm` initializes the VM state, starts `microvm@opencode-agent-vm.service`, and prints the local web URL. On `lapdog`, the UI is available at:
+`start-opencode-agent-vm` initializes the VM state, starts `microvm@opencode-agent-vm.service`, and prints the local web URL. Hosts may also set `autostart = true` to start the VM at boot. On `lapdog`, the UI is available at:
 
 ```text
 http://127.0.0.1:32860
@@ -53,7 +53,7 @@ The host side requires `microvm.nixosModules.host`. It creates the host systemd 
 
 The guest side requires `microvm.nixosModules.microvm`. It configures the VM OS, user, static network, shared filesystems, SSH, Home Manager, and the `opencode serve` systemd service.
 
-Each host flake that enables the service must expose a guest NixOS configuration named the same as `vmName`. On `lapdog`, this is `nixosConfigurations.opencode-agent-vm`.
+Each host flake that enables the service must expose a guest NixOS configuration named the same as `vmName`. On `lapdog` and `mini`, this is `nixosConfigurations.opencode-agent-vm`.
 
 ## State And Credentials
 
@@ -93,7 +93,11 @@ Guest IP:     10.0.101.2/24
 Network CIDR: 10.0.101.0/24
 ```
 
-The host enables IPv4 forwarding and NAT for the VM network. Guest DNS points at the host bridge IP. The module merges the bridge into the existing host `dnsmasq` service and logs queries there.
+The host enables IPv4 forwarding and NAT for the VM network. Guest DNS points at the host bridge IP. The module merges the bridge listen address into the existing host `dnsmasq` service and logs queries there.
+
+By default, the module also adds the VM bridge as an explicit dnsmasq `interface` and enables `bind-interfaces`. This is suitable for `lapdog`, where dnsmasq is dedicated to VM DNS.
+
+On `mini`, `dnsmasqBindBridgeInterface = false` keeps dnsmasq available on the LAN, Tailscale, loopback, and the VM bridge by listen address without restricting it to only the VM bridge. `mini` also sets `dnsmasqBindInterfaces = false` because its Tailscale listen address may not exist yet when dnsmasq starts after boot; strict binding makes dnsmasq fail with `Cannot assign requested address` in that case.
 
 `nftables` logs new outbound TCP/UDP connections from the VM bridge with the prefix `[opencode-agent-vm]`. This is audit visibility, not an outbound allowlist. The VM can still reach the LAN and internet unless additional firewall rules are added.
 
@@ -111,19 +115,21 @@ The host runs a local-only `socat` proxy:
 127.0.0.1:32860 -> 10.0.101.2:32859
 ```
 
-This keeps the initial `lapdog` UI reachable only from the local machine. The module also has a Caddy option for a later `mini` deployment. When enabled, Caddy should protect the route with Authentik `forward_auth` before proxying to the host-local service.
+This keeps the local proxy reachable only from the host. On `mini`, Caddy exposes `https://opencode.local.doreto.com.br`, protects it with Authentik `forward_auth`, and autostarts the VM at boot before proxying to the host-local service.
 
 ## Filesystem Shares
 
-Shares are explicit module configuration. The module refuses to enable host or guest mode without a non-empty share list.
+The VM always mounts its VM-owned persistent home and VM SSH key material from `stateDir`. Additional host directory shares are explicit module configuration through `dog.services.opencode-agent-vm.shares`, and the list may be empty.
 
-The current `lapdog` test configuration intentionally shares:
+The current `lapdog` test configuration intentionally adds this extra host share:
 
 ```text
-/home/dog/projects -> /workspace/projects (read-write)
+/home/dog/projects -> /home/agent/projects (read-write)
 ```
 
-This broad share is an accepted initial testing tradeoff. It gives the VM write access to project checkouts under `/home/dog/projects`, including this dotfiles checkout. It should not be treated as the final shape for `mini`; that host should provide its own explicit share list.
+This broad share is an accepted initial testing tradeoff on `lapdog`. It gives the VM write access to project checkouts under `/home/dog/projects`, including this dotfiles checkout.
+
+`mini` intentionally has no additional host directory shares. It starts OpenCode in `/home/agent`, which is backed by VM-owned persistent state under `/var/lib/opencode-agent-vm/home`. Because the service is exposed through Caddy, `mini` sets `autostart = true` so the host-local proxy is present after boot.
 
 Always keep sensitive host state out of the share list unless that access is intentional.
 
@@ -158,11 +164,20 @@ nixosConfigurations.opencode-agent-vm
 ```nix
 dog.services.opencode-agent-vm = opencodeAgentVm // {
   enable = true;
-  flake = self;
 };
 ```
 
 The existing `lapdog-agent` VM remains separate and unchanged.
+
+## Mini Integration
+
+`hosts/mini/flake.nix` imports `../../modules/nixos`, adds `microvm.nix`, defines `opencodeAgentVm`, and exposes `nixosConfigurations.opencode-agent-vm` for the guest. `hosts/mini/configuration.nix` enables the host side.
+
+The previous host-level `opencode-web` service has been removed. `opencode.local.doreto.com.br` is now owned by the VM module's Caddy integration and proxies through `127.0.0.1:32860`.
+
+`mini` relies on the default `shares = [ ]`, so the VM does not mount `/home/dog/projects` or any other additional host directory.
+
+`mini` already runs dnsmasq for LAN and local-domain DNS. Its dnsmasq `listen-address` values are list-shaped so the VM module can append `10.0.101.1`, while `dnsmasqBindBridgeInterface = false` and `dnsmasqBindInterfaces = false` preserve the host's non-strict binding behavior.
 
 ## Validation
 
@@ -172,6 +187,9 @@ Before switching a host generation, validate with:
 nix flake check ./hosts/lapdog/
 nix build ./hosts/lapdog#nixosConfigurations.lapdog.config.system.build.toplevel
 nix build ./hosts/lapdog#nixosConfigurations.opencode-agent-vm.config.system.build.toplevel
+nix flake check ./hosts/mini/
+nix build ./hosts/mini#nixosConfigurations.dogdot.config.system.build.toplevel
+nix build ./hosts/mini#nixosConfigurations.opencode-agent-vm.config.system.build.toplevel
 ```
 
 Do not run activation commands from automation. The user switches generations manually.

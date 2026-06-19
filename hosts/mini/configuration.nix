@@ -2,7 +2,11 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running 'nixos-help').
 
-{ pkgs, ... }:
+{
+  pkgs,
+  opencodeAgentVm,
+  ...
+}:
 
 let
   vars = import ./_variables.nix;
@@ -21,7 +25,6 @@ in
     ./services/mail-me.nix
     ./services/media.nix
     ./services/nextcloud.nix
-    ./services/opencode-web.nix
     ./services/librechat.nix
     # ./services/openwebui.nix
     ./services/kokoro.nix
@@ -222,6 +225,10 @@ in
   };
 
   virtualisation.podman.enable = true;
+
+  dog.services.opencode-agent-vm = opencodeAgentVm // {
+    enable = true;
+  };
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
