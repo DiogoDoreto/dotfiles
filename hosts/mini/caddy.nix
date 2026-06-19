@@ -29,43 +29,43 @@ in
       };
       "auth.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy http://localhost:${p.authentik}
+          reverse_proxy http://127.0.0.1:${p.authentik}
         '';
       };
       "nextcloud.local.doreto.com.br" = {
         extraConfig = ''
           header Strict-Transport-Security "max-age=15552000; includeSubDomains"
-          reverse_proxy localhost:${p.nextcloud}
+          reverse_proxy 127.0.0.1:${p.nextcloud}
         '';
       };
       "lidarr.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.lidarr}
+          reverse_proxy 127.0.0.1:${p.lidarr}
         '';
       };
       "radarr.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.radarr}
+          reverse_proxy 127.0.0.1:${p.radarr}
         '';
       };
       "sonarr.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.sonarr}
+          reverse_proxy 127.0.0.1:${p.sonarr}
         '';
       };
       "prowlarr.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.prowlarr}
+          reverse_proxy 127.0.0.1:${p.prowlarr}
         '';
       };
       "qbit.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.qbittorrent}
+          reverse_proxy 127.0.0.1:${p.qbittorrent}
         '';
       };
       "jellyfin.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.jellyfin}
+          reverse_proxy 127.0.0.1:${p.jellyfin}
         '';
       };
       "calibre.local.doreto.com.br" = {
@@ -73,36 +73,36 @@ in
           request_header X-Forwarded-Host {http.request.host}
 
           @outpost path /outpost.goauthentik.io/*
-          reverse_proxy @outpost http://localhost:${p.authentik}
+          reverse_proxy @outpost http://127.0.0.1:${p.authentik}
 
           @protected not path /opds*
-          forward_auth @protected http://localhost:${p.authentik} {
+          forward_auth @protected http://127.0.0.1:${p.authentik} {
             uri /outpost.goauthentik.io/auth/caddy
             copy_headers X-Authentik-Username
             trusted_proxies private_ranges
           }
 
-          reverse_proxy localhost:${p.calibre}
+          reverse_proxy 127.0.0.1:${p.calibre}
         '';
       };
       "git.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.forgejo}
+          reverse_proxy 127.0.0.1:${p.forgejo}
         '';
       };
       "audiobook.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.audiobookshelf}
+          reverse_proxy 127.0.0.1:${p.audiobookshelf}
         '';
       };
       "ai.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.openWebui}
+          reverse_proxy 127.0.0.1:${p.openWebui}
         '';
       };
       "chat.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.libreChat}
+          reverse_proxy 127.0.0.1:${p.libreChat}
         '';
       };
       "ha.local.doreto.com.br" = {
@@ -112,22 +112,22 @@ in
       };
       "home.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.homepage}
+          reverse_proxy 127.0.0.1:${p.homepage}
         '';
       };
       "search.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.searx}
+          reverse_proxy 127.0.0.1:${p.searx}
         '';
       };
       "code.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.vscodium}
+          reverse_proxy 127.0.0.1:${p.vscodium}
         '';
       };
       "tts.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.kokoro}
+          reverse_proxy 127.0.0.1:${p.kokoro}
         '';
       };
       "photos.local.doreto.com.br" = {

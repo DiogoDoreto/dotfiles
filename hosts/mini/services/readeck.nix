@@ -73,13 +73,13 @@ in
     # Proxy outpost paths directly to Authentik. These must be excluded from
     # forward_auth or the Authentik login redirect loops.
     @outpost path /outpost.goauthentik.io/*
-    reverse_proxy @outpost http://localhost:${p.authentik}
+    reverse_proxy @outpost http://127.0.0.1:${p.authentik}
 
     # Readeck API and OPDS endpoints use Readeck API keys, not Authentik.
     @needsAuth {
       not path /api /api/* /opds /opds/* /outpost.goauthentik.io/*
     }
-    forward_auth @needsAuth http://localhost:${p.authentik} {
+    forward_auth @needsAuth http://127.0.0.1:${p.authentik} {
       uri /outpost.goauthentik.io/auth/caddy
       copy_headers X-Authentik-Username>Remote-User X-Authentik-Email>Remote-Email
       trusted_proxies private_ranges

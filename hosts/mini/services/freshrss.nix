@@ -27,7 +27,7 @@
     # Proxy outpost paths directly to Authentik (sign-out callbacks, login flow).
     # These must be excluded from forward_auth or the Authentik login redirect loops.
     @outpost path /outpost.goauthentik.io/*
-    reverse_proxy @outpost http://localhost:9000
+    reverse_proxy @outpost http://127.0.0.1:9000
 
     # Gate all non-API, non-outpost requests through Authentik forward auth.
     # /api/* paths (GReader, Fever) use FreshRSS's own API password auth — bypass SSO.
@@ -35,7 +35,7 @@
       not path /api/*
       not path /outpost.goauthentik.io/*
     }
-    forward_auth @needsAuth http://localhost:9000 {
+    forward_auth @needsAuth http://127.0.0.1:9000 {
       uri /outpost.goauthentik.io/auth/caddy
       # Rename X-Authentik-Username → Remote-User so FreshRSS receives HTTP_REMOTE_USER.
       copy_headers X-Authentik-Username>Remote-User
