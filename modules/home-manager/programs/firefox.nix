@@ -108,8 +108,10 @@ in
             "font.name.monospace.x-western" = "VictorMono Nerd Font Mono";
             "media.eme.enabled" = true;
             "media.webrtc.camera.allow-pipewire" = true;
+            "network.trr.mode" = 5;
             "privacy.donottrackheader.enabled" = true;
             "privacy.globalprivacycontrol.enabled" = true;
+            "security.enterprise_roots.enabled" = true;
             "signon.rememberSignons" = false;
             "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
             "widget.gtk.overlay-scrollbars.enabled" = true;
