@@ -260,7 +260,7 @@ in
 
     workingDirectory = mkOption {
       type = types.str;
-      default = "/workspace/projects";
+      default = "$HOME";
       description = "Working directory for the opencode serve systemd service inside the guest.";
     };
 
@@ -596,6 +596,8 @@ in
         environment.systemPackages = with pkgs; [
           curl
           fd
+          forgejo-cli
+          gh
           git
           jq
           neovim
@@ -607,10 +609,6 @@ in
         nix.settings.experimental-features = [
           "nix-command"
           "flakes"
-        ];
-
-        systemd.tmpfiles.rules = [
-          "d /workspace 0755 root root -"
         ];
 
         systemd.services."${cfg.vmName}-guest-ssh-setup" = {
@@ -650,6 +648,7 @@ in
             WorkingDirectory = cfg.workingDirectory;
             Environment = [
               "HOME=/home/${cfg.guestUser}"
+              "PATH=/etc/profiles/per-user/${cfg.guestUser}/bin:/run/current-system/sw/bin:/run/wrappers/bin"
               "USER=${cfg.guestUser}"
             ];
             ExecStart = "${pkgs.llm-agents.opencode}/bin/opencode serve --hostname ${cfg.guestAddress} --port ${toString cfg.opencodePort}";
@@ -673,8 +672,16 @@ in
 
             targets.genericLinux.enable = true;
 
-            programs = {
+            dog.programs = {
+              cli-tools.enable = true;
               git.enable = true;
+              playwright-cli = {
+                enable = true;
+                installAgentsSkill = true;
+              };
+            };
+
+            programs = {
               ssh.enable = true;
             };
           };

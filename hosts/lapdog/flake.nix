@@ -101,7 +101,7 @@
         opencodePort = 32859;
         hostLocalAddress = "127.0.0.1";
         hostLocalPort = 32860;
-        workingDirectory = "/workspace/projects";
+        workingDirectory = "/home/agent/projects";
         dnsForwardZones = [
           {
             domain = "local.doreto.com.br";
@@ -116,7 +116,7 @@
           {
             tag = "projects";
             source = "/home/dog/projects";
-            mountPoint = "/workspace/projects";
+            mountPoint = "/home/agent/projects";
             readOnly = false;
           }
         ];

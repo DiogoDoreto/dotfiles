@@ -141,6 +141,10 @@ The guest user is in `wheel`, and `security.sudo.wheelNeedsPassword = false`. Th
 
 The guest home is a persistent virtiofs share from `/var/lib/opencode-agent-vm/home` mounted at `/home/agent`. The host `/nix/store` is mounted read-only at `/nix/.ro-store` and combined with `writableStoreOverlay = "/nix/.rw-store"` so the guest can use Nix without writing to the host store.
 
+The guest includes the GitHub CLI (`gh`) and Forgejo CLI (`forgejo-cli`). Git is configured for the `agent` user through the shared `dog.programs.git` Home Manager module, so the VM gets the same default identity, aliases, ignores, and private include path as the rest of the dotfiles.
+
+The `opencode serve` systemd service runs with `PATH` pointing at `/etc/profiles/per-user/agent/bin`, `/run/current-system/sw/bin`, and `/run/wrappers/bin`. This makes Home Manager tools such as `npm` available to commands launched by OpenCode, matching the tools visible in an SSH session more closely than systemd's default service environment.
+
 ## Lapdog Integration
 
 `hosts/lapdog/flake.nix` defines the shared `opencodeAgentVm` settings and passes them through `specialArgs`. It also imports `../../modules/nixos` and adds the guest output:
