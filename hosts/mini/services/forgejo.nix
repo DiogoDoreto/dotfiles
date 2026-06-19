@@ -129,4 +129,114 @@ in
       EnvironmentFile = "/etc/secrets/forgejo/oauth";
     };
   };
+
+  systemd.services.forgejo-action-mirror-setup = {
+    description = "Create local git-pages Forgejo Action mirror";
+    after = [
+      "forgejo.service"
+      "caddy.service"
+      "caddy-cert-trust.service"
+    ];
+    wants = [
+      "caddy.service"
+      "caddy-cert-trust.service"
+    ];
+    requires = [ "forgejo.service" ];
+    wantedBy = [ "multi-user.target" ];
+    path = [
+      pkgs.coreutils
+      pkgs.curl
+    ];
+    environment = {
+      SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+    };
+    script = ''
+      set -euo pipefail
+
+      TOKEN="$(tr -d '\n' < "$CREDENTIALS_DIRECTORY/admin-api-token")"
+      API="https://git.local.doreto.com.br/api/v1"
+      tmpdir="$(mktemp -d)"
+      trap 'rm -rf "$tmpdir"' EXIT
+
+      org_status="$(curl --silent --show-error --output "$tmpdir/org.json" --write-out "%{http_code}" \
+        --cacert "$SSL_CERT_FILE" \
+        --header "Authorization: token $TOKEN" \
+        --header "Accept: application/json" \
+        "$API/orgs/actions")"
+
+      case "$org_status" in
+        200)
+          echo "Forgejo organization actions already exists"
+          ;;
+        404)
+          create_org_status="$(curl --silent --show-error --output "$tmpdir/create-org.json" --write-out "%{http_code}" \
+            --request POST \
+            --cacert "$SSL_CERT_FILE" \
+            --header "Authorization: token $TOKEN" \
+            --header "Accept: application/json" \
+            --header "Content-Type: application/json" \
+            --data '{"username":"actions","full_name":"Actions","description":"Local mirrors for Forgejo Actions","visibility":"public"}' \
+            "$API/orgs")"
+          if [ "$create_org_status" != "201" ]; then
+            echo "Failed to create actions organization: HTTP $create_org_status" >&2
+            cat "$tmpdir/create-org.json" >&2
+            exit 1
+          fi
+          echo "Created Forgejo organization actions"
+          ;;
+        *)
+          echo "Failed to check actions organization: HTTP $org_status" >&2
+          cat "$tmpdir/org.json" >&2
+          exit 1
+          ;;
+      esac
+
+      repo_status="$(curl --silent --show-error --output "$tmpdir/repo.json" --write-out "%{http_code}" \
+        --cacert "$SSL_CERT_FILE" \
+        --header "Authorization: token $TOKEN" \
+        --header "Accept: application/json" \
+        "$API/repos/actions/git-pages")"
+
+      case "$repo_status" in
+        200)
+          echo "Forgejo action mirror actions/git-pages already exists"
+          ;;
+        404)
+          migrate_status="$(curl --silent --show-error --output "$tmpdir/migrate.json" --write-out "%{http_code}" \
+            --request POST \
+            --cacert "$SSL_CERT_FILE" \
+            --header "Authorization: token $TOKEN" \
+            --header "Accept: application/json" \
+            --header "Content-Type: application/json" \
+            --data '{"clone_addr":"https://codeberg.org/git-pages/action.git","mirror":true,"private":false,"repo_name":"git-pages","repo_owner":"actions","service":"git","wiki":false,"issues":false,"pull_requests":false,"releases":false}' \
+            "$API/repos/migrate")"
+          case "$migrate_status" in
+            200|201)
+              echo "Created Forgejo action mirror actions/git-pages"
+              ;;
+            409)
+              echo "Forgejo action mirror actions/git-pages already exists"
+              ;;
+            *)
+              echo "Failed to create actions/git-pages mirror: HTTP $migrate_status" >&2
+              cat "$tmpdir/migrate.json" >&2
+              exit 1
+              ;;
+          esac
+          ;;
+        *)
+          echo "Failed to check actions/git-pages repository: HTTP $repo_status" >&2
+          cat "$tmpdir/repo.json" >&2
+          exit 1
+          ;;
+      esac
+    '';
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "forgejo";
+      Group = "forgejo";
+      LoadCredential = [ "admin-api-token:/etc/secrets/forgejo/admin-api-token" ];
+    };
+  };
 }
