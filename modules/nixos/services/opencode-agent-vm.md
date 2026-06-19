@@ -148,7 +148,7 @@ UID/GID `1000` keeps ownership compatible with the host user for shared project 
 
 The guest user is in `wheel`, and `security.sudo.wheelNeedsPassword = false`. This is intentional: the agent should be able to administer the guest freely. The boundary is the VM, network policy, VM-owned credentials, and explicit shares.
 
-The guest home is a persistent virtiofs share from `/var/lib/opencode-agent-vm/home` mounted at `/home/agent`. The host `/nix/store` is mounted read-only at `/nix/.ro-store` and combined with `writableStoreOverlay = "/nix/.rw-store"` so the guest can use Nix without writing to the host store.
+The guest home is a persistent virtiofs share from `/var/lib/opencode-agent-vm/home` mounted at `/home/agent`. The host `/nix/store` is mounted read-only at `/nix/.ro-store` and combined with `writableStoreOverlay = "/nix/.rw-store"` so the guest can use Nix without writing to the host store. `/nix/.rw-store` is a persistent virtiofs share from `/var/lib/opencode-agent-vm/rw-store`, which keeps guest Nix builds and package installs from consuming the tmpfs root filesystem without adding a separate fixed-size VM disk.
 
 The guest includes the GitHub CLI (`gh`) and Forgejo CLI (`forgejo-cli`). Git is configured for the `agent` user through the shared `dog.programs.git` Home Manager module, so the VM gets the same default identity, aliases, ignores, and private include path as the rest of the dotfiles.
 

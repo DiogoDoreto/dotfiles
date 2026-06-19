@@ -121,6 +121,13 @@ let
     readOnly = true;
   };
 
+  rwStoreShare = {
+    proto = "virtiofs";
+    tag = "rw-store";
+    source = "${cfg.stateDir}/rw-store";
+    mountPoint = "/nix/.rw-store";
+  };
+
   userShareToMicrovmShare = share: {
     proto = "virtiofs";
     inherit (share)
@@ -450,6 +457,7 @@ in
 
             ${pkgs.coreutils}/bin/install -d -m 0755 -o root -g root ${cfg.stateDir}
             ${pkgs.coreutils}/bin/install -d -m 0755 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/home
+            ${pkgs.coreutils}/bin/install -d -m 0755 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/rw-store
             ${pkgs.coreutils}/bin/install -d -m 0700 -o ${cfg.controlUser} -g "$host_group" ${cfg.stateDir}/ssh/host
             ${pkgs.coreutils}/bin/install -d -m 0700 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/ssh/guest
 
@@ -738,6 +746,7 @@ in
               mountPoint = "/nix/.ro-store";
               readOnly = true;
             }
+            rwStoreShare
             persistentHomeShare
             guestSshShare
           ]
