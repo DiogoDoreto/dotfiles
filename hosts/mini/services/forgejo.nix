@@ -153,14 +153,22 @@ in
     script = ''
       set -euo pipefail
 
-      TOKEN="$(tr -d '\n' < "$CREDENTIALS_DIRECTORY/admin-api-token")"
       API="https://git.local.doreto.com.br/api/v1"
+      umask 077
       tmpdir="$(mktemp -d)"
       trap 'rm -rf "$tmpdir"' EXIT
 
+      auth_header="$tmpdir/authorization-header"
+      {
+        printf 'Authorization: token '
+        tr -d '\n' < "$CREDENTIALS_DIRECTORY/admin-api-token"
+        printf '\n'
+      } > "$auth_header"
+      chmod 600 "$auth_header"
+
       org_status="$(curl --silent --show-error --output "$tmpdir/org.json" --write-out "%{http_code}" \
         --cacert "$SSL_CERT_FILE" \
-        --header "Authorization: token $TOKEN" \
+        --header "@$auth_header" \
         --header "Accept: application/json" \
         "$API/orgs/actions")"
 
@@ -172,7 +180,7 @@ in
           create_org_status="$(curl --silent --show-error --output "$tmpdir/create-org.json" --write-out "%{http_code}" \
             --request POST \
             --cacert "$SSL_CERT_FILE" \
-            --header "Authorization: token $TOKEN" \
+            --header "@$auth_header" \
             --header "Accept: application/json" \
             --header "Content-Type: application/json" \
             --data '{"username":"actions","full_name":"Actions","description":"Local mirrors for Forgejo Actions","visibility":"public"}' \
@@ -193,7 +201,7 @@ in
 
       repo_status="$(curl --silent --show-error --output "$tmpdir/repo.json" --write-out "%{http_code}" \
         --cacert "$SSL_CERT_FILE" \
-        --header "Authorization: token $TOKEN" \
+        --header "@$auth_header" \
         --header "Accept: application/json" \
         "$API/repos/actions/git-pages")"
 
@@ -205,7 +213,7 @@ in
           migrate_status="$(curl --silent --show-error --output "$tmpdir/migrate.json" --write-out "%{http_code}" \
             --request POST \
             --cacert "$SSL_CERT_FILE" \
-            --header "Authorization: token $TOKEN" \
+            --header "@$auth_header" \
             --header "Accept: application/json" \
             --header "Content-Type: application/json" \
             --data '{"clone_addr":"https://codeberg.org/git-pages/action.git","mirror":true,"private":false,"repo_name":"git-pages","repo_owner":"actions","service":"git","wiki":false,"issues":false,"pull_requests":false,"releases":false}' \

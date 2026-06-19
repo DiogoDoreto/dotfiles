@@ -5,7 +5,7 @@ let
   p = builtins.mapAttrs (_: toString) vars.ports;
   gitPagesPackage = inputs.git-pages.packages.${pkgs.system}.default;
   gitPagesConfig = pkgs.writeText "git-pages.toml" ''
-    features = ["expiration"]
+    features = ["expiration", "preview"]
     log-format = "text"
 
     [server]
