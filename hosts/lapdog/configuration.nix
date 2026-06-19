@@ -329,7 +329,6 @@
 
   dog.services.opencode-agent-vm = opencodeAgentVm // {
     enable = true;
-    flake = self;
   };
 
   # ── MicroVM: DNS logging via dnsmasq ──────────────────────────────────────
