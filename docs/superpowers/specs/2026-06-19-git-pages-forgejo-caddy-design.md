@@ -8,7 +8,7 @@ Status: Approved design, awaiting implementation plan
 
 Add a `git-pages` static site service to the `mini` host and integrate it with the existing Forgejo and Caddy stack. The service starts as an internal-only Pages deployment under `*.pages.local.doreto.com.br` and `*.preview.pages.local.doreto.com.br`, while keeping the routing and service boundaries compatible with later public exposure.
 
-The preferred publishing path is Forgejo Actions using a local mirror of `git-pages/action@v2` at `actions/git-pages@v2`. This supports generated static sites, repository-matching wildcard authorization through Forgejo's automatic action token, and optional pull request preview deployments without relying on external action references at workflow runtime.
+The preferred publishing path is Forgejo Actions using a local mirror of `git-pages/action@v2` at `actions/git-pages@v2`. Forgejo's action resolver must point `DEFAULT_ACTIONS_URL` at local Forgejo so unqualified `actions/...` references resolve to `git.local.doreto.com.br`, not an external action host. This supports generated static sites, repository-matching wildcard authorization through Forgejo's automatic action token, and optional pull request preview deployments without relying on external action references at workflow runtime.
 
 ## Goals
 
@@ -36,7 +36,7 @@ The preferred publishing path is Forgejo Actions using a local mirror of `git-pa
 | `hosts/mini/flake.nix` | Add upstream `git-pages` as a flake input and pass it through existing `inputs`. |
 | `hosts/mini/_variables.nix` | Add localhost ports for `git-pages` pages, Caddy ask, and metrics listeners. |
 | `hosts/mini/services/git-pages.nix` | New NixOS module for package, config file, state directory, and systemd service. |
-| `hosts/mini/services/forgejo.nix` | Add idempotent setup for the local `actions/git-pages` pull mirror. |
+| `hosts/mini/services/forgejo.nix` | Configure Forgejo Actions to resolve unqualified actions locally and add idempotent setup for the local `actions/git-pages` pull mirror. |
 | `hosts/mini/caddy.nix` | Add wildcard Pages virtual hosts that reverse proxy to `git-pages`. |
 | `hosts/mini/configuration.nix` | Import `./services/git-pages.nix`. |
 | `hosts/mini/backup.nix` | Include `/var/lib/git-pages` in the Borg include patterns. |
@@ -139,6 +139,8 @@ Repository workflows must use the local Forgejo action reference:
 ```yaml
 uses: actions/git-pages@v2
 ```
+
+Set Forgejo's `[actions] DEFAULT_ACTIONS_URL` to `https://git.local.doreto.com.br` so the unqualified `actions/git-pages@v2` reference resolves against this local Forgejo instance.
 
 The implementation should ensure this exists as a pull mirror of Codeberg's action repository:
 

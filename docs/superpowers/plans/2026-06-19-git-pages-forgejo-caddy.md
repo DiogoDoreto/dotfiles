@@ -4,7 +4,7 @@
 
 **Goal:** Add an internal-first `git-pages` service on `mini`, integrate it with Forgejo Actions and Caddy, and guarantee a local `actions/git-pages@v2` action mirror.
 
-**Architecture:** `git-pages` runs as a localhost-only systemd service with filesystem state in `/var/lib/git-pages`. Caddy terminates internal TLS for `*.pages.local.doreto.com.br` and `*.preview.pages.local.doreto.com.br`, then reverse proxies to the Pages listener. Forgejo provides repository authorization and an idempotent setup service creates a local pull mirror of Codeberg's `git-pages/action` repository.
+**Architecture:** `git-pages` runs as a localhost-only systemd service with filesystem state in `/var/lib/git-pages`. Caddy terminates internal TLS for `*.pages.local.doreto.com.br` and `*.preview.pages.local.doreto.com.br`, then reverse proxies to the Pages listener. Forgejo provides repository authorization, points its action resolver at local Forgejo for unqualified `actions/...` references, and an idempotent setup service creates a local pull mirror of Codeberg's `git-pages/action` repository.
 
 **Tech Stack:** NixOS modules, per-host flake under `hosts/mini`, systemd services and timers, Caddy, Forgejo API, Forgejo Actions, Borg backup patterns.
 
@@ -18,6 +18,7 @@
 - Do not set `PAGES_INSECURE`.
 - Do not set `allowed-repository-url-prefixes` because it prohibits archive uploads used by `git-pages/action`.
 - Repository workflows must use `actions/git-pages@v2`; do not require full external action references.
+- Forgejo's `[actions] DEFAULT_ACTIONS_URL` must be `https://git.local.doreto.com.br` so `actions/git-pages@v2` resolves locally.
 - Do not expose arbitrary custom domains in this implementation.
 - Do not run `nixos-rebuild switch`, `nixos-rebuild boot`, `home-manager switch`, or any command that activates a generation.
 - Format Nix files with `make format-nix` before validation.
@@ -34,7 +35,7 @@
 - `hosts/mini/configuration.nix`: imports the new service module.
 - `hosts/mini/caddy.nix`: adds Pages wildcard virtual hosts.
 - `hosts/mini/backup.nix`: adds `/var/lib/git-pages` to the explicit Borg include patterns.
-- `hosts/mini/services/forgejo.nix`: adds the local action mirror setup service alongside the existing Forgejo service and runner config.
+- `hosts/mini/services/forgejo.nix`: points Forgejo's action resolver at local Forgejo and adds the local action mirror setup service alongside the existing Forgejo service and runner config.
 - `docs/superpowers/specs/2026-06-19-git-pages-forgejo-caddy-design.md`: approved design reference, already written.
 - `docs/superpowers/plans/2026-06-19-git-pages-forgejo-caddy.md`: this implementation plan.
 
@@ -360,7 +361,7 @@ git commit -m "feat: route git-pages through caddy"
 
 **Interfaces:**
 - Consumes: existing Forgejo service, `caddy.service`, `caddy-cert-trust.service`, and `/etc/secrets/forgejo/admin-api-token`.
-- Produces: `systemd.services.forgejo-action-mirror-setup`, which creates `https://git.local.doreto.com.br/actions/git-pages` as a public pull mirror of `https://codeberg.org/git-pages/action.git`.
+- Produces: `services.forgejo.settings.actions.DEFAULT_ACTIONS_URL = "https://git.local.doreto.com.br"` and `systemd.services.forgejo-action-mirror-setup`, which creates `https://git.local.doreto.com.br/actions/git-pages` as a public pull mirror of `https://codeberg.org/git-pages/action.git`.
 
 - [ ] **Step 1: Verify the mirror setup service is not already present**
 
@@ -372,7 +373,13 @@ nix eval ./hosts/mini#nixosConfigurations.dogdot.config.systemd.services.forgejo
 
 Expected: FAIL with an attribute-missing error for `forgejo-action-mirror-setup`.
 
-- [ ] **Step 2: Add the idempotent mirror setup oneshot**
+- [ ] **Step 2: Point the Forgejo action resolver at local Forgejo and add the idempotent mirror setup oneshot**
+
+Edit `hosts/mini/services/forgejo.nix`. In the existing `services.forgejo.settings.actions` block, set:
+
+```nix
+        DEFAULT_ACTIONS_URL = "https://git.local.doreto.com.br";
+```
 
 Edit `hosts/mini/services/forgejo.nix`. Insert this block after the existing `systemd.services.forgejo-oauth-setup` block and before the module's final closing brace:
 

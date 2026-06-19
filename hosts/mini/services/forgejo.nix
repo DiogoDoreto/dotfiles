@@ -40,6 +40,7 @@ in
       };
       actions = {
         ENABLED = true;
+        DEFAULT_ACTIONS_URL = "https://git.local.doreto.com.br";
       };
     };
   };
