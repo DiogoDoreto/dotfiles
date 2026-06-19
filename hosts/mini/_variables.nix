@@ -17,6 +17,9 @@
     calibre = 18083;
     forgejo = 3000;
     forgejoSsh = 2222;
+    gitPages = 3010;
+    gitPagesCaddy = 3011;
+    gitPagesMetrics = 3012;
     home-assistant = 8123; # default; not configurable via NixOS option
     homepage = 8082;
     immich = 2283;

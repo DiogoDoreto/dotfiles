@@ -6,6 +6,10 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     authentik-nix.url = "github:nix-community/authentik-nix";
     llm-agents.url = "github:numtide/llm-agents.nix";
+    git-pages = {
+      url = "git+https://codeberg.org/git-pages/git-pages";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nur = {
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";

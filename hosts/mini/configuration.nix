@@ -20,6 +20,7 @@ in
     ./backup.nix
     ./services/authentik.nix
     ./services/forgejo.nix
+    ./services/git-pages.nix
     ./services/freshrss.nix
     ./services/homepage.nix
     ./services/mail-me.nix
