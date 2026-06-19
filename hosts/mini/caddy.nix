@@ -90,6 +90,18 @@ in
           reverse_proxy 127.0.0.1:${p.forgejo}
         '';
       };
+      "*.pages.local.doreto.com.br" = {
+        extraConfig = ''
+          tls internal
+          reverse_proxy 127.0.0.1:${p.gitPages}
+        '';
+      };
+      "*.preview.pages.local.doreto.com.br" = {
+        extraConfig = ''
+          tls internal
+          reverse_proxy 127.0.0.1:${p.gitPages}
+        '';
+      };
       "audiobook.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy 127.0.0.1:${p.audiobookshelf}

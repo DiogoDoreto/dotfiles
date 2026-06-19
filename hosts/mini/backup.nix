@@ -43,6 +43,8 @@
       "+ /var/lib/readeck/data"
       "+ /var/lib/private/readeck/data"
 
+      "+ /var/lib/git-pages"
+
       "+ /var/lib/radarr/.config/Radarr/config.xml"
       "+ /var/lib/radarr/.config/Radarr/radarr.db"
 
