@@ -1,8 +1,10 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   vars = import ../_variables.nix;
   p = builtins.mapAttrs (_: toString) vars.ports;
+  openidIssuer = "https://auth.local.doreto.com.br/application/o/librechat/";
+  openidDiscoveryUrl = "${openidIssuer}.well-known/openid-configuration";
 
   configFile = (pkgs.formats.yaml { }).generate "librechat.yaml" {
     version = "1.3.6";
@@ -29,6 +31,7 @@ in
 {
   # LibreChat setup (manual, one-time):
   #   1. In Authentik, create an OAuth2/OIDC provider for librechat
+  #      and an application with slug: librechat
   #      with redirect URI: https://chat.local.doreto.com.br/oauth/openid/callback
   #      Subject mode: Based on the User's Email
   #   2. Create an application bound to that provider
@@ -66,7 +69,40 @@ in
 
   systemd.services.podman-librechat = {
     requires = [ "podman-create-librechat-network.service" ];
-    after = [ "podman-create-librechat-network.service" ];
+    wants = [
+      "authentik.service"
+      "caddy-cert-trust.service"
+      "caddy.service"
+      "network-online.target"
+    ];
+    after = [
+      "podman-create-librechat-network.service"
+      "authentik.service"
+      "caddy-cert-trust.service"
+      "caddy.service"
+      "network-online.target"
+    ];
+    serviceConfig.ExecStartPre = lib.mkAfter [
+      (pkgs.writeShellScript "wait-for-librechat-openid-discovery" ''
+        set -eu
+
+        ca_bundle="/etc/ssl/certs/ca-bundle-with-local-ca.crt"
+
+        for attempt in $(${pkgs.coreutils}/bin/seq 1 60); do
+          if ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 5 \
+            --cacert "$ca_bundle" \
+            "${openidDiscoveryUrl}" >/dev/null; then
+            exit 0
+          fi
+
+          echo "Waiting for LibreChat OpenID discovery (${openidDiscoveryUrl}) [$attempt/60]" >&2
+          ${pkgs.coreutils}/bin/sleep 2
+        done
+
+        echo "LibreChat OpenID discovery endpoint did not become ready: ${openidDiscoveryUrl}" >&2
+        exit 1
+      '')
+    ];
   };
 
   systemd.services.podman-librechat-mongodb = {
@@ -105,7 +141,7 @@ in
       DOMAIN_SERVER = "https://chat.local.doreto.com.br";
       # Authentik SSO
       ALLOW_SOCIAL_LOGIN = "true";
-      OPENID_ISSUER = "https://auth.local.doreto.com.br/application/o/librechat/.well-known/openid-configuration";
+      OPENID_ISSUER = openidIssuer;
       OPENID_CALLBACK_URL = "/oauth/openid/callback";
       OPENID_SCOPE = "openid profile email";
       OPENID_BUTTON_LABEL = "Login with Authentik";
