@@ -135,7 +135,11 @@ in
   options.dog.services.opencode-agent-vm = {
     enable = mkEnableOption "OpenCode agent MicroVM host integration";
 
-    guest.enable = mkEnableOption "OpenCode agent MicroVM guest runtime";
+    guest = {
+      enable = mkEnableOption "OpenCode agent MicroVM guest runtime";
+
+      tailscale.enable = mkEnableOption "Tailscale inside the OpenCode agent MicroVM guest";
+    };
 
     vmName = mkOption {
       type = types.str;
@@ -594,6 +598,8 @@ in
             PermitRootLogin = "no";
           };
         };
+
+        services.tailscale.enable = cfg.guest.tailscale.enable;
 
         users.groups.${cfg.guestUser}.gid = cfg.guestGid;
         users.users.${cfg.guestUser} = {

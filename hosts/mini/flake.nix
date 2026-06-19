@@ -117,6 +117,7 @@
             {
               dog.services.opencode-agent-vm = opencodeAgentVm // {
                 guest.enable = true;
+                guest.tailscale.enable = true;
               };
             }
           ];

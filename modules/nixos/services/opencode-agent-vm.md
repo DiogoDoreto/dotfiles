@@ -47,11 +47,14 @@ The shared module has two sides:
 ```nix
 dog.services.opencode-agent-vm.enable = true;
 dog.services.opencode-agent-vm.guest.enable = true;
+dog.services.opencode-agent-vm.guest.tailscale.enable = true;
 ```
 
 The host side requires `microvm.nixosModules.host`. It creates the host systemd units, bridge, NAT, dnsmasq integration, helper commands, credentials, and `microvm.vms.<vmName>` declaration.
 
 The guest side requires `microvm.nixosModules.microvm`. It configures the VM OS, user, static network, shared filesystems, SSH, Home Manager, and the `opencode serve` systemd service.
+
+`guest.tailscale.enable` additionally enables the NixOS Tailscale service inside the VM guest. It defaults to false; `mini` enables it for its guest configuration.
 
 Each host flake that enables the service must expose a guest NixOS configuration named the same as `vmName`. On `lapdog` and `mini`, this is `nixosConfigurations.opencode-agent-vm`.
 
@@ -167,6 +170,8 @@ dog.services.opencode-agent-vm = opencodeAgentVm // {
 };
 ```
 
+The `lapdog` guest leaves `guest.tailscale.enable` at its default `false`.
+
 ## Mini Integration
 
 `hosts/mini/flake.nix` imports `../../modules/nixos`, adds `microvm.nix`, defines `opencodeAgentVm`, and exposes `nixosConfigurations.opencode-agent-vm` for the guest. `hosts/mini/configuration.nix` enables the host side.
@@ -174,6 +179,8 @@ dog.services.opencode-agent-vm = opencodeAgentVm // {
 The previous host-level `opencode-web` service has been removed. `opencode.local.doreto.com.br` is now owned by the VM module's Caddy integration and proxies through `127.0.0.1:32860`.
 
 `mini` relies on the default `shares = [ ]`, so the VM does not mount `/home/dog/projects` or any other additional host directory.
+
+`mini` enables `guest.tailscale.enable = true` for its `opencode-agent-vm` guest configuration, so the VM has the Tailscale service available independently of the host's own Tailscale daemon.
 
 `mini` already runs dnsmasq for LAN and local-domain DNS. Its dnsmasq `listen-address` values are list-shaped so the VM module can append `10.0.101.1`, while `dnsmasqBindBridgeInterface = false` and `dnsmasqBindInterfaces = false` preserve the host's non-strict binding behavior.
 
