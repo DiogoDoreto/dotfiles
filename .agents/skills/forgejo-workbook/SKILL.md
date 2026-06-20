@@ -13,13 +13,13 @@ description: >
 ## Service Stack
 
 Forgejo on mini is served by Forgejo behind Caddy, with a local actions runner
-and a git-pages action mirror setup unit.
+and an action mirror setup unit.
 
 | Unit | Role |
 |---|---|
 | `forgejo.service` | Main Forgejo web/API/SSH service |
 | `forgejo-oauth-setup.service` | One-shot Authentik OAuth source setup |
-| `forgejo-action-mirror-setup.service` | One-shot creation of the local `actions/git-pages` mirror |
+| `forgejo-action-mirror-setup.service` | One-shot creation of local `actions/*` mirrors |
 | `gitea-runner-mini.service` | Forgejo Actions runner instance |
 | `caddy.service` | TLS termination and reverse proxy for `git.local.doreto.com.br` |
 | `caddy-cert-trust.service` | Builds local CA bundle used by services that call Caddy TLS |
@@ -153,22 +153,35 @@ verify the local Caddy certificate.
 
 ## Local Action Mirror Setup
 
-`forgejo-action-mirror-setup.service` creates:
+`forgejo-action-mirror-setup.service` creates local mirrors under:
 
 ```text
-https://git.local.doreto.com.br/actions/git-pages
+https://git.local.doreto.com.br/actions/
 ```
 
-as a pull mirror of:
+The managed mirrors are:
+
+- `actions/cache`
+- `actions/checkout`
+- `actions/download-artifact`
+- `actions/forgejo-release`
+- `actions/git-pages`
+- `actions/setup-go`
+- `actions/setup-node`
+- `actions/setup-python`
+- `actions/upload-artifact`
+
+Each source is:
 
 ```text
-https://codeberg.org/git-pages/action.git
+https://code.forgejo.org/actions/<repo>.git
 ```
 
 It needs `/etc/secrets/forgejo/admin-api-token`, loaded through systemd
 credentials as `admin-api-token`. The token must belong to a Forgejo site admin
-or otherwise have enough permission to create the `actions` org and migrate a
-repository into it.
+or otherwise have enough permission to create the `actions` org, migrate
+repositories into it, and replace managed mirrors whose source no longer
+matches the declared `code.forgejo.org/actions` source.
 
 Provision token:
 
@@ -189,11 +202,13 @@ sudo journalctl -u forgejo-action-mirror-setup.service -b --no-pager
 Verify result:
 
 ```bash
-curl -I --cacert /etc/ssl/certs/ca-bundle-with-local-ca.crt \
-  https://git.local.doreto.com.br/actions/git-pages
+for repo in git-pages cache checkout upload-artifact download-artifact forgejo-release setup-node setup-go setup-python; do
+  curl -I --cacert /etc/ssl/certs/ca-bundle-with-local-ca.crt \
+    "https://git.local.doreto.com.br/actions/$repo"
+done
 ```
 
-Then check the Forgejo UI for tag `v2`.
+Then check the Forgejo UI for expected tags, such as `v2` for `git-pages`.
 
 ## Migration / Import Policy
 
@@ -205,7 +220,7 @@ Failed to create actions/git-pages mirror: HTTP 422
 ```
 
 Cause: Forgejo's migration/import policy disallows the remote clone host, e.g.
-`codeberg.org`.
+`code.forgejo.org`.
 
 Fix in Nix by adding the narrowest policy that allows the intended source. Do
 not broadly allow all hosts unless the user explicitly wants that. After
@@ -236,10 +251,8 @@ This means unqualified workflow actions such as:
 uses: actions/git-pages@v2
 ```
 
-resolve to local Forgejo. Any other unqualified `actions/...` used by production
-workflows also needs to exist locally. For example, if workflows use
-`actions/checkout`, mirror it locally or use the project's established checkout
-mechanism.
+resolve to local Forgejo. Keep production workflow `actions/...` references in
+the managed mirror list, or add a new mirror before using the action.
 
 ## Git Pages Publishing
 

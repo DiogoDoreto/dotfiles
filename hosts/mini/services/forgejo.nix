@@ -7,6 +7,17 @@
 
 let
   vars = import ../_variables.nix;
+  actionMirrorRepos = [
+    "cache"
+    "checkout"
+    "download-artifact"
+    "forgejo-release"
+    "git-pages"
+    "setup-go"
+    "setup-node"
+    "setup-python"
+    "upload-artifact"
+  ];
   forgejoWithGitPagesPreviewAuth = pkgs.forgejo.overrideAttrs (oldAttrs: {
     pname = "${oldAttrs.pname}-pr-12727";
     patches = (oldAttrs.patches or [ ]) ++ [
@@ -55,6 +66,9 @@ in
       actions = {
         ENABLED = true;
         DEFAULT_ACTIONS_URL = "https://git.local.doreto.com.br";
+      };
+      migrations = {
+        ALLOWED_DOMAINS = "code.forgejo.org";
       };
     };
   };
@@ -146,7 +160,7 @@ in
   };
 
   systemd.services.forgejo-action-mirror-setup = {
-    description = "Create local git-pages Forgejo Action mirror";
+    description = "Create local Forgejo Action mirrors";
     after = [
       "network-online.target"
       "forgejo.service"
@@ -163,6 +177,7 @@ in
     path = [
       pkgs.coreutils
       pkgs.curl
+      pkgs.jq
     ];
     environment = {
       SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
@@ -235,45 +250,92 @@ in
           ;;
       esac
 
-      repo_status="$(curl --silent --show-error --output "$tmpdir/repo.json" --write-out "%{http_code}" \
-        --cacert "$SSL_CERT_FILE" \
-        --header "@$auth_header" \
-        --header "Accept: application/json" \
-        "$API/repos/actions/git-pages")"
+      create_mirror() {
+        repo="$1"
+        clone_addr="https://code.forgejo.org/actions/$repo.git"
+        migrate_json="$tmpdir/migrate-$repo.json"
 
-      case "$repo_status" in
-        200)
-          echo "Forgejo action mirror actions/git-pages already exists"
-          ;;
-        404)
-          migrate_status="$(curl --silent --show-error --output "$tmpdir/migrate.json" --write-out "%{http_code}" \
-            --request POST \
-            --cacert "$SSL_CERT_FILE" \
-            --header "@$auth_header" \
-            --header "Accept: application/json" \
-            --header "Content-Type: application/json" \
-            --data '{"clone_addr":"https://codeberg.org/git-pages/action.git","mirror":true,"private":false,"repo_name":"git-pages","repo_owner":"actions","service":"git","wiki":false,"issues":false,"pull_requests":false,"releases":false}' \
-            "$API/repos/migrate")"
-          case "$migrate_status" in
-            200|201)
-              echo "Created Forgejo action mirror actions/git-pages"
-              ;;
-            409)
-              echo "Forgejo action mirror actions/git-pages already exists"
-              ;;
-            *)
-              echo "Failed to create actions/git-pages mirror: HTTP $migrate_status" >&2
-              cat "$tmpdir/migrate.json" >&2
+        migrate_status="$(curl --silent --show-error --output "$migrate_json" --write-out "%{http_code}" \
+          --request POST \
+          --cacert "$SSL_CERT_FILE" \
+          --header "@$auth_header" \
+          --header "Accept: application/json" \
+          --header "Content-Type: application/json" \
+          --data "$(jq -nc \
+            --arg clone_addr "$clone_addr" \
+            --arg repo "$repo" \
+            '{"clone_addr":$clone_addr,"mirror":true,"private":false,"repo_name":$repo,"repo_owner":"actions","service":"git","wiki":false,"issues":false,"pull_requests":false,"releases":false}')" \
+          "$API/repos/migrate")"
+        case "$migrate_status" in
+          200|201)
+            echo "Created Forgejo action mirror actions/$repo from $clone_addr"
+            ;;
+          409)
+            echo "Forgejo action mirror actions/$repo already exists"
+            ;;
+          *)
+            echo "Failed to create actions/$repo mirror from $clone_addr: HTTP $migrate_status" >&2
+            cat "$migrate_json" >&2
+            exit 1
+            ;;
+        esac
+      }
+
+      ensure_mirror() {
+        repo="$1"
+        clone_addr="https://code.forgejo.org/actions/$repo.git"
+        repo_json="$tmpdir/repo-$repo.json"
+
+        repo_status="$(curl --silent --show-error --output "$repo_json" --write-out "%{http_code}" \
+          --cacert "$SSL_CERT_FILE" \
+          --header "@$auth_header" \
+          --header "Accept: application/json" \
+          "$API/repos/actions/$repo")"
+
+        case "$repo_status" in
+          200)
+            mirror="$(jq -r '.mirror // false' "$repo_json")"
+            original_url="$(jq -r '.original_url // ""' "$repo_json")"
+            if [ "$mirror" != "true" ]; then
+              echo "actions/$repo exists but is not a mirror; refusing to replace it" >&2
               exit 1
-              ;;
-          esac
-          ;;
-        *)
-          echo "Failed to check actions/git-pages repository: HTTP $repo_status" >&2
-          cat "$tmpdir/repo.json" >&2
-          exit 1
-          ;;
-      esac
+            fi
+            if [ "$original_url" != "$clone_addr" ]; then
+              if [ -z "$original_url" ]; then
+                echo "actions/$repo mirror exists, but Forgejo did not report original_url; refusing to replace it blindly" >&2
+                exit 1
+              fi
+
+              echo "Replacing actions/$repo mirror source: $original_url -> $clone_addr"
+              delete_status="$(curl --silent --show-error --output "$tmpdir/delete-$repo.json" --write-out "%{http_code}" \
+                --request DELETE \
+                --cacert "$SSL_CERT_FILE" \
+                --header "@$auth_header" \
+                "$API/repos/actions/$repo")"
+              if [ "$delete_status" != "204" ]; then
+                echo "Failed to delete actions/$repo before recreating mirror: HTTP $delete_status" >&2
+                cat "$tmpdir/delete-$repo.json" >&2
+                exit 1
+              fi
+              create_mirror "$repo"
+            else
+              echo "Forgejo action mirror actions/$repo already exists from $clone_addr"
+            fi
+            ;;
+          404)
+            create_mirror "$repo"
+            ;;
+          *)
+            echo "Failed to check actions/$repo repository: HTTP $repo_status" >&2
+            cat "$repo_json" >&2
+            exit 1
+            ;;
+        esac
+      }
+
+      for repo in ${lib.escapeShellArgs actionMirrorRepos}; do
+        ensure_mirror "$repo"
+      done
     '';
     serviceConfig = {
       Type = "oneshot";
