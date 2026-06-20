@@ -44,6 +44,7 @@ let
     zip
     zstd
   ];
+  localCaBundle = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
   forgejoWithGitPagesPreviewAuth = pkgs.forgejo.overrideAttrs (oldAttrs: {
     pname = "${oldAttrs.pname}-pr-12727";
     patches = (oldAttrs.patches or [ ]) ++ [
@@ -130,6 +131,10 @@ in
         "ubuntu-24.04:docker://catthehacker/ubuntu:act-24.04"
         "ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04"
       ];
+      settings = {
+        container.options = "--mount type=bind,source=/etc/ssl/certs,target=/etc/ssl/certs,readonly";
+        container.valid_volumes = [ "/etc/ssl/certs" ];
+      };
     };
   };
 
@@ -144,6 +149,7 @@ in
       "caddy-cert-trust.service"
       "forgejo.service"
     ];
+    requires = [ "caddy-cert-trust.service" ];
     wants = [
       "caddy-cert-trust.service"
       "forgejo.service"
@@ -153,13 +159,14 @@ in
       User = "gitea-runner";
       Group = "gitea-runner";
     };
-    environment.SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+    environment.SSL_CERT_FILE = localCaBundle;
   };
 
   systemd.services.gitea-runner-ubuntu = {
     after = [
       "caddy-cert-trust.service"
     ];
+    requires = [ "caddy-cert-trust.service" ];
     wants = [
       "caddy-cert-trust.service"
     ];
@@ -168,7 +175,7 @@ in
       User = "gitea-runner";
       Group = "gitea-runner";
     };
-    environment.SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+    environment.SSL_CERT_FILE = localCaBundle;
   };
 
   systemd.services.forgejo = {
