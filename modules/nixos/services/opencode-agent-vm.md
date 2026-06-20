@@ -76,6 +76,16 @@ Important subdirectories:
 
 The init unit, `opencode-agent-vm-init.service`, creates this state before both `microvm@opencode-agent-vm.service` and `microvm-virtiofsd@opencode-agent-vm.service`. This ordering matters because virtiofsd needs the share source directories to exist before the VM starts.
 
+The top-level state directory is owned as `root:kvm` with mode `0775`. The `microvm@opencode-agent-vm.service` runner executes as `microvm:kvm`, so it needs group write access there to create the writable Nix store overlay image on first start. The SSH subdirectories keep narrower ownership and permissions.
+
+The writable Nix store overlay image is:
+
+```text
+/var/lib/opencode-agent-vm/rw-store.img
+```
+
+MicroVM creates this as a sparse 64 GiB ext4 image when it does not already exist. `ls -lh` shows the apparent guest disk size; `du -h` shows the actual host disk blocks consumed.
+
 Generated keypairs:
 
 - `ssh/host/host_to_vm`: host maintenance key used by `opencode-agent-vm-ssh`.
@@ -148,7 +158,9 @@ UID/GID `1000` keeps ownership compatible with the host user for shared project 
 
 The guest user is in `wheel`, and `security.sudo.wheelNeedsPassword = false`. This is intentional: the agent should be able to administer the guest freely. The boundary is the VM, network policy, VM-owned credentials, and explicit shares.
 
-The guest home is a persistent virtiofs share from `/var/lib/opencode-agent-vm/home` mounted at `/home/agent`. The host `/nix/store` is mounted read-only at `/nix/.ro-store` and combined with `writableStoreOverlay = "/nix/.rw-store"` so the guest can use Nix without writing to the host store. `/nix/.rw-store` is a persistent virtiofs share from `/var/lib/opencode-agent-vm/rw-store`, which keeps guest Nix builds and package installs from consuming the tmpfs root filesystem without adding a separate fixed-size VM disk.
+The guest home is a persistent virtiofs share from `/var/lib/opencode-agent-vm/home` mounted at `/home/agent`. The host `/nix/store` is mounted read-only at `/nix/.ro-store` and combined with `writableStoreOverlay = "/nix/.rw-store"` so the guest can use Nix without writing to the host store. `/nix/.rw-store` is backed by the persistent ext4 volume image at `/var/lib/opencode-agent-vm/rw-store.img`, currently sized at 64 GiB. This keeps guest Nix builds and package installs from consuming the tmpfs root filesystem while avoiding virtiofs as the writable overlay upperdir.
+
+The guest trusts the local Caddy root CA through `security.pki.certificateFiles`, using the checked-in `hosts/mini/home-caddy.crt`. This allows tools inside the VM, including `curl`, `git`, and `forgejo-cli`, to verify HTTPS services signed by Caddy's internal CA such as `https://git.local.doreto.com.br`.
 
 The guest includes the GitHub CLI (`gh`) and Forgejo CLI (`forgejo-cli`). Git is configured for the `agent` user through the shared `dog.programs.git` Home Manager module, so the VM gets the same default identity, aliases, ignores, and private include path as the rest of the dotfiles.
 
