@@ -83,6 +83,10 @@ in
       {
         # interface = "wlo1";
         # bind-interfaces = true;
+        # Bind only the configured listen addresses, while still tolerating
+        # late/dynamic addresses such as Tailscale. Without this dnsmasq binds
+        # wildcard :53 and blocks podman/aardvark DNS on per-job networks.
+        bind-dynamic = true;
         listen-address = [
           "::1"
           "127.0.0.1"

@@ -99,18 +99,38 @@ in
     };
   };
 
-  # Runner token must be provisioned manually:
+  # Runner tokens must be provisioned manually:
   # 1. Go to https://git.local.doreto.com.br/admin/actions/runners
   # 2. Copy the registration token
   # 3. sudo install -m 600 -o root /dev/stdin /etc/secrets/forgejo/runner-token
   #    TOKEN=(paste token, then Ctrl+D)
-  services.gitea-actions-runner.instances.mini = {
-    enable = true;
-    url = "https://git.local.doreto.com.br";
-    name = "mini";
-    tokenFile = "/etc/secrets/forgejo/runner-token";
-    labels = [ "nix:host" ];
-    hostPackages = actionRunnerHostPackages;
+  services.gitea-actions-runner.instances = {
+    mini = {
+      enable = true;
+      url = "https://git.local.doreto.com.br";
+      name = "mini";
+      tokenFile = "/etc/secrets/forgejo/runner-token";
+      labels = [ "nix:host" ];
+      hostPackages = actionRunnerHostPackages;
+    };
+
+    # Ubuntu runner: executes action jobs inside containers using
+    # the catthehacker/ubuntu images (which include git, node, and other
+    # common CI tooling). The runner user gets access to the podman socket
+    # via the `podman` supplementary group (handled by the module — podman
+    # provides a Docker-compatible API socket), enabling Docker-in-Docker
+    # workflows (building/pushing images from CI).
+    ubuntu = {
+      enable = true;
+      url = "https://git.local.doreto.com.br";
+      name = "ubuntu";
+      tokenFile = "/etc/secrets/forgejo/runner-token";
+      labels = [
+        "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
+        "ubuntu-24.04:docker://catthehacker/ubuntu:act-24.04"
+        "ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04"
+      ];
+    };
   };
 
   users.groups.gitea-runner = { };
@@ -127,6 +147,21 @@ in
     wants = [
       "caddy-cert-trust.service"
       "forgejo.service"
+    ];
+    serviceConfig = {
+      DynamicUser = lib.mkForce false;
+      User = "gitea-runner";
+      Group = "gitea-runner";
+    };
+    environment.SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+  };
+
+  systemd.services.gitea-runner-ubuntu = {
+    after = [
+      "caddy-cert-trust.service"
+    ];
+    wants = [
+      "caddy-cert-trust.service"
     ];
     serviceConfig = {
       DynamicUser = lib.mkForce false;
