@@ -87,7 +87,7 @@ The new service module can reference `inputs.git-pages.packages.${pkgs.system}.d
 The generated config should be written into the Nix store and passed with `git-pages -config <path>`.
 
 ```toml
-features = ["expiration"]
+features = ["expiration", "preview"]
 log-format = "text"
 
 [server]
