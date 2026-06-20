@@ -179,16 +179,16 @@ in
           exit 1
         fi
 
-        mkdir -p /etc/ssl/certs
-        cp /etc/static/ssl/certs/ca-bundle.crt "$CUSTOM_CA_BUNDLE"
-
-        # Append Caddy cert if not already present
-        if ! grep -q "$(head -1 "$CADDY_CERT")" "$CUSTOM_CA_BUNDLE" 2>/dev/null; then
-          echo "" >> "$CUSTOM_CA_BUNDLE"
-          cat "$CADDY_CERT" >> "$CUSTOM_CA_BUNDLE"
+        if { [ -e "$CUSTOM_CA_BUNDLE" ] || [ -L "$CUSTOM_CA_BUNDLE" ]; } && [ ! -f "$CUSTOM_CA_BUNDLE" ]; then
+          ${pkgs.coreutils}/bin/rm -rf -- "$CUSTOM_CA_BUNDLE"
         fi
 
-        chmod 644 "$CUSTOM_CA_BUNDLE"
+        ${pkgs.coreutils}/bin/mkdir -p /etc/ssl/certs
+        ${pkgs.coreutils}/bin/install -m 0644 /etc/static/ssl/certs/ca-bundle.crt "$CUSTOM_CA_BUNDLE"
+
+        # Rebuild from the static bundle each run, then append Caddy's root.
+        printf '\n' >> "$CUSTOM_CA_BUNDLE"
+        ${pkgs.coreutils}/bin/cat "$CADDY_CERT" >> "$CUSTOM_CA_BUNDLE"
       '';
     in
     {
