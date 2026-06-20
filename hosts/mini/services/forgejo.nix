@@ -148,11 +148,13 @@ in
   systemd.services.forgejo-action-mirror-setup = {
     description = "Create local git-pages Forgejo Action mirror";
     after = [
+      "network-online.target"
       "forgejo.service"
       "caddy.service"
       "caddy-cert-trust.service"
     ];
     wants = [
+      "network-online.target"
       "caddy.service"
       "caddy-cert-trust.service"
     ];
@@ -168,10 +170,29 @@ in
     script = ''
       set -euo pipefail
 
-      API="https://git.local.doreto.com.br/api/v1"
+      HOST="git.local.doreto.com.br"
+      API="https://$HOST/api/v1"
       umask 077
       tmpdir="$(mktemp -d)"
       trap 'rm -rf "$tmpdir"' EXIT
+
+      ready_status=""
+      for attempt in $(seq 1 60); do
+        ready_status="$(curl --silent --show-error --output "$tmpdir/version.json" --write-out "%{http_code}" \
+          --cacert "$SSL_CERT_FILE" \
+          "$API/version" 2>"$tmpdir/version.err" || true)"
+        if [ "$ready_status" = "200" ]; then
+          break
+        fi
+        sleep 2
+      done
+
+      if [ "$ready_status" != "200" ]; then
+        echo "Forgejo API did not become ready at $API: HTTP $ready_status" >&2
+        cat "$tmpdir/version.err" >&2
+        cat "$tmpdir/version.json" >&2
+        exit 1
+      fi
 
       auth_header="$tmpdir/authorization-header"
       {
