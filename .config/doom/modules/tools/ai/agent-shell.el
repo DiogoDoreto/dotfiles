@@ -44,9 +44,10 @@
 
   (defun +dd/agent-shell-submit ()
     (interactive)
-    (shell-maker-submit)
-    (comint-previous-prompt 1)
-    (recenter 0))
+    (save-excursion
+      (shell-maker-submit)
+      (comint-previous-prompt 1)
+      (recenter 0)))
 
   (map! :map agent-shell-mode-map
         :ni "<up>" #'previous-line
