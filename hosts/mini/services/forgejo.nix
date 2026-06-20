@@ -18,6 +18,32 @@ let
     "setup-python"
     "upload-artifact"
   ];
+  actionRunnerHostPackages = with pkgs; [
+    bash
+    coreutils
+    curl
+    diffutils
+    file
+    findutils
+    gawk
+    gitMinimal
+    gnugrep
+    gnupatch
+    gnused
+    gnutar
+    gzip
+    jq
+    nix
+    nodejs
+    openssh
+    rsync
+    unzip
+    wget
+    which
+    xz
+    zip
+    zstd
+  ];
   forgejoWithGitPagesPreviewAuth = pkgs.forgejo.overrideAttrs (oldAttrs: {
     pname = "${oldAttrs.pname}-pr-12727";
     patches = (oldAttrs.patches or [ ]) ++ [
@@ -84,6 +110,7 @@ in
     name = "mini";
     tokenFile = "/etc/secrets/forgejo/runner-token";
     labels = [ "nix:host" ];
+    hostPackages = actionRunnerHostPackages;
   };
 
   users.groups.gitea-runner = { };
@@ -101,7 +128,6 @@ in
       "caddy-cert-trust.service"
       "forgejo.service"
     ];
-    path = [ pkgs.rsync ];
     serviceConfig = {
       DynamicUser = lib.mkForce false;
       User = "gitea-runner";
