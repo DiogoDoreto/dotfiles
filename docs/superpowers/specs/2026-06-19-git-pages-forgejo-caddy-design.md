@@ -10,6 +10,8 @@ Add a `git-pages` static site service to the `mini` host and integrate it with t
 
 The preferred publishing path is Forgejo Actions using a local mirror of `git-pages/action@v2` at `actions/git-pages@v2`. Forgejo's action resolver must point `DEFAULT_ACTIONS_URL` at local Forgejo so unqualified `actions/...` references resolve to `git.local.doreto.com.br`, not an external action host. This supports generated static sites, repository-matching wildcard authorization through Forgejo's automatic action token, and optional pull request preview deployments without relying on external action references at workflow runtime.
 
+Pull request preview authorization also requires Forgejo's `/api/v1/actions/run` endpoint. The mini host temporarily patches the packaged Forgejo 15.0.2 derivation with Forgejo PR 12727 until nixpkgs ships a Forgejo release that includes that endpoint.
+
 ## Goals
 
 - Serve user and project static sites from repositories hosted on `git.local.doreto.com.br`.
@@ -36,7 +38,7 @@ The preferred publishing path is Forgejo Actions using a local mirror of `git-pa
 | `hosts/mini/flake.nix` | Add upstream `git-pages` as a flake input and pass it through existing `inputs`. |
 | `hosts/mini/_variables.nix` | Add localhost ports for `git-pages` pages, Caddy ask, and metrics listeners. |
 | `hosts/mini/services/git-pages.nix` | New NixOS module for package, config file, state directory, and systemd service. |
-| `hosts/mini/services/forgejo.nix` | Configure Forgejo Actions to resolve unqualified actions locally and add idempotent setup for the local `actions/git-pages` pull mirror. |
+| `hosts/mini/services/forgejo.nix` | Patch Forgejo with PR 12727 for `git-pages` preview authorization, configure Forgejo Actions to resolve unqualified actions locally, and add idempotent setup for the local `actions/git-pages` pull mirror. |
 | `hosts/mini/caddy.nix` | Add wildcard Pages virtual hosts that reverse proxy to `git-pages`. |
 | `hosts/mini/configuration.nix` | Import `./services/git-pages.nix`. |
 | `hosts/mini/backup.nix` | Include `/var/lib/git-pages` in the Borg include patterns. |
@@ -81,6 +83,8 @@ git-pages = {
 ```
 
 The new service module can reference `inputs.git-pages.packages.${pkgs.system}.default`. The host already passes `inputs` through `specialArgs`, so no new special-argument plumbing is needed.
+
+For Forgejo itself, keep the override local to `hosts/mini/services/forgejo.nix`: start from `pkgs.forgejo`, append PR 12727 with `pkgs.fetchpatch`, and set `services.forgejo.package` to that patched derivation. Keep the Forgejo package version at 15.0.2, but name the local derivation with the PR number so targeted evals can distinguish it from the unpatched nixpkgs package. The fetchpatch filter excludes only PR 12727's upstream integration test, which depends on newer test helpers not present in Forgejo 15.0.2; the runtime endpoint and swagger hunks remain included. Remove this override when the packaged Forgejo version includes `/api/v1/actions/run`.
 
 ## Git Pages Config
 
@@ -259,6 +263,7 @@ Before deployment:
 
 - Run `nix flake check ./hosts/mini/`.
 - Build the mini NixOS configuration if feasible.
+- Evaluate `config.services.forgejo.package.version` and the package path/marker to confirm mini is using the PR 12727-patched Forgejo derivation.
 
 After deployment:
 

@@ -7,12 +7,26 @@
 
 let
   vars = import ../_variables.nix;
+  forgejoWithGitPagesPreviewAuth = pkgs.forgejo.overrideAttrs (oldAttrs: {
+    pname = "${oldAttrs.pname}-pr-12727";
+    patches = (oldAttrs.patches or [ ]) ++ [
+      (pkgs.fetchpatch {
+        name = "forgejo-pr-12727-actions-run-api.patch";
+        url = "https://codeberg.org/forgejo/forgejo/pulls/12727.patch";
+        excludes = [ "tests/integration/actions_token_metadata_test.go" ];
+        hash = "sha256-04JxQDnfpXUErpdAfTedjn6QmEIxztMmz9ScimwL+TA=";
+      })
+    ];
+    passthru = (oldAttrs.passthru or { }) // {
+      gitPagesPreviewAuthorizationPatch = "forgejo-pr-12727";
+    };
+  });
 in
 
 {
   services.forgejo = {
     enable = true;
-    package = pkgs.forgejo;
+    package = forgejoWithGitPagesPreviewAuth;
     settings = {
       server = {
         HTTP_ADDR = "127.0.0.1"; # localhost only — Caddy proxies
