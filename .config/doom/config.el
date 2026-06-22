@@ -233,6 +233,7 @@ From: https://karthinks.com/software/emacs-window-management-almanac/#a-window-p
 
 Based on the code of `doom/bump-package-at-point'"
   (interactive "P")
+  (doom-require 'doom-lib 'packages)
   (doom-initialize-packages)
   (cl-destructuring-bind (&key package plist _beg _end)
       (or (doom--package-at-point)
