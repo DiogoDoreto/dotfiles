@@ -8,4 +8,4 @@
 (package! acp :pin "3ddfa907eb7f17949a4a8e731ea5c5241e6cbcb4")
 (package! agent-shell :pin "66afc5787f5a5bbe8ef21f4fc6cd5ff084aa6a1a")
 
-(package! copilot :pin "ab5c58bc969f52f6d75e972658f2c3381c70b4fa")
+(package! copilot :pin "765ddf0a39bd3f7c38718d218679458541bcae21")
