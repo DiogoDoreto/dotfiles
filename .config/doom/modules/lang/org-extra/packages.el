@@ -1,5 +1,4 @@
-;; -*- no-byte-compile: t; -*-
-;;; lang/org-extra/packages.el
+;;; lang/org-extra/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
 
 (package! org-block-capf
   :recipe (:host github :repo "xenodium/org-block-capf")

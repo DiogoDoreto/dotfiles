@@ -1,5 +1,4 @@
-;; -*- no-byte-compile: t; -*-
-;;; $DOOMDIR/packages.el
+;;; $DOOMDIR/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
 
 (package! jsts
   :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
