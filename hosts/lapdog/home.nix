@@ -123,6 +123,13 @@ in
           AddKeysToAgent = "yes";
           IdentityFile = "~/.ssh/id_ed25519_dogdot";
         };
+        "opencode-mini" = {
+          HostName = "10.0.101.2";
+          User = "agent";
+          ProxyCommand = "ssh -W %h:%p dogdot";
+          AddKeysToAgent = "yes";
+          IdentityFile = "~/.ssh/opencode-mini";
+        };
       };
     };
   };
