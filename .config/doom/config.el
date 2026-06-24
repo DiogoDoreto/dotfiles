@@ -378,7 +378,7 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
            " " (size 9 -1 :right)
            " " (mode 16 16 :left :elide)
            ,@(when (require 'ibuffer-vc nil t)
-               '(" " (vc-status 12 :left)))
+               '(" " (vc-status 12 12 :left)))
            " " filename-and-process))))
 
 (with-eval-after-load 'envrc
