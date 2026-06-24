@@ -99,9 +99,9 @@ in
           ServerAliveCountMax = 3;
           HashKnownHosts = false;
           UserKnownHostsFile = "~/.ssh/known_hosts";
-          ControlMaster = "no";
-          ControlPath = "~/.ssh/master-%r@%n:%p";
-          ControlPersist = "no";
+          ControlMaster = "auto";
+          ControlPath = "~/.ssh/cm-%r@%n:%p";
+          ControlPersist = "10m";
         };
         "dogdot" = {
           HostName = "192.168.0.2";
@@ -126,7 +126,7 @@ in
         "opencode-mini" = {
           HostName = "10.0.101.2";
           User = "agent";
-          ProxyCommand = "ssh -W %h:%p dogdot";
+          ProxyJump = "dogdot";
           AddKeysToAgent = "yes";
           IdentityFile = "~/.ssh/opencode-mini";
         };
