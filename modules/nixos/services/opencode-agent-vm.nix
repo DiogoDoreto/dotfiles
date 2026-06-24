@@ -667,12 +667,7 @@ in
             Type = "simple";
             User = cfg.guestUser;
             WorkingDirectory = cfg.workingDirectory;
-            Environment = [
-              "HOME=/home/${cfg.guestUser}"
-              "PATH=/etc/profiles/per-user/${cfg.guestUser}/bin:/run/current-system/sw/bin:/run/wrappers/bin"
-              "USER=${cfg.guestUser}"
-            ];
-            ExecStart = "${pkgs.llm-agents.opencode}/bin/opencode serve --hostname ${cfg.guestAddress} --port ${toString cfg.opencodePort}";
+            ExecStart = "${pkgs.bash}/bin/bash -lc 'exec ${pkgs.llm-agents.opencode}/bin/opencode serve --hostname ${cfg.guestAddress} --port ${toString cfg.opencodePort}'";
             Restart = "on-failure";
             RestartSec = "2s";
           };
