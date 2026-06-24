@@ -128,9 +128,18 @@ in
         "ubuntu-24.04:docker://catthehacker/ubuntu:act-24.04"
         "ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04"
       ];
+      # See `gitea-runner generate-config` for the schema.
       settings = {
         container.options = "--mount type=bind,source=/etc/ssl/certs,target=/etc/ssl/certs,readonly";
         container.valid_volumes = [ "/etc/ssl/certs" ];
+        # Node.js does not read the system CA bundle by default, so the
+        # bind-mounted local CA is ignored by JS-based actions. Point
+        # NODE_EXTRA_CA_CERTS (and SSL_CERT_FILE for everything else) at
+        # the bundle that includes the local Caddy CA.
+        runner.envs = {
+          NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+          SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+        };
       };
     };
   };

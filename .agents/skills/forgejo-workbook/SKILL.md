@@ -151,6 +151,42 @@ journalctl -u gitea-runner-mini.service -n 100 --no-pager
 The runner uses `url = "https://git.local.doreto.com.br"` and must be able to
 verify the local Caddy certificate.
 
+### Runner config schema
+
+The NixOS module's `settings` is freeform YAML passed straight to
+`gitea-runner`. To see the full, authoritative schema (including which fields
+are maps vs lists), generate the example config from the runner binary itself:
+
+```bash
+# Find the runner package path from the running service
+RUNNER_BIN=$(systemctl cat gitea-runner-mini.service \
+  | sed -n 's/.*ExecStart=\([^ ]*\).*/\1/p')
+"$RUNNER_BIN" generate-config | less
+```
+
+Or, without going through systemd:
+
+```bash
+nix eval --raw \
+  ./hosts/mini#nixosConfigurations.dogdot.config.systemd.services.gitea-runner-mini.serviceConfig.ExecStart \
+  | sed -n 's|^\(/nix/store/[^ ]*/bin/gitea-runner\).*|\1|p' \
+  | xargs -I{} {} generate-config
+```
+
+Key gotchas learned from this:
+
+- **Node.js ignores the system CA bundle.** Even with `/etc/ssl/certs`
+  bind-mounted into the job container, JS-based actions fail TLS verification
+  against the local Caddy CA. Set `NODE_EXTRA_CA_CERTS` (and `SSL_CERT_FILE`
+  for good measure) under `runner.envs` pointing at
+  `/etc/ssl/certs/ca-bundle-with-local-ca.crt`:
+  ```nix
+  settings.runner.envs = {
+    NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+    SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
+  };
+  ```
+
 ## Local Action Mirror Setup
 
 `forgejo-action-mirror-setup.service` creates local mirrors under:
