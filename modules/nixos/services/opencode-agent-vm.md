@@ -70,6 +70,8 @@ Important subdirectories:
 
 ```text
 /var/lib/opencode-agent-vm/home/
+/var/lib/opencode-agent-vm/var/lib/
+/var/lib/opencode-agent-vm/var/log/
 /var/lib/opencode-agent-vm/ssh/host/
 /var/lib/opencode-agent-vm/ssh/guest/
 ```
@@ -132,7 +134,17 @@ This keeps the local proxy reachable only from the host. On `mini`, Caddy expose
 
 ## Filesystem Shares
 
-The VM always mounts its VM-owned persistent home and VM SSH key material from `stateDir`. Additional host directory shares are explicit module configuration through `dog.services.opencode-agent-vm.shares`, and the list may be empty.
+The VM always mounts its VM-owned persistent home, persistent `/var/lib`, persistent `/var/log`, and VM SSH key material from `stateDir`. Additional host directory shares are explicit module configuration through `dog.services.opencode-agent-vm.shares`, and the list may be empty.
+
+Persistent guest paths and their host backing:
+
+```text
+/var/lib/opencode-agent-vm/home      -> /home/agent
+/var/lib/opencode-agent-vm/var/lib   -> /var/lib
+/var/lib/opencode-agent-vm/var/log   -> /var/log
+```
+
+`/var/lib` persists service state such as Tailscale device identity (when `guest.tailscale.enable` is true). `/var/log` preserves the guest journal across reboots so post-mortem debugging survives restarts. Both are mounted read-write as root-owned virtiofs shares.
 
 The current `lapdog` test configuration intentionally adds this extra host share:
 
@@ -158,7 +170,7 @@ UID/GID `1000` keeps ownership compatible with the host user for shared project 
 
 The guest user is in `wheel`, and `security.sudo.wheelNeedsPassword = false`. This is intentional: the agent should be able to administer the guest freely. The boundary is the VM, network policy, VM-owned credentials, and explicit shares.
 
-The guest home is a persistent virtiofs share from `/var/lib/opencode-agent-vm/home` mounted at `/home/agent`. The host `/nix/store` is mounted read-only at `/nix/.ro-store` and combined with `writableStoreOverlay = "/nix/.rw-store"` so the guest can use Nix without writing to the host store. `/nix/.rw-store` is backed by the persistent ext4 volume image at `/var/lib/opencode-agent-vm/rw-store.img`, currently sized at 64 GiB. This keeps guest Nix builds and package installs from consuming the tmpfs root filesystem while avoiding virtiofs as the writable overlay upperdir.
+The guest home is a persistent virtiofs share from `/var/lib/opencode-agent-vm/home` mounted at `/home/agent`. `/var/lib` and `/var/log` are similarly backed by `/var/lib/opencode-agent-vm/var/lib` and `/var/lib/opencode-agent-vm/var/log`, preserving service state (e.g. Tailscale identity) and the journal across guest restarts. The host `/nix/store` is mounted read-only at `/nix/.ro-store` and combined with `writableStoreOverlay = "/nix/.rw-store"` so the guest can use Nix without writing to the host store. `/nix/.rw-store` is backed by the persistent ext4 volume image at `/var/lib/opencode-agent-vm/rw-store.img`, currently sized at 64 GiB. This keeps guest Nix builds and package installs from consuming the tmpfs root filesystem while avoiding virtiofs as the writable overlay upperdir.
 
 The guest trusts the local Caddy root CA through `security.pki.certificateFiles`, using the checked-in `hosts/mini/home-caddy.crt`. This allows tools inside the VM, including `curl`, `git`, and `forgejo-cli`, to verify HTTPS services signed by Caddy's internal CA such as `https://git.local.doreto.com.br`.
 

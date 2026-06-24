@@ -113,6 +113,20 @@ let
     mountPoint = "/home/${cfg.guestUser}";
   };
 
+  persistentVarLibShare = {
+    proto = "virtiofs";
+    tag = "agent-var-lib";
+    source = "${cfg.stateDir}/var/lib";
+    mountPoint = "/var/lib";
+  };
+
+  persistentVarLogShare = {
+    proto = "virtiofs";
+    tag = "agent-var-log";
+    source = "${cfg.stateDir}/var/log";
+    mountPoint = "/var/log";
+  };
+
   guestSshShare = {
     proto = "virtiofs";
     tag = "agent-ssh";
@@ -450,6 +464,8 @@ in
 
             ${pkgs.coreutils}/bin/install -d -m 0775 -o root -g kvm ${cfg.stateDir}
             ${pkgs.coreutils}/bin/install -d -m 0755 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/home
+            ${pkgs.coreutils}/bin/install -d -m 0755 -o root -g root ${cfg.stateDir}/var/lib
+            ${pkgs.coreutils}/bin/install -d -m 0755 -o root -g systemd-journal ${cfg.stateDir}/var/log
             ${pkgs.coreutils}/bin/install -d -m 0700 -o ${cfg.controlUser} -g "$host_group" ${cfg.stateDir}/ssh/host
             ${pkgs.coreutils}/bin/install -d -m 0700 -o ${toString cfg.guestUid} -g ${toString cfg.guestGid} ${cfg.stateDir}/ssh/guest
 
@@ -738,6 +754,8 @@ in
               readOnly = true;
             }
             persistentHomeShare
+            persistentVarLibShare
+            persistentVarLogShare
             guestSshShare
           ]
           ++ map userShareToMicrovmShare cfg.shares;
