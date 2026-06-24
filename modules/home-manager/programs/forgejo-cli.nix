@@ -10,15 +10,19 @@ with lib;
 let
   cfg = config.dog.programs.forgejo-cli;
 
-  # PR #473: add env attribute to clap derives so FJ_HOST and FJ_STYLE env vars are recognised
-  forgejo-cli = pkgs.forgejo-cli.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [
-      (pkgs.fetchpatch {
-        url = "https://codeberg.org/forgejo-contrib/forgejo-cli/pulls/473.patch";
-        hash = "sha256-sD3hJsFGGVybvyEilt8SZb5AuErOOW5ZL+oY8jbbJBU=";
-      })
-    ];
-  });
+  forgejo-cli =
+    if cfg.host != null then
+      pkgs.symlinkJoin {
+        name = "forgejo-cli";
+        paths = [ pkgs.forgejo-cli ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram "$out/bin/fj" \
+            --add-flags "--host ${escapeShellArg cfg.host}"
+        '';
+      }
+    else
+      pkgs.forgejo-cli;
 in
 {
   options.dog.programs.forgejo-cli = {
@@ -28,15 +32,11 @@ in
       type = types.nullOr types.str;
       default = null;
       example = "codeberg.org";
-      description = "The Forgejo host to target. Sets the FJ_HOST environment variable when non-null.";
+      description = "The Forgejo host to target. Hardcodes the `--host` flag on every `fj` invocation when non-null.";
     };
   };
 
   config = mkIf cfg.enable {
     home.packages = [ forgejo-cli ];
-
-    home.sessionVariables = {
-      FJ_HOST = mkIf (cfg.host != null) cfg.host;
-    };
   };
 }
