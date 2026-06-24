@@ -42,7 +42,7 @@ Related config:
 | `127.0.0.1:3000` | Forgejo HTTP listener, local only |
 | `git.local.doreto.com.br:2222` | Forgejo built-in SSH server |
 | `https://*.pages.local.doreto.com.br` | git-pages published sites |
-| `https://*.preview.pages.local.doreto.com.br` | git-pages preview sites |
+| `https://*.pages-preview.local.doreto.com.br` | git-pages preview sites |
 
 Use the canonical hostname for user-visible behavior and action resolution.
 Only use localhost probes when explicitly isolating Forgejo from Caddy/DNS.
@@ -283,7 +283,7 @@ https://<user>.pages.local.doreto.com.br/<repo>/
 Preview sites use:
 
 ```text
-https://<user>.preview.pages.local.doreto.com.br/<repo>@<pr-number>/
+https://<user>.pages-preview.local.doreto.com.br/<repo>@<pr-number>/
 ```
 
 ## OAuth / Authentik Login

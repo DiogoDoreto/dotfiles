@@ -96,7 +96,7 @@ in
           reverse_proxy 127.0.0.1:${p.gitPages}
         '';
       };
-      "*.preview.pages.local.doreto.com.br" = {
+      "*.pages-preview.local.doreto.com.br" = {
         extraConfig = ''
           tls internal
           reverse_proxy 127.0.0.1:${p.gitPages}

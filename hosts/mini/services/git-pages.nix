@@ -15,7 +15,7 @@ let
 
     [[wildcard]]
     domain = "pages.local.doreto.com.br"
-    preview-domain = "preview.pages.local.doreto.com.br"
+    preview-domain = "pages-preview.local.doreto.com.br"
     clone-url = "https://git.local.doreto.com.br/<user>/<project>.git"
     index-repo = "pages"
     index-repo-branch = "main"
