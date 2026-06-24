@@ -94,9 +94,6 @@ in
         ENABLED = true;
         DEFAULT_ACTIONS_URL = "https://git.local.doreto.com.br";
       };
-      migrations = {
-        ALLOWED_DOMAINS = "code.forgejo.org";
-      };
     };
   };
 
