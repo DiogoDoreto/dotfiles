@@ -613,6 +613,17 @@ in
             PasswordAuthentication = false;
             PermitRootLogin = "no";
           };
+          hostKeys = [
+            {
+              type = "ed25519";
+              path = "/var/lib/ssh/ssh_host_ed25519_key";
+            }
+            {
+              type = "rsa";
+              bits = 4096;
+              path = "/var/lib/ssh/ssh_host_rsa_key";
+            }
+          ];
         };
 
         services.tailscale.enable = cfg.guest.tailscale.enable;

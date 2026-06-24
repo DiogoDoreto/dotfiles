@@ -28,7 +28,7 @@ http://127.0.0.1:32860
 
 `opencode-agent-vm-public-key` prints the VM outbound SSH public key. Add this key manually to GitHub, Forgejo, or other Git remotes when the agent needs SSH access. The private key stays under `/var/lib/opencode-agent-vm/ssh/guest/` and is mounted into the guest read-only.
 
-`opencode-agent-vm-ssh` logs into the guest as `agent` using the host-to-VM maintenance key generated for this VM. Host key checking is disabled because this VM is expected to be replaceable.
+`opencode-agent-vm-ssh` logs into the guest as `agent` using the host-to-VM maintenance key generated for this VM. Host key checking is disabled for the maintenance key because the VM is replaceable. Guest SSH host keys live under `/var/lib/ssh/` (persisted via the `agent-var-lib` virtiofs share), so other clients that connect to the guest and save its host key will not see fingerprint changes across VM recreations.
 
 Useful logs:
 
