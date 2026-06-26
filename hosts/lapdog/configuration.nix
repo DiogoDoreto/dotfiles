@@ -198,11 +198,11 @@
     ];
   };
 
-  # Ship lapdog's journal to mini's VictoriaLogs
+  # Ship lapdog's journal to mini's VictoriaLogs via Caddy
   services.journald.upload = {
     enable = true;
     settings.Upload = {
-      URL = "http://192.168.0.2:9428/insert/journald";
+      URL = "https://logs.local.doreto.com.br/insert/journald";
     };
   };
 
