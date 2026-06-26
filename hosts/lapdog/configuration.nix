@@ -40,6 +40,9 @@
       enable = true;
       allowedTCPPorts = [ ];
       allowedUDPPorts = [ ];
+      extraInputRules = ''
+        ip saddr 192.168.0.2 tcp dport 9100 accept
+      '';
     };
   };
 
@@ -202,8 +205,6 @@
       URL = "http://192.168.0.2:9428/insert/journald";
     };
   };
-
-  networking.firewall.allowedTCPPorts = [ 9100 ];
 
   services.tailscale.enable = true;
 

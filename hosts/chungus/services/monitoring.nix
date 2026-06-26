@@ -46,10 +46,10 @@ in
     };
   };
 
-  # Allow mini (192.168.0.2) to scrape the exporters on this host
-  networking.firewall.allowedTCPPorts = [
-    nodeExporterPort
-    systemdExporterPort
-    nvidiaExporterPort
-  ];
+  # Allow only mini (192.168.0.2) to scrape the exporters on this host.
+  networking.firewall.extraCommands = ''
+    iptables -A nixos-fw -p tcp -s 192.168.0.2 --dport ${toString nodeExporterPort} -j nixos-fw-accept
+    iptables -A nixos-fw -p tcp -s 192.168.0.2 --dport ${toString systemdExporterPort} -j nixos-fw-accept
+    iptables -A nixos-fw -p tcp -s 192.168.0.2 --dport ${toString nvidiaExporterPort} -j nixos-fw-accept
+  '';
 }
