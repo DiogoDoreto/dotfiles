@@ -275,6 +275,8 @@ in
     dog.programs.emacs.doom.preInit = ''
       ;; Restore evil-collection's default before Doom initializes evil-collection.
       (setq evil-collection-repl-submit-state 'normal)
+
+      (setq parinfer-rust-library "${pkgs.parinfer-rust-emacs}/lib/libparinfer_rust.so")
     '';
 
     programs.emacs = {
@@ -289,7 +291,6 @@ in
     };
 
     home.packages = with pkgs; [
-      sqlite # for org-roam
       ripgrep
 
       # spell checking

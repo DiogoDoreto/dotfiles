@@ -26,7 +26,8 @@
 
 ;;; Tramp
 
-(setq tramp-use-connection-share t
+(setq tramp-completion-use-auth-sources nil
+      tramp-use-connection-share t
       tramp-ssh-controlmaster-options (concat "-o ControlPath=/tmp/ssh-ControlPath-%%r@%%h:%%p "
                                               "-o ControlMaster=auto -o ControlPersist=yes"))
 
