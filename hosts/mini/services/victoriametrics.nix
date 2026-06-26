@@ -44,13 +44,9 @@ in
   services.victoriametrics = {
     enable = true;
     listenAddress = "127.0.0.1:${p.victoriametrics}";
-    retentionPeriod = 6; # months
+    retentionPeriod = "6"; # months
     extraOptions = [
       "-promscrape.config=${scrapeConfig}"
     ];
   };
-
-  systemd.tmpfiles.rules = [
-    "d /var/lib/victoriametrics 0750 victoriametrics victoriametrics -"
-  ];
 }

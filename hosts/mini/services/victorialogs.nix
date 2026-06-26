@@ -11,7 +11,7 @@ in
     #   sudo podman pull docker.io/victoriametrics/victoria-logs:latest
     #   sudo systemctl restart podman-victorialogs.service
     image = "docker.io/victoriametrics/victoria-logs:latest";
-    ports = [ "127.0.0.1:${p.victorialogs}:9428" ];
+    ports = [ "0.0.0.0:${p.victorialogs}:9428" ];
     volumes = [
       "/var/lib/victorialogs:/vlogs"
     ];
@@ -32,4 +32,9 @@ in
       URL = "http://127.0.0.1:${p.victorialogs}/insert/journald";
     };
   };
+
+  # Allow LAN hosts to ship journals directly while keeping the port closed elsewhere.
+  networking.firewall.extraInputRules = ''
+    ip saddr 192.168.0.0/24 tcp dport ${p.victorialogs} accept
+  '';
 }
