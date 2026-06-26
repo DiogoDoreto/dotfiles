@@ -5,7 +5,6 @@ let
   nodeExporterPort = miniVars.ports.nodeExporter;
   systemdExporterPort = miniVars.ports.systemdExporter;
   nvidiaExporterPort = miniVars.ports.nvidiaExporter;
-  victorialogsPort = miniVars.ports.victorialogs;
 in
 
 {
@@ -38,11 +37,11 @@ in
     port = nvidiaExporterPort;
   };
 
-  # Ship chungus journal logs to mini's VictoriaLogs instance
+  # Ship chungus journal logs to mini's VictoriaLogs via Caddy
   services.journald.upload = {
     enable = true;
     settings.Upload = {
-      URL = "http://192.168.0.2:${toString victorialogsPort}/insert/journald";
+      URL = "https://logs.local.doreto.com.br/insert/journald";
     };
   };
 

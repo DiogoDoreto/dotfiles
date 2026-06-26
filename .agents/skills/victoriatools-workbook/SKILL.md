@@ -12,15 +12,14 @@ description: >
 
 ## Architecture Overview
 
-Mini runs VictoriaMetrics (native NixOS service) and VictoriaLogs (Podman
-container) as the central monitoring hub. Each host ships its own metrics and
-logs to mini:
+Mini runs VictoriaMetrics and VictoriaLogs (both native NixOS services) as
+the central monitoring hub. Each host ships its own metrics and logs to mini:
 
 | Host | IP | Exports | Ships |
 |---|---|---|---|
 | mini | 192.168.0.2 | node_exporter (127.0.0.1), systemd_exporter (127.0.0.1) | journal → VictoriaLogs on 127.0.0.1 |
-| chungus | 192.168.0.3 | node_exporter (0.0.0.0), systemd_exporter (0.0.0.0), nvidia_smi (0.0.0.0) | journal → VictoriaLogs on 192.168.0.2 |
-| lapdog | DHCP | node_exporter (0.0.0.0) | journal → VictoriaLogs on 192.168.0.2 |
+| chungus | 192.168.0.3 | node_exporter (0.0.0.0), systemd_exporter (0.0.0.0), nvidia_smi (0.0.0.0) | journal → VictoriaLogs via Caddy (logs.local.doreto.com.br) |
+| lapdog | DHCP | node_exporter (0.0.0.0) | journal → VictoriaLogs via Caddy (logs.local.doreto.com.br) |
 
 All remote exporters are scraped by VictoriaMetrics over the LAN. Remote
 journald upload targets mini's VictoriaLogs directly. Both services are
@@ -31,7 +30,7 @@ Config files:
 | File | Purpose |
 |---|---|
 | `hosts/mini/services/victoriametrics.nix` | VictoriaMetrics service, scrape config, retention |
-| `hosts/mini/services/victorialogs.nix` | VictoriaLogs Podman container, firewall rules, mini's own journald upload |
+| `hosts/mini/services/victorialogs.nix` | VictoriaLogs service, firewall rules, mini's own journald upload |
 | `hosts/mini/services/monitoring-exporters.nix` | node_exporter + systemd_exporter on mini |
 | `hosts/chungus/services/monitoring.nix` | Exporters, journald upload, firewall on chungus |
 | `hosts/lapdog/configuration.nix` (lines 179–207) | node_exporter + journald upload on lapdog |
@@ -43,7 +42,7 @@ Config files:
 | Port | Service | Listens On |
 |---|---|---|
 | `8428` | VictoriaMetrics HTTP | 127.0.0.1 (mini) |
-| `9428` | VictoriaLogs HTTP | 0.0.0.0 (mini, via Podman port mapping) |
+| `9428` | VictoriaLogs HTTP | 127.0.0.1 (mini) |
 | `9100` | node_exporter | 127.0.0.1 (mini), 0.0.0.0 (chungus, lapdog) |
 | `9558` | systemd_exporter | 127.0.0.1 (mini), 0.0.0.0 (chungus) |
 | `9835` | nvidia_smi exporter | 0.0.0.0 (chungus) |
@@ -63,20 +62,19 @@ wildcard in `caddy.nix`.
 | Path | Purpose |
 |---|---|
 | `/var/lib/victoriametrics/` | TSDB data (NixOS service data directory) |
-| `/var/lib/victorialogs/` | VictoriaLogs storage, bind-mounted into container at `/vlogs` |
+| `/var/lib/victorialogs/` | VictoriaLogs storage (systemd StateDirectory) |
 
 ## First-Response Checklist
 
 ```bash
 # Service health
 systemctl status victoriametrics.service
-systemctl status podman-victorialogs.service caddy.service
+systemctl status victorialogs.service caddy.service
 
 # Is VictoriaMetrics listening?
 ss -tlnp | grep 8428
 
-# Is VictoriaLogs container running and port bound?
-sudo podman ps -a --filter name=victorialogs
+# Is VictoriaLogs listening?
 ss -tlnp | grep 9428
 
 # VictoriaMetrics self-metrics (local)
@@ -97,21 +95,25 @@ curl -s --cacert /etc/ssl/certs/ca-bundle-with-local-ca.crt \
 
 # Recent logs for both services
 journalctl -u victoriametrics.service -n 50 --no-pager
-journalctl -u podman-victorialogs.service -n 50 --no-pager
+journalctl -u victorialogs.service -n 50 --no-pager
 ```
 
 Key things to look for:
 
-- **`podman-victorialogs.service` not found** — the container was never created.
-  Check that `virtualisation.oci-containers.containers.victorialogs` is enabled
-  in the Nix config and that the host was switched.
+- **`victorialogs.service` not found** — the service module is not enabled.
+  Check that `services.victorialogs.enable = true` is set in the Nix config
+  and that the host was switched.
 - **502 from Caddy for metrics or logs endpoints** — the backend service is not
   listening or crashed. Check `ss -tlnp` and the service statuses above.
 - **`curl: (6) Could not resolve host`** — DNS issue. Ensure dnsmasq on mini is
   serving `*.local.doreto.com.br`.
-- **VictoriaLogs port 9428 unreachable from chungus/lapdog** — firewall rule on
-  mini may not be applied. Check `iptables -L nixos-fw` and verify the IP is in
-  `192.168.0.0/24`.
+- **VictoriaLogs port 9428 unreachable from remote hosts** — VictoriaLogs binds to
+  127.0.0.1 only. Remote hosts must ship journals through Caddy at
+  `https://logs.local.doreto.com.br/insert/journald`. Verify the journald upload
+  URL on the shipping host:
+  ```bash
+  systemctl cat systemd-journal-upload.service | grep URL
+  ```
 - **Chungus exporters unreachable from mini** — chungus firewall may be blocking.
   Check `iptables -L nixos-fw` on chungus and verify the source IP `192.168.0.2`
   is allowed.
@@ -174,52 +176,34 @@ ip addr show | grep 'inet 192.168'
 # Or assign a static DHCP lease in mini's dnsmasq config.
 ```
 
-## VictoriaLogs (Podman Container)
+## VictoriaLogs (NixOS Service)
 
-VictoriaLogs runs as an OCI container managed by the NixOS `virtualisation.oci-containers`
-module. It is **not** a native NixOS service — the systemd unit is
-`podman-victorialogs.service` (auto-generated by the module).
+VictoriaLogs runs as a native NixOS service (`services.victorialogs`) managed
+by systemd as `victorialogs.service`. The package version is pinned by the
+nixpkgs revision in the flake input.
 
-### Upgrading VictoriaLogs
-
-Since `image = "docker.io/victoriametrics/victoria-logs:latest"`, the container
-uses whatever `latest` was pulled at creation time. To upgrade:
+### Service Commands
 
 ```bash
-# Pull the new image
-sudo podman pull docker.io/victoriametrics/victoria-logs:latest
+# View service logs
+journalctl -u victorialogs.service -n 50 --no-pager
 
-# Restart the container to use the new image
-sudo systemctl restart podman-victorialogs.service
+# Follow live logs
+journalctl -u victorialogs.service -f
 
-# Verify
-sudo podman ps --filter name=victorialogs
-curl -s http://127.0.0.1:9428/health
-```
+# Restart the service
+sudo systemctl restart victorialogs.service
 
-No Nix rebuild is needed for image upgrades — only when changing container
-parameters (ports, volumes, cmd) in the Nix config.
-
-### Container Commands
-
-```bash
-# View container logs (same as journalctl -u podman-victorialogs.service)
-sudo podman logs victorialogs
-
-# Shell into the container
-sudo podman exec -it victorialogs /bin/sh
-
-# Check storage usage inside the container
-sudo podman exec victorialogs du -sh /vlogs
-
-# Check container resource usage
-sudo podman stats --no-stream victorialogs
+# Check storage usage
+sudo du -sh /var/lib/victorialogs/
 ```
 
 ## Journald Upload (Log Shipping)
 
-Both chungus and lapdog ship their systemd journals to mini's VictoriaLogs via
-`services.journald.upload`. Mini also ships its own journal to localhost.
+Chungus and lapdog ship their systemd journals to mini's VictoriaLogs through
+Caddy at `https://logs.local.doreto.com.br/insert/journald`. Mini ships its own
+journal to localhost directly. Caddy provides TLS termination with its internal
+CA, which both chungus and lapdog trust via `security.pki.certificateFiles`.
 
 ### Checking Journal Upload Status
 
@@ -311,7 +295,6 @@ curl -s 'http://127.0.0.1:9428/select/logsql/query' \
 
 | Host | Rule | Purpose |
 |---|---|---|
-| mini | `192.168.0.0/24 tcp dport 9428 accept` | Allow LAN journald upload to VictoriaLogs |
 | chungus | `192.168.0.2 tcp dport 9100,9558,9835 accept` | Allow mini to scrape chungus exporters |
 | lapdog | `192.168.0.2 tcp dport 9100 accept` | Allow mini to scrape lapdog node_exporter |
 
