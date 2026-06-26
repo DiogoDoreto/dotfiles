@@ -165,12 +165,12 @@ in
       };
       "metrics.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.victoriametrics}
+          reverse_proxy 127.0.0.1:${p.victoriametrics}
         '';
       };
       "logs.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy localhost:${p.victorialogs}
+          reverse_proxy 127.0.0.1:${p.victorialogs}
         '';
       };
     };

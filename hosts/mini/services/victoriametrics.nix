@@ -12,7 +12,7 @@ let
     scrape_configs:
       - job_name: node
         static_configs:
-          - targets: ["localhost:${p.nodeExporter}"]
+          - targets: ["127.0.0.1:${p.nodeExporter}"]
             labels:
               host: mini
           - targets: ["192.168.0.3:${p.nodeExporter}"]
@@ -25,7 +25,7 @@ let
 
       - job_name: systemd
         static_configs:
-          - targets: ["localhost:${p.systemdExporter}"]
+          - targets: ["127.0.0.1:${p.systemdExporter}"]
             labels:
               host: mini
           - targets: ["192.168.0.3:${p.systemdExporter}"]
