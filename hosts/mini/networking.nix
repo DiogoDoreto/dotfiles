@@ -95,9 +95,7 @@ in
         ];
         address = [
           "/${config.networking.hostName}.home/${static-ip}"
-          "/${config.networking.hostName}.home/${tailscale-ip}"
-          "/.local.doreto.com.br/${static-ip}"
-          "/.local.doreto.com.br/${tailscale-ip}"
+          "/local.doreto.com.br/${static-ip}"
           "/chungus.home/192.168.0.3"
           "/chungus-proxy.home/${vars.chungusProxyIp}"
         ];
