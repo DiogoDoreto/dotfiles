@@ -2,7 +2,6 @@
 
 let
   vars = import ./_variables.nix;
-  chungusProxyIp = "192.168.0.4"; # dummy interface dedicated to chungus proxy
   lanGateway = "192.168.0.1";
   lanInterface = "wlo1";
   dnsUpstreams = [
@@ -91,7 +90,7 @@ in
           "::1"
           "127.0.0.1"
           static-ip
-          chungusProxyIp
+          vars.chungusProxyIp
           tailscale-ip
         ];
         address = [
@@ -100,7 +99,7 @@ in
           "/.local.doreto.com.br/${static-ip}"
           "/.local.doreto.com.br/${tailscale-ip}"
           "/chungus.home/192.168.0.3"
-          "/chungus-proxy.home/${chungusProxyIp}"
+          "/chungus-proxy.home/${vars.chungusProxyIp}"
         ];
 
         # Accept DNS queries only from hosts whose address is on a local subnet
@@ -125,7 +124,7 @@ in
   };
 
   systemd.services.chungus-proxy-iface = {
-    description = "dummy interface + proxy ARP for chungus proxy (${chungusProxyIp})";
+    description = "dummy interface + proxy ARP for chungus proxy (${vars.chungusProxyIp})";
     wantedBy = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
@@ -134,7 +133,7 @@ in
       RemainAfterExit = true;
       ExecStart = pkgs.writeShellScript "chungus-proxy-iface-up" ''
         ${pkgs.iproute2}/bin/ip link add chungus-proxy type dummy 2>/dev/null || true
-        ${pkgs.iproute2}/bin/ip addr add ${chungusProxyIp}/32 dev chungus-proxy 2>/dev/null || true
+        ${pkgs.iproute2}/bin/ip addr add ${vars.chungusProxyIp}/32 dev chungus-proxy 2>/dev/null || true
         ${pkgs.iproute2}/bin/ip link set chungus-proxy up
         ${pkgs.procps}/bin/sysctl -w net.ipv4.conf.wlo1.proxy_arp=1
       '';

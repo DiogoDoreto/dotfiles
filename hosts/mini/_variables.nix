@@ -1,4 +1,6 @@
 {
+  chungusProxyIp = "192.168.0.4";
+
   ports = {
     # standard / well-known
     dns = 53;

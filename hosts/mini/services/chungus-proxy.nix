@@ -16,6 +16,7 @@
 { pkgs, ... }:
 
 let
+  vars = import ../_variables.nix;
   chungusIp = "192.168.0.3";
   chungusMac = "74:56:3c:41:57:85"; # enp4s0 Ethernet MAC
 
@@ -65,7 +66,7 @@ in
           description = "WoL proxy socket → chungus:${toString port}";
           wantedBy = [ "sockets.target" ];
           socketConfig = {
-            ListenStream = "192.168.0.4:${toString port}";
+            ListenStream = "${vars.chungusProxyIp}:${toString port}";
             Accept = true;
             NoDelay = true;
             KeepAlive = true;
