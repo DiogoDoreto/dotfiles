@@ -57,21 +57,24 @@ in
           ];
 
           outputs = [
-            ({
-              name = "http";
-              match = "journal.*";
-              host = cfg.host;
-              port = cfg.port;
-              uri = ingestUri;
-              format = "json_lines";
-              json_date_key = "date";
-              json_date_format = "iso8601";
-              retry_limit = false;
-              "storage.total_limit_size" = "100M";
-            } // lib.optionalAttrs cfg.tls {
-              tls = "on";
-              "tls.verify" = "on";
-            })
+            (
+              {
+                name = "http";
+                match = "journal.*";
+                host = cfg.host;
+                port = cfg.port;
+                uri = ingestUri;
+                format = "json_lines";
+                json_date_key = "date";
+                json_date_format = "iso8601";
+                retry_limit = false;
+                "storage.total_limit_size" = "100M";
+              }
+              // lib.optionalAttrs cfg.tls {
+                tls = "on";
+                "tls.verify" = "on";
+              }
+            )
           ];
         };
       };
