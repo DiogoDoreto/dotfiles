@@ -9,6 +9,31 @@ in
     enable = true;
     listenPort = vars.ports.homepage;
     allowedHosts = "home.local.doreto.com.br";
+    settings = {
+      headerStyle = "clean";
+      fullWidth = true;
+      layout = [
+        {
+          Media = {
+            style = "row";
+            columns = 4;
+          };
+        }
+        {
+          Apps = {
+            header = false;
+            style = "row";
+            columns = 4;
+          };
+        }
+        {
+          Downloads = {
+            style = "row";
+            columns = 4;
+          };
+        }
+      ];
+    };
     widgets = [
       {
         resources = {
@@ -29,52 +54,51 @@ in
       {
         Media = [
           {
-            "Photos" = rec {
+            "Photos" = {
               icon = "immich.png";
               href = "https://photos.local.doreto.com.br";
-              ping = href;
             };
           }
           {
             "FreshRSS" = rec {
               icon = "freshrss.png";
               href = "https://freshrss.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
             };
           }
           {
             "Readeck" = rec {
               icon = "readeck.png";
               href = "https://readeck.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
             };
           }
           {
             "Jellyfin" = rec {
               icon = "jellyfin.png";
               href = "https://jellyfin.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
             };
           }
           {
             "NextCloud" = rec {
               icon = "nextcloud.png";
               href = "https://nextcloud.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
             };
           }
           {
             "Calibre" = rec {
               icon = "calibre.png";
               href = "https://calibre.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
             };
           }
           {
             "Audiobooks" = rec {
               icon = "audiobookshelf.png";
               href = "https://audiobook.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
             };
           }
         ];
@@ -82,67 +106,96 @@ in
       {
         Apps = [
           {
-            "HomeAssistant" = rec {
-              icon = "home-assistant.png";
-              href = "https://ha.local.doreto.com.br";
-              ping = href;
-            };
+            Home = [
+              {
+                "HomeAssistant" = rec {
+                  icon = "home-assistant.png";
+                  href = "https://ha.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+              {
+                "Searx" = rec {
+                  icon = "searxng.png";
+                  href = "https://search.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+            ];
           }
           {
-            "OpenCode" = rec {
-              icon = "opencode.png";
-              href = "https://opencode.local.doreto.com.br";
-              ping = href;
-            };
+            Code = [
+              {
+                "OpenCode" = rec {
+                  icon = "opencode.png";
+                  href = "https://opencode.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+              {
+                "Forgejo" = rec {
+                  icon = "forgejo.png";
+                  href = "https://git.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+              {
+                "VSCode" = rec {
+                  icon = "vscode.png";
+                  href = "https://code.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+            ];
           }
           {
-            "Forgejo" = rec {
-              icon = "forgejo.png";
-              href = "https://git.local.doreto.com.br";
-              ping = href;
-            };
+            AI = [
+              {
+                "LibreChat" = rec {
+                  icon = "librechat.png";
+                  href = "https://chat.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+              {
+                "InvokeAI" = {
+                  icon = "midjourney-light.png";
+                  href = "https://invokeai.local.doreto.com.br";
+                };
+              }
+              {
+                "Kokoro TTS" = rec {
+                  icon = "kokoro-web.png";
+                  href = "https://tts.local.doreto.com.br/web/";
+                  siteMonitor = href;
+                };
+              }
+            ];
           }
           {
-            "Authentik" = rec {
-              icon = "authentik.png";
-              href = "https://auth.local.doreto.com.br";
-              ping = href;
-            };
-          }
-          {
-            "Searx" = rec {
-              icon = "searxng.png";
-              href = "https://search.local.doreto.com.br";
-              ping = href;
-            };
-          }
-          {
-            "VSCode" = rec {
-              icon = "vscode.png";
-              href = "https://code.local.doreto.com.br";
-              ping = href;
-            };
-          }
-          {
-            "LibreChat" = rec {
-              icon = "librechat.png";
-              href = "https://chat.local.doreto.com.br";
-              ping = href;
-            };
-          }
-          {
-            "InvokeAI" = rec {
-              icon = "midjourney-light.png";
-              href = "https://invokeai.local.doreto.com.br";
-              ping = href;
-            };
-          }
-          {
-            "Kokoro TTS" = {
-              icon = "kokoro-web.png";
-              href = "https://tts.local.doreto.com.br/web/";
-              ping = "https://tts.local.doreto.com.br";
-            };
+            Admin = [
+              {
+                "Authentik" = rec {
+                  icon = "authentik.png";
+                  href = "https://auth.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+              {
+                "VictoriaLogs" = rec {
+                  icon = "victorialogs.png";
+                  href = "https://logs.local.doreto.com.br/select/vmui/";
+                  siteMonitor = href;
+                };
+              }
+              {
+                "VictoriaMetrics" = rec {
+                  icon = "victoriametrics.png";
+                  href = "https://metrics.local.doreto.com.br/vmui/#/dashboards";
+                  siteMonitor = href;
+                };
+              }
+            ];
           }
         ];
       }
@@ -151,8 +204,9 @@ in
           {
             "qBittorrent" = rec {
               icon = "qbittorrent.png";
+              description = "yarr";
               href = "https://qbit.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
               widget = {
                 type = "qbittorrent";
                 url = href;
@@ -164,7 +218,7 @@ in
               icon = "radarr.png";
               description = "Movies downloader";
               href = "https://radarr.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
               widget = {
                 type = "radarr";
                 url = href;
@@ -177,7 +231,7 @@ in
               icon = "sonarr.png";
               description = "TV Shows downloader";
               href = "https://sonarr.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
               widget = {
                 type = "sonarr";
                 url = href;
@@ -190,7 +244,7 @@ in
               icon = "lidarr.png";
               description = "Music downloader";
               href = "https://lidarr.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
               widget = {
                 type = "lidarr";
                 url = href;
@@ -203,7 +257,7 @@ in
               icon = "prowlarr.png";
               description = "Search torrents";
               href = "https://prowlarr.local.doreto.com.br";
-              ping = href;
+              siteMonitor = href;
             };
           }
         ];
