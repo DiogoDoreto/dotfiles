@@ -47,7 +47,9 @@
       :stream t
       :key #'gptel-api-key-from-auth-source
       :models '(moonshotai/kimi-k2.7-code
-                minimax/minimax-m3))
+                minimax/minimax-m3
+                xiaomi/mimo-v2.5
+                deepseek/deepseek-v4-pro))
     (load! "gptel-openrouter.el")
     (+gptel-openrouter-refresh-model-metadata)
 
