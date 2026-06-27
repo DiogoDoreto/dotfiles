@@ -159,6 +159,8 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  environment.variables.SYSTEMD_PAGER = "";
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [

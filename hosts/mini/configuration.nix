@@ -144,6 +144,8 @@ in
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  environment.variables.SYSTEMD_PAGER = "";
+
   programs.firefox.enable = true;
   programs.fish.enable = true;
   programs.kdeconnect.enable = true;
