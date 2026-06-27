@@ -3,6 +3,12 @@
   "model": "openai/gpt-5.5",
   "small_model": "openai/gpt-5.4-mini",
   "autoupdate": false,
+  "permission": {
+    "external_directory": {
+      "/nix/store/**": "allow",
+      "/etc/nix/inputs/**": "allow",
+    }
+  },
   "provider": {
     "localhost": {
       "npm": "@ai-sdk/openai-compatible",
