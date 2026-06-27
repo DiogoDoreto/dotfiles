@@ -182,6 +182,10 @@ VictoriaLogs runs as a native NixOS service (`services.victorialogs`) managed
 by systemd as `victorialogs.service`. The package version is pinned by the
 nixpkgs revision in the flake input.
 
+VictoriaLogs query output is newline-delimited JSON. Do not pipe raw
+`/select/logsql/query` output to `python3 -m json.tool` unless the endpoint
+returns a single JSON object or array.
+
 ### Service Commands
 
 ```bash
@@ -215,7 +219,7 @@ journalctl -u systemd-journal-upload.service -n 30 --no-pager
 # Check if VictoriaLogs is receiving data
 # VictoriaLogs UI: https://logs.local.doreto.com.br
 # Or query the API directly
-curl -s 'http://127.0.0.1:9428/select/logsql/query' \
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
   --data-urlencode 'query=_time:5m'
 ```
 
@@ -279,17 +283,67 @@ curl -s 'http://127.0.0.1:8428/api/v1/label/host/values' | python3 -m json.tool
 # See: https://docs.victoriametrics.com/victorialogs/logsql/
 
 # Recent log entries
-curl -s 'http://127.0.0.1:9428/select/logsql/query' \
-  --data-urlencode 'query=_time:5m | limit 10' | python3 -m json.tool
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
+  --data-urlencode 'query=_time:5m | limit 10'
 
 # Filter by host (via journald _HOSTNAME field)
-curl -s 'http://127.0.0.1:9428/select/logsql/query' \
-  --data-urlencode 'query=_time:1h _HOSTNAME:chungus | limit 20' | python3 -m json.tool
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
+  --data-urlencode 'query=_time:1h _HOSTNAME:chungus | limit 20'
 
 # Filter by unit
-curl -s 'http://127.0.0.1:9428/select/logsql/query' \
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
   --data-urlencode 'query=_time:1h _SYSTEMD_UNIT:caddy.service | limit 20'
 ```
+
+### Home Assistant Lookups
+
+Home Assistant on mini runs as a Home Manager user Podman container:
+
+| Item | Value |
+|---|---|
+| Container unit | `podman-home-assistant.service` |
+| Journald identifier | `home-assistant` |
+| Config mount | `/home/dog/projects/home-assistant-config/config:/config` |
+| Caddy upstream | `192.168.0.2:8123` |
+| Local URL | `https://ha.local.doreto.com.br` |
+
+Fast failure query:
+
+```bash
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
+  --data-urlencode 'query=_time:8h (SYSLOG_IDENTIFIER:home-assistant OR _SYSTEMD_USER_UNIT:podman-home-assistant.service OR _SYSTEMD_UNIT:caddy.service) (ha.local.doreto.com.br OR "8123" OR "Failed to create HTTP server" OR "connection refused" OR "Name does not resolve") | limit 120'
+```
+
+Focused follow-up queries:
+
+```bash
+# Caddy side: confirms whether Caddy is reachable but HA is not listening.
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
+  --data-urlencode 'query=_time:4h _SYSTEMD_UNIT:caddy.service (ha.local.doreto.com.br OR "192.168.0.2:8123" OR "connection refused" OR "502") | limit 80'
+
+# Home Assistant side: HTTP bind and startup errors.
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
+  --data-urlencode 'query=_time:4h SYSLOG_IDENTIFIER:home-assistant (error OR "8123" OR "HTTP server" OR "Name does not resolve") | limit 80'
+
+# Container lifecycle: restart/update context.
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
+  --data-urlencode 'query=_time:4h (_SYSTEMD_USER_UNIT:podman-home-assistant.service OR SYSLOG_IDENTIFIER:podman) home-assistant | limit 100'
+
+# Home Manager activation: shows whether the user container stack was restarted.
+curl -s 'https://logs.local.doreto.com.br/select/logsql/query' \
+  --data-urlencode 'query=_time:4h _SYSTEMD_UNIT:home-manager-dog.service | limit 80'
+```
+
+Key interpretations:
+
+- **Caddy `dial tcp 192.168.0.2:8123: connect: connection refused`** means
+  Caddy is reachable, but Home Assistant is not listening on port 8123.
+- **Home Assistant `Failed to create HTTP server at port 8123: [Errno -2] Name does not resolve`**
+  usually means `http.server_host` contains a hostname that cannot resolve.
+- **Container `create/start/died/remove` events** around the same timestamp show
+  whether the failure followed a reboot, Home Manager activation, or container update.
+- **Home Manager user Podman containers** often show up under `user@1000.service`;
+  search by `SYSLOG_IDENTIFIER` and `_SYSTEMD_USER_UNIT`, not only `_SYSTEMD_UNIT`.
 
 ## Firewall Rules Summary
 
