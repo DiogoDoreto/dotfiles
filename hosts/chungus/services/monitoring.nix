@@ -37,14 +37,6 @@ in
     port = nvidiaExporterPort;
   };
 
-  # Ship chungus journal logs to mini's VictoriaLogs via Caddy
-  services.journald.upload = {
-    enable = true;
-    settings.Upload = {
-      URL = "https://logs.local.doreto.com.br/insert/journald";
-    };
-  };
-
   # Allow only mini (192.168.0.2) to scrape the exporters on this host.
   networking.firewall.extraCommands = ''
     iptables -A nixos-fw -p tcp -s 192.168.0.2 --dport ${toString nodeExporterPort} -j nixos-fw-accept

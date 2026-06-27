@@ -200,14 +200,6 @@
     ];
   };
 
-  # Ship lapdog's journal to mini's VictoriaLogs via Caddy
-  services.journald.upload = {
-    enable = true;
-    settings.Upload = {
-      URL = "https://logs.local.doreto.com.br/insert/journald";
-    };
-  };
-
   services.tailscale.enable = true;
 
   # Keyboard remaping
