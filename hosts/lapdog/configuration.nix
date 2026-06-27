@@ -200,6 +200,13 @@
     ];
   };
 
+  dog.services.journald-to-victorialogs = {
+    enable = true;
+    host = "logs.local.doreto.com.br";
+    port = 443;
+    tls = true;
+  };
+
   services.tailscale.enable = true;
 
   # Keyboard remaping
