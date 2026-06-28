@@ -392,6 +392,11 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
 
 ;;; Use packages
 
+(use-package alert
+  :defer t
+  :config
+  (setq alert-default-style 'libnotify))
+
 (use-package ef-themes
   :after modus-themes
   :init

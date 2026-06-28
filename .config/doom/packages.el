@@ -38,6 +38,7 @@
 
 (package! evil-textobj-tree-sitter :pin "7f58008a82c70eb1c6c5761db499f0be0db9d6cb")
 
+(package! alert :pin "31fc56855289d0846e73d7ca9b84b628aeac16a0")
 
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or
