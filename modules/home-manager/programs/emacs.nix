@@ -11,6 +11,7 @@ with lib;
 
 let
   cfg = config.dog.programs.emacs;
+  finalDoomModules = attrsets.recursiveUpdate defaultDoomInit cfg.doom.init;
 
   inherit (dog-lib) dotfilesSymlink;
 
@@ -126,6 +127,7 @@ let
     };
     term = {
       eshell.enable = true;
+      ghostel.enable = false;
       vterm.enable = true;
     };
     checkers = {
@@ -215,14 +217,6 @@ in
   options.dog.programs.emacs = {
     enable = mkEnableOption "emacs + doom";
 
-    ghostel.enable = mkEnableOption "ghostel native terminal emulator" // {
-      description = ''
-        Enable ghostel, an Emacs terminal emulator powered by libghostty-vt.
-        Requires the ghostel flake overlay to be applied to pkgs
-        (pkgs.ghostel-package must exist). See flakes/ghostel/README.md.
-      '';
-    };
-
     doom.init =
       let
         doomModuleType = types.submodule {
@@ -282,7 +276,11 @@ in
     programs.emacs = {
       enable = true;
       package = pkgs.emacs30;
-      extraPackages = epkgs: [ epkgs.vterm ];
+      extraPackages =
+        epkgs:
+        [ ]
+        ++ lib.optionals finalDoomModules.term.vterm.enable [ epkgs.vterm ]
+        ++ lib.optionals finalDoomModules.term.ghostel.enable [ epkgs.ghostel ];
     };
 
     services.emacs = {
@@ -322,18 +320,10 @@ in
       DOOMPROFILELOADFILE = "$HOME/.local/share/doomemacs/profiles/load.el";
     };
 
-    # When ghostel is enabled, symlink the combined package (elisp + .so) into
-    # straight.el's repos directory. The path matches DOOMLOCALDIR set below.
-    # straight uses it with :type nil — no git operations; build artifacts go
-    # to straight/build/, so the read-only nix store symlink is fine.
-    home.file = mkIf cfg.ghostel.enable {
-      ".local/share/doomemacs/straight/repos/ghostel".source = pkgs.ghostel-package;
-    };
-
     xdg.configFile = {
       emacs.source = inputs.doomemacs;
 
-      "doom/init.el".text = doomInitMacroFile (attrsets.recursiveUpdate defaultDoomInit cfg.doom.init);
+      "doom/init.el".text = doomInitMacroFile finalDoomModules;
       "doom/config.el".source = dotfilesSymlink ".config/doom/config.el";
       "doom/packages.el".source = dotfilesSymlink ".config/doom/packages.el";
 

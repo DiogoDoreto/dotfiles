@@ -38,27 +38,6 @@
 
 (package! evil-textobj-tree-sitter :pin "7f58008a82c70eb1c6c5761db499f0be0db9d6cb")
 
-;; ghostel — terminal emulator powered by libghostty-vt.
-;; The package directory is placed by Nix at straight's repos path (see
-;; modules/home-manager/programs/emacs.nix and flakes/ghostel/).
-;; ghostel-module.so lives alongside ghostel.el so ghostel finds it automatically at load time.
-(when (file-directory-p (expand-file-name
-                         "straight/repos/ghostel"
-                         (or (getenv "DOOMLOCALDIR")
-                             (expand-file-name "~/.local/share/doomemacs"))))
-  (package! ghostel
-    :type 'local
-    :recipe (:local-repo "ghostel"
-             :files ("*.el" "*.so" "etc")
-             :type nil))
-  (package! evil-ghostel
-    :type 'local
-    :recipe (:local-repo "ghostel"
-             :files ("evil-ghostel.el")
-             :type nil)))
-
-;; remove when fixed: https://github.com/doomemacs/doomemacs/issues/8585
-;; (package! nixos-options :pin "053a2d5110ce05b7f99bcc2ac4804b70cbe87916")
 
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or

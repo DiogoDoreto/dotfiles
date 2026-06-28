@@ -1,0 +1,30 @@
+;;; config.el -*- lexical-binding: t; -*-
+
+(use-package ghostel
+  :config
+  ;; ghostel-module.so lives alongside ghostel.el in the straight repo dir;
+  ;; ghostel.el finds it automatically via (file-name-directory load-file-name).
+  (setq ghostel-shell "fish"
+        ;; Module is always provided by Nix — never prompt to download or compile.
+        ghostel-module-auto-install nil)
+
+  (setq-hook! 'ghostel-mode-hook
+    doom-real-buffer-p t)
+
+  (set-popup-rule! "^\\*ghostel" :size 0.25 :vslot -4 :select t :quit nil :ttl 0)
+
+  (add-hook 'doom-after-init-hook
+            (lambda ()
+              (map! :leader
+                    :desc "Open ghostel term"      "o t" #'ghostel-project
+                    :desc "Open ghostel term here" "o T" #'ghostel))))
+
+(use-package ghostel-compile
+  :hook (after-init . ghostel-compile-global-mode))
+
+(use-package ghostel-comint
+  :hook (after-init . ghostel-comint-global-mode))
+
+(use-package evil-ghostel
+  :after (ghostel evil)
+  :hook (ghostel-mode . evil-ghostel-mode))

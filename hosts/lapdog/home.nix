@@ -202,11 +202,13 @@ in
 
     emacs = {
       enable = true;
-      ghostel.enable = true;
 
       doom.init = {
         app = {
           rss.enable = true;
+        };
+        term = {
+          ghostel.enable = true;
         };
         lang = {
           # common-lisp.enable = true;
