@@ -452,17 +452,17 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
     :quit nil
     :ttl nil))
 
-(use-package elfeed-protocol
-  :after elfeed
-  :config
-  (setq elfeed-search-filter "@2-weeks-ago +unread")
-  (setq elfeed-protocol-enabled-protocols '(fever))
-  (setq elfeed-protocol-fever-update-unread-only nil)
-  (setq elfeed-protocol-fever-fetch-category-as-tag t)
-  (setq elfeed-protocol-feeds '(("fever+https://diogo@freshrss.local.doreto.com.br"
-                                 :api-url "https://freshrss.local.doreto.com.br/api/fever.php"
-                                 :password "freshrss")))
-  (elfeed-protocol-enable))
+;; (use-package elfeed-protocol
+;;   :after elfeed
+;;   :config
+;;   (setq elfeed-search-filter "@2-weeks-ago +unread")
+;;   (setq elfeed-protocol-enabled-protocols '(fever))
+;;   (setq elfeed-protocol-fever-update-unread-only nil)
+;;   (setq elfeed-protocol-fever-fetch-category-as-tag t)
+;;   (setq elfeed-feeds '(("fever+https://diogo@freshrss.local.doreto.com.br"
+;;                         :api-url "https://freshrss.local.doreto.com.br/api/fever.php"
+;;                         :password "freshrss")))
+;;   (elfeed-protocol-enable))
 
 ;;; Random stuff...
 

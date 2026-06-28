@@ -275,7 +275,7 @@ in
 
     programs.emacs = {
       enable = true;
-      package = pkgs.emacs30;
+      package = pkgs.emacs31;
       extraPackages =
         epkgs:
         [ ]

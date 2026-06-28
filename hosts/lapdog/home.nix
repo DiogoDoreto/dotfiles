@@ -209,6 +209,7 @@ in
         };
         term = {
           ghostel.enable = true;
+          vterm.enable = false;
         };
         lang = {
           # common-lisp.enable = true;

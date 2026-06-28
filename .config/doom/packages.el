@@ -1,14 +1,14 @@
 ;;; $DOOMDIR/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
 
-(package! jsts
-  :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
+;; (package! jsts
+;;   :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
 
 (package! tts
   :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
-(package! modus-themes :pin "c8925cd23b8af5d84975fa33431f58a59c630bfc")
+(package! modus-themes :pin "9172a0e8efda63ada2cb4aeff01124260a672c1e")
 
-(package! ef-themes :pin "d58cd17212a51e100c185b5fc75e829c2b39f497")
+(package! ef-themes :pin "db36d53c090d7820643157f2e81ee37937fe4a0d")
 
 (package! dts-mode :pin "cd1847d0e7162c1ecab772c6ca7ef4f3c5d2214d")
 
@@ -16,7 +16,7 @@
 
 (package! magit-delta :pin "5fc7dbddcfacfe46d3fd876172ad02a9ab6ac616")
 
-(package! git-link :pin "ca1a170343448c6d5d265ec12f934d865f7e0aee")
+(package! git-link :pin "3870ae57408dc72ae2215b0056d6661e2c198e75")
 
 (package! fancy-compilation :pin "502d36e0fb4c4daedc16ea5d732dcbc8285d6fb1")
 
@@ -32,11 +32,11 @@
 
 (package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")
 
-(package! jinx :pin "b08ec1cde1b67bb153b7d27942f2b0edce8ede82")
+(package! jinx :pin "80b3618d401a654137a48be7d4f90b67cad92748")
 
-(package! elfeed-protocol :pin "4f5e77a28c501db686ac06a2ea250a7b37d5420c")
+(package! elfeed-protocol :pin "58936590459ccc2dfd6132f69983011d15d9404a")
 
-(package! evil-textobj-tree-sitter :pin "7f58008a82c70eb1c6c5761db499f0be0db9d6cb")
+(package! evil-textobj-tree-sitter :pin "fecc0e11615df31a6651ce11b012388e53cad4e9")
 
 (package! alert :pin "31fc56855289d0846e73d7ca9b84b628aeac16a0")
 
