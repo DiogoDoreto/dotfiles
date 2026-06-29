@@ -56,6 +56,8 @@ in
         "yarn-error.log*"
         # AI tools
         ".agent-shell/"
+        ".playwright/"
+        ".playwright-cli/"
         ".claude/*.local.json"
       ];
     };
