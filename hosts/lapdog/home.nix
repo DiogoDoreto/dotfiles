@@ -145,6 +145,7 @@ in
 
   dog.programs = {
     cli-tools.enable = true;
+    ghostty.enable = true;
     git.enable = true;
     websearch.enable = true;
     firefox = {
