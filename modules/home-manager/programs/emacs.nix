@@ -15,6 +15,14 @@ let
 
   inherit (dog-lib) dotfilesSymlink;
 
+  aspell' = pkgs.aspellWithDicts (
+    dicts: with dicts; [
+      en
+      en-computers
+    ]
+  );
+  enchant' = pkgs.enchant_2.override { aspell = aspell'; };
+
   makeDoomMacroModules =
     moduleName: moduleCfg:
     let
@@ -278,7 +286,14 @@ in
       package = pkgs.emacs31;
       extraPackages =
         epkgs:
-        [ ]
+        let
+          jinxWithAspellEnchant = epkgs.jinx.overrideAttrs (old: {
+            buildInputs = lib.remove pkgs.enchant_2 (old.buildInputs or [ ]) ++ [
+              enchant'
+            ];
+          });
+        in
+        [ jinxWithAspellEnchant ]
         ++ lib.optionals finalDoomModules.term.vterm.enable [ epkgs.vterm ]
         ++ lib.optionals finalDoomModules.term.ghostel.enable [ epkgs.ghostel ];
     };
@@ -294,22 +309,23 @@ in
 
       # spell checking
       wordnet
-      (enchant.overrideAttrs (old: rec {
-        # jinx needs enchant.h to compile itself
-        # nixpkgs version 2.6.9 does not include it in the tarball
-        # latest version 2.8.12 fails to build
-        # version 2.7.3 has the header but it is not being placed on the /nix/store output (FIXME)
-        version = "2.7.3";
-        src = fetchurl {
-          url = "https://github.com/rrthomas/${old.pname}/releases/download/v${version}/${old.pname}-${version}.tar.gz";
-          hash = "sha256-/mrUy+jHG5OE/975Yr5S1NK9Xr+2NRQ1uzkFQ9T3ix4=";
-        };
-      }))
       hunspellDicts.pt_BR
       hunspellDicts.es_ES
       hunspellDicts.en_US
-      aspellDicts.en-computers
+      enchant'
+      aspell'
     ];
+
+    home.file = {
+      ".aspell.conf".text = ''
+        data-dir ${aspell'}/lib/aspell
+        dict-dir ${aspell'}/lib/aspell
+        master en_US
+        # TODO en-computers does not seem to be recognized
+        add-extra-dicts en-computers.rws
+        extra-dicts en-computers.rws
+      '';
+    };
 
     home.sessionPath = [
       "${config.xdg.configHome}/emacs/bin"

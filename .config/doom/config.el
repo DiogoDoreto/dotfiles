@@ -414,9 +414,14 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
   :defer t
   :hook 'Info-selection-hook)
 
-;; TODO fix jinx compilation when toggling jinx-mode
-;; (use-package jinx)
-;; (add-hook 'emacs-startup-hook #'global-jinx-mode)
+(use-package jinx
+  :hook (emacs-startup-hook . global-jinx-mode)
+  :config
+  (map! :map jinx-mode-map
+        "M-p"   #'jinx-previous
+        "M-n"   #'jinx-next
+        "M-$"   #'jinx-correct
+        "C-M-$" #'jinx-languages))
 
 (use-package ct :defer t)
 
