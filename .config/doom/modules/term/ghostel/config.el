@@ -17,7 +17,12 @@
             (lambda ()
               (map! :leader
                     :desc "Open ghostel term"      "o t" #'ghostel-project
-                    :desc "Open ghostel term here" "o T" #'ghostel))))
+                    :desc "Open ghostel term here" "o T" #'ghostel)))
+
+  (map! :map ghostel-mode-map
+        :desc "paste" :ni "C-S-v" #'ghostel-paste
+        :n "C-p" (cmd! (ghostel-send-key "p" "ctrl"))
+        :n "C-n" (cmd! (ghostel-send-key "n" "ctrl"))))
 
 (use-package ghostel-compile
   :hook (after-init . ghostel-compile-global-mode))
