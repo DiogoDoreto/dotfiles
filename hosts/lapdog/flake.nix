@@ -32,14 +32,6 @@
       url = "../../modules/flakes/ipu7";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    my-claude-agent-acp = {
-      url = "../../flakes/claude-agent-acp";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    my-pi = {
-      url = "../../flakes/pi";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     llm-agents.url = "github:numtide/llm-agents.nix";
     handy = {
       url = "github:cjpais/Handy";
@@ -66,9 +58,7 @@
         inputs.llm-agents.overlays.default
         inputs.nur.overlays.default
 
-        inputs.my-claude-agent-acp.overlays.${system}.default
         inputs.my-kwtype.overlays.default
-        inputs.my-pi.overlays.${system}.default
 
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;

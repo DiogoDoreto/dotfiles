@@ -155,35 +155,7 @@ in
     plasma-fix-taskbar-icons.enable = true;
     wezterm.enable = true;
 
-    claude-code = {
-      enable = true;
-      bubblewrap = {
-        enable = true;
-        extraWritablePaths = [
-          "~/projects/"
-          "/run/user/1000/agent-browser"
-        ];
-      };
-    };
-
-    codex = {
-      enable = true;
-      bubblewrap = {
-        enable = true;
-        extraWritablePaths = [
-          "~/projects/"
-        ];
-      };
-    };
-
     opencode = {
-      enable = true;
-      extraWritablePaths = [
-        "~/projects/"
-      ];
-    };
-
-    pi = {
       enable = true;
       extraWritablePaths = [
         "~/projects/"
@@ -197,7 +169,6 @@ in
 
     playwright-cli = {
       enable = true;
-      installClaudeSkill = true;
       installAgentsSkill = true;
     };
 
