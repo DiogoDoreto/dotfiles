@@ -8,10 +8,7 @@
         ;; Module is always provided by Nix — never prompt to download or compile.
         ghostel-module-auto-install nil)
 
-  (setq-hook! 'ghostel-mode-hook
-    doom-real-buffer-p t)
-
-  (set-popup-rule! "^\\*ghostel" :size 0.25 :vslot -4 :select t :quit nil :ttl 0)
+  (add-to-list 'doom-real-buffer-modes 'ghostel-mode)
 
   (add-hook 'doom-after-init-hook
             (lambda ()

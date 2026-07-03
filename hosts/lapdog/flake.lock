@@ -87,11 +87,11 @@
     "doomemacs": {
       "flake": false,
       "locked": {
-        "lastModified": 1782628393,
-        "narHash": "sha256-6PSjIc7MTwsoybIHBRbOuZ5A4lk0hLzLh/yua16fuq4=",
+        "lastModified": 1783093997,
+        "narHash": "sha256-YC/3Q9kcbhbBgq74q6jHfuKZzIqF9h03xesn5DpRSUs=",
         "ref": "refs/heads/master",
-        "rev": "5c48899840e6480a2e092f9a682f58380df03e0f",
-        "revCount": 21138,
+        "rev": "8e4fbbae048a9abe897bf1878cbd32732a6d41d7",
+        "revCount": 21154,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/doomemacs/doomemacs"

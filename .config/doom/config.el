@@ -82,7 +82,7 @@
       calendar-week-start-day 1
       calendar-weekend-days '(0 5 6))
 
-(add-hook 'eww-mode-hook (lambda () (setq-local doom-real-buffer-p t)))
+(add-to-list 'doom-real-buffer-modes 'eww-mode)
 
 ;;; Flymake / Flycheck diagnostics
 
@@ -243,7 +243,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
+                  (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (message "Checking last commit...")
                      (cdr (doom-call-process
@@ -303,6 +303,8 @@ Based on the code of `doom/bump-package-at-point'"
 (map! :i "C-v" (cmd! (insert (current-kill 0))))
 (map! :map evil-ex-search-keymap
       "C-v" (cmd! (insert (current-kill 0))))
+(map! :map minibuffer-mode-map
+      "C-v" (cmd! (insert (current-kill 0))))
 
 ;; use middle click to go-to-definition - the down event ensures we navigate to the target point
 (map! :n "<down-mouse-2>" #'evil-mouse-drag-region
@@ -328,9 +330,11 @@ and return to the original position."
       :desc "Browse man pages" :n "w" #'woman
       :leader :prefix "i" ;; insert
       :desc "Nerd icon" :n "n" #'nerd-icons-insert
+      :leader :prefix "s" ;; search
+      :desc "Search files" :n "f" #'consult-fd
       :leader :prefix "t" ;; toggle
-      :desc "Auto fill"            :n "C" #'auto-fill-mode
-      :desc "Highline cursor line" :n "L" #'hl-line-mode)
+      :desc "Auto fill"             :n "C" #'auto-fill-mode
+      :desc "Highlight cursor line" :n "L" #'hl-line-mode)
 
 (map! :map dired-mode-map :n "<backspace>" #'dired-up-directory)
 

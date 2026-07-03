@@ -4,6 +4,8 @@
   :defer t
   :after acp
   :config
+  (add-to-list 'doom-real-buffer-modes 'agent-shell-mode)
+
   (setopt agent-shell-session-strategy 'prompt
           agent-shell-show-usage-at-turn-end t
           agent-shell-context-sources '(files region error)
@@ -35,8 +37,6 @@
 
   (add-hook 'agent-shell-mode-hook
             (lambda ()
-              ;; from https://github.com/xenodium/agent-shell/issues/259
-              (setq-local doom-real-buffer-p t)
               (agent-shell-subscribe-to
                :shell-buffer (current-buffer)
                :event 'idle
