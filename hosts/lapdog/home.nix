@@ -153,7 +153,6 @@ in
       plasma-integration = true;
     };
     plasma-fix-taskbar-icons.enable = true;
-    wezterm.enable = true;
 
     opencode = {
       enable = true;

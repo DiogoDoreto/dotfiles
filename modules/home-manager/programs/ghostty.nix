@@ -21,11 +21,11 @@ in
       enableFishIntegration = true;
       settings = {
         command = "${lib.getExe pkgs.fish} -l";
-        theme = "Nightfox";
-        window-theme = "ghostty";
+        theme = "Synthwave";
         font-family = "VictorMono Nerd Font Propo";
         font-size = 11;
-        background-opacity = 0.95;
+        background-opacity = 0.8;
+        background-blur = true;
         quit-after-last-window-closed = true;
       };
     };
