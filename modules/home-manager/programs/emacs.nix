@@ -295,7 +295,10 @@ in
         in
         [ jinxWithAspellEnchant ]
         ++ lib.optionals finalDoomModules.term.vterm.enable [ epkgs.vterm ]
-        ++ lib.optionals finalDoomModules.term.ghostel.enable [ epkgs.ghostel ];
+        ++ lib.optionals finalDoomModules.term.ghostel.enable [
+          epkgs.ghostel
+          epkgs.evil-ghostel
+        ];
     };
 
     services.emacs = {
