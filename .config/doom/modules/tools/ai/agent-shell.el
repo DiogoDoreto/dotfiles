@@ -13,11 +13,8 @@
           agent-shell-session-restore-verbosity 'full)
 
   (when (string= (system-name) "lapdog")
-    (setopt agent-shell-agent-configs (list (agent-shell-openai-make-codex-config)
-                                            (agent-shell-opencode-make-agent-config))
-            agent-shell-preferred-agent-config (car agent-shell-agent-configs)
-            ;; env var fixes init issue https://github.com/agentclientprotocol/claude-agent-acp/issues/575
-            agent-shell-anthropic-claude-acp-command '("ssh" "lapdog-agent" "CLAUDE_CODE_EXECUTABLE=/etc/profiles/per-user/dog/bin/claude" "claude-agent-acp")))
+    (setopt agent-shell-agent-configs (list (agent-shell-opencode-make-agent-config))
+            agent-shell-preferred-agent-config (car agent-shell-agent-configs)))
 
   (when (string= (system-name) "DT-5RHWB24")
     (setopt agent-shell-agent-configs (list (agent-shell-anthropic-make-claude-code-config)
@@ -31,9 +28,8 @@
            (frame (and win (window-frame win))))
       (message "agent-shell IDLE")
       (unless (and frame (eq (frame-focus-state frame) t))
-        (let ((msg (format "%s is waiting" (buffer-name buf))))
-          (start-process "notify" nil "notify-send"
-                         "--icon=emacs" "Agent Shell" msg)))))
+        (alert (format "%s is waiting" (buffer-name buf))
+               :title "Agent Shell"))))
 
   (add-hook 'agent-shell-mode-hook
             (lambda ()
@@ -44,8 +40,8 @@
 
   (defun +dd/agent-shell-submit ()
     (interactive)
+    (shell-maker-submit)
     (save-excursion
-      (shell-maker-submit)
       (comint-previous-prompt 1)
       (recenter 0)))
 
