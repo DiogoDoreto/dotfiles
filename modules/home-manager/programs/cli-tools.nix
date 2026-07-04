@@ -95,7 +95,11 @@ in
         '';
       };
 
-      fzf.enable = true;
+      fzf = {
+        enable = true;
+        # disable history widget in favor of Atuin
+        historyWidget.command = "";
+      };
 
       gh.enable = true;
 
