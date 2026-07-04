@@ -37,6 +37,7 @@ if [[ $rc -eq 0 ]]; then
 else
   body="Command failed (exit $rc)"
 fi
+body="$body [$(date +%H:%M:%S)]"
 
 # notify (fallback to stderr if notify-send not available)
 if command -v notify-send >/dev/null 2>&1; then
