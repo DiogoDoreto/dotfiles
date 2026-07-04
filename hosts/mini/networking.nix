@@ -48,16 +48,16 @@ let
 
   mkDnsmasqConfig =
     name: leaseFile: settings:
-    dnsmasqSettingsFormat.generate "${name}.conf" (
+    dnsmasqSettingsFormat.generate "dnsmasq-${name}.conf" (
       commonDnsmasqSettings
       // {
         dhcp-leasefile = leaseFile;
-        pid-file = "/run/${name}.pid";
+        pid-file = "/run/dnsmasq-${name}.pid";
       }
       // settings
     );
 
-  dnsmasqLanConfig = mkDnsmasqConfig "dnsmasq-lan" dnsmasqLanLeaseFile {
+  dnsmasqLanConfig = mkDnsmasqConfig "lan" dnsmasqLanLeaseFile {
     listen-address = [
       "::1"
       "127.0.0.1"
@@ -75,7 +75,7 @@ let
     ];
   };
 
-  dnsmasqTailscaleConfig = mkDnsmasqConfig "dnsmasq-tailscale" dnsmasqTailscaleLeaseFile {
+  dnsmasqTailscaleConfig = mkDnsmasqConfig "tailscale" dnsmasqTailscaleLeaseFile {
     listen-address = [ tailscaleIp ];
     address = [ "/local.doreto.com.br/${tailscaleIp}" ];
   };
@@ -85,15 +85,16 @@ let
       description,
       configFile,
       leaseFile,
-      after ? [
-        "network.target"
-        "systemd-resolved.service"
-      ],
+      after ? [ ],
       wants ? [ ],
     }:
     {
-      inherit description after wants;
+      inherit description wants;
       wantedBy = [ "multi-user.target" ];
+      after = after ++ [
+        "network.target"
+        "systemd-resolved.service"
+      ];
       path = [ pkgs.dnsmasq ];
       preStart = ''
         mkdir -m 755 -p ${dnsmasqStateDir}
@@ -194,11 +195,7 @@ in
     description = "Dnsmasq Tailscale DNS";
     configFile = dnsmasqTailscaleConfig;
     leaseFile = dnsmasqTailscaleLeaseFile;
-    after = [
-      "network-online.target"
-      "tailscaled.service"
-      "systemd-resolved.service"
-    ];
+    after = [ "tailscaled.service" ];
     wants = [
       "network-online.target"
       "tailscaled.service"
