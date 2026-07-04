@@ -1,13 +1,112 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   vars = import ./_variables.nix;
   lanGateway = "192.168.0.1";
   lanInterface = "wlo1";
+  staticIp = "192.168.0.2"; # needs to be set manually in Network Manager
+  tailscaleIp = "100.117.142.110";
   dnsUpstreams = [
     "1.1.1.1"
     "1.0.0.1"
   ];
+  dnsmasqStateDir = "/var/lib/dnsmasq";
+  dnsmasqLanLeaseFile = "${dnsmasqStateDir}/dnsmasq-lan.leases";
+  dnsmasqTailscaleLeaseFile = "${dnsmasqStateDir}/dnsmasq-tailscale.leases";
+
+  dnsmasqSettingsFormat =
+    let
+      formatKeyValue =
+        name: value:
+        if value == true then
+          name
+        else if value == false then
+          "# setting `${name}` explicitly set to false"
+        else
+          lib.generators.mkKeyValueDefault { } "=" name value;
+    in
+    pkgs.formats.keyValue {
+      mkKeyValue = formatKeyValue;
+      listsAsDuplicateKeys = true;
+    };
+
+  commonDnsmasqSettings = {
+    bind-dynamic = true;
+    no-hosts = true;
+    no-resolv = true;
+    bogus-priv = true;
+    domain-needed = true;
+    server = dnsUpstreams;
+    log-queries = true;
+  };
+
+  mkDnsmasqConfig =
+    name: leaseFile: settings:
+    dnsmasqSettingsFormat.generate "${name}.conf" (
+      commonDnsmasqSettings
+      // {
+        dhcp-leasefile = leaseFile;
+        pid-file = "/run/${name}.pid";
+      }
+      // settings
+    );
+
+  dnsmasqLanConfig = mkDnsmasqConfig "dnsmasq-lan" dnsmasqLanLeaseFile {
+    listen-address = [
+      "::1"
+      "127.0.0.1"
+      staticIp
+      vars.chungusProxyIp
+    ];
+    address = [
+      "/${config.networking.hostName}.home/${staticIp}"
+      "/local.doreto.com.br/${staticIp}"
+      "/chungus.home/192.168.0.3"
+      "/chungus-proxy.home/${vars.chungusProxyIp}"
+    ];
+  };
+
+  dnsmasqTailscaleConfig = mkDnsmasqConfig "dnsmasq-tailscale" dnsmasqTailscaleLeaseFile {
+    listen-address = [ tailscaleIp ];
+    address = [ "/local.doreto.com.br/${tailscaleIp}" ];
+  };
+
+  mkDnsmasqService =
+    {
+      description,
+      configFile,
+      leaseFile,
+      after ? [
+        "network.target"
+        "systemd-resolved.service"
+      ],
+      wants ? [ ],
+    }:
+    {
+      inherit description after wants;
+      wantedBy = [ "multi-user.target" ];
+      path = [ pkgs.dnsmasq ];
+      preStart = ''
+        mkdir -m 755 -p ${dnsmasqStateDir}
+        touch ${leaseFile}
+        chown -R dnsmasq ${dnsmasqStateDir}
+        dnsmasq --test -C ${configFile}
+      '';
+      serviceConfig = {
+        ExecStart = "${pkgs.dnsmasq}/bin/dnsmasq -k --user=dnsmasq -C ${configFile}";
+        ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
+        PrivateTmp = true;
+        ProtectSystem = true;
+        ProtectHome = true;
+        Restart = "always";
+      };
+    };
+
   keepDnsOffVpn = pkgs.writeShellScript "keep-dns-off-vpn" ''
     set -eu
 
@@ -30,6 +129,7 @@ in
 
   networking = {
     hostName = "dogdot";
+    nameservers = [ "127.0.0.1" ];
     networkmanager = {
       enable = true;
       unmanaged = [ "chungus-proxy" ];
@@ -71,54 +171,34 @@ in
     };
   };
 
-  services.dnsmasq = {
-    enable = true;
-    alwaysKeepRunning = true;
-    settings =
-      let
-        static-ip = "192.168.0.2"; # needs to be set manually in networkmanager
-        tailscale-ip = "100.117.142.110";
-      in
-      {
-        # interface = "wlo1";
-        # bind-interfaces = true;
-        # Bind only the configured listen addresses, while still tolerating
-        # late/dynamic addresses such as Tailscale. Without this dnsmasq binds
-        # wildcard :53 and blocks podman/aardvark DNS on per-job networks.
-        bind-dynamic = true;
-        listen-address = [
-          "::1"
-          "127.0.0.1"
-          static-ip
-          vars.chungusProxyIp
-          tailscale-ip
-        ];
-        address = [
-          "/${config.networking.hostName}.home/${static-ip}"
-          "/local.doreto.com.br/${static-ip}"
-          "/chungus.home/192.168.0.3"
-          "/chungus-proxy.home/${vars.chungusProxyIp}"
-        ];
+  services.dnsmasq.enable = lib.mkForce false;
 
-        # Accept DNS queries only from hosts whose address is on a local subnet
-        # local-service = true;
-        # Do not read system files
-        no-hosts = true;
-        no-resolv = true;
-        # Do not send private addresses to upstream servers
-        bogus-priv = true;
-        # Do not send addresses without dot to upstream servers
-        domain-needed = true;
-        # Upstream DNS servers
-        server = dnsUpstreams;
-        # Log DNS queries
-        log-queries = true;
+  users.users.dnsmasq = {
+    isSystemUser = true;
+    group = "dnsmasq";
+    description = "Dnsmasq daemon user";
+  };
+  users.groups.dnsmasq = { };
 
-        # Enable DNSSEC
-        # dnssec = true;
-        # DNSSEC trust anchor. Source: https://data.iana.org/root-anchors/root-anchors.xml
-        # trust-anchor = ".,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D";
-      };
+  systemd.services.dnsmasq-lan = mkDnsmasqService {
+    description = "Dnsmasq LAN DNS";
+    configFile = dnsmasqLanConfig;
+    leaseFile = dnsmasqLanLeaseFile;
+  };
+
+  systemd.services.dnsmasq-tailscale = mkDnsmasqService {
+    description = "Dnsmasq Tailscale DNS";
+    configFile = dnsmasqTailscaleConfig;
+    leaseFile = dnsmasqTailscaleLeaseFile;
+    after = [
+      "network-online.target"
+      "tailscaled.service"
+      "systemd-resolved.service"
+    ];
+    wants = [
+      "network-online.target"
+      "tailscaled.service"
+    ];
   };
 
   systemd.services.chungus-proxy-iface = {
