@@ -108,12 +108,15 @@ in
 
           redir /app-agenda-escolar /app-agenda-escolar/ 308
 
-          @appAgendaEscolar path /app-agenda-escolar/*
-          reverse_proxy @appAgendaEscolar 127.0.0.1:${p.gitPages} {
-            header_up Host diogo.pages.local.doreto.com.br
+          handle /app-agenda-escolar/* {
+            reverse_proxy 127.0.0.1:${p.gitPages} {
+              header_up Host diogo.pages.local.doreto.com.br
+            }
           }
 
-          respond "not found" 404
+          handle {
+            respond "not found" 404
+          }
         '';
       };
       ":${p.publicCaddy}" = {
