@@ -102,7 +102,7 @@ in
           reverse_proxy 127.0.0.1:${p.gitPages}
         '';
       };
-      "apps.doreto.com.br:${p.publicCaddy}" = {
+      "http://apps.doreto.com.br:${p.publicCaddy}" = {
         extraConfig = ''
           bind 127.0.0.1
 
@@ -119,7 +119,7 @@ in
           }
         '';
       };
-      ":${p.publicCaddy}" = {
+      "http://:${p.publicCaddy}" = {
         extraConfig = ''
           bind 127.0.0.1
           respond "not found" 404
