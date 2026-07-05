@@ -102,6 +102,26 @@ in
           reverse_proxy 127.0.0.1:${p.gitPages}
         '';
       };
+      "apps.doreto.com.br:${p.publicCaddy}" = {
+        extraConfig = ''
+          bind 127.0.0.1
+
+          redir /app-agenda-escolar /app-agenda-escolar/ 308
+
+          @appAgendaEscolar path /app-agenda-escolar/*
+          reverse_proxy @appAgendaEscolar 127.0.0.1:${p.gitPages} {
+            header_up Host diogo.pages.local.doreto.com.br
+          }
+
+          respond "not found" 404
+        '';
+      };
+      ":${p.publicCaddy}" = {
+        extraConfig = ''
+          bind 127.0.0.1
+          respond "not found" 404
+        '';
+      };
       "audiobook.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy 127.0.0.1:${p.audiobookshelf}
