@@ -6,6 +6,7 @@
     dns = 53;
     http = 80;
     https = 443;
+    publicCaddy = 8088; # localhost-only Cloudflare Tunnel ingress listener
     mdns = 5353;
     haHomekitBridge = [
       21064
