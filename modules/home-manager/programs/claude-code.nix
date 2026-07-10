@@ -106,7 +106,7 @@ in
         })
         (wrapIfNeeded {
           inherit extraWritablePaths;
-          package = pkgs.claude-agent-acp;
+          package = pkgs.llm-agents.claude-agent-acp;
           extraReadOnlyPaths = cfg.bubblewrap.extraReadOnlyPaths;
         })
       ];
