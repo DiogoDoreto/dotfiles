@@ -33,9 +33,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     llm-agents.url = "github:numtide/llm-agents.nix";
+    linux-systems.url = "github:nix-systems/x86_64-linux";
     handy = {
       url = "github:cjpais/Handy";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.bun2nix.inputs.systems.follows = "linux-systems";
     };
     forgejo-cli.url = "git+https://codeberg.org/forgejo-contrib/forgejo-cli";
     microvm = {
