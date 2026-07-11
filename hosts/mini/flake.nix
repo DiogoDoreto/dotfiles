@@ -46,6 +46,21 @@
         inputs.nur.overlays.default
         inputs.llm-agents.overlays.default
         (final: prev: {
+          # https://github.com/NixOS/nixpkgs/pull/540681
+          calibre-web = prev.calibre-web.overridePythonAttrs (old: {
+            pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [
+              "certifi"
+              "chardet"
+            ];
+          });
+          pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+            (python-final: python-prev: {
+              pip-chill = python-prev.pip-chill.overridePythonAttrs (old: {
+                doCheck = false;
+                pythonImportsCheck = [ ];
+              });
+            })
+          ];
           inherit (inputs.home-manager.packages.${system}) home-manager;
           orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
         })
