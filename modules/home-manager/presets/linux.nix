@@ -23,10 +23,11 @@ in
       };
 
       pointerCursor = {
+        enable = true;
+        gtk.enable = true;
         name = "Nordzy-cursors-white";
         package = pkgs.nordzy-cursor-theme;
         size = 32;
-        gtk.enable = true;
       };
 
       sessionVariables = {
