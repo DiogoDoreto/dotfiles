@@ -31,6 +31,7 @@ in
           ];
           uiColor = colors.Cerulean;
           drawColor = "crimson";
+          useX11LegacyScreenshot = true;
         };
       };
     };
