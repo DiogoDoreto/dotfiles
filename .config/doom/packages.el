@@ -1,14 +1,18 @@
 ;;; $DOOMDIR/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
 
-;; (package! jsts
-;;   :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
+;; (package! jsts :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
 
-(package! tts
-  :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
+(package! tts :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
 (package! modus-themes :pin "e81c3c6ce3cdeb02266487a6fc1461cb9194c70e")
 
 (package! ef-themes :pin "db36d53c090d7820643157f2e81ee37937fe4a0d")
+
+(package! consult-gh :recipe (:host github :repo "armindarvish/consult-gh")
+  :pin "7042619362cd47314d3d0f706fa9cac5bf07950c")
+
+(package! consult-omni :recipe (:host github :repo "armindarvish/consult-omni" :files (:defaults "sources/*.el"))
+  :pin "3a126ee54479755408faed10da945dbc2366303b")
 
 (package! dts-mode :pin "cd1847d0e7162c1ecab772c6ca7ef4f3c5d2214d")
 

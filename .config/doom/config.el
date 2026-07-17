@@ -475,6 +475,26 @@ and return to the original position."
   :config
   (elfeed-protocol-freshrss-register-protocol))
 
+(map! :leader :prefix ("/" . "Omni Search")
+      :desc "SearxNG"   "/" #'consult-omni-searxng-static
+      :desc "GitHub"    "g" #'consult-omni-github-static
+      :desc "Wikipedia" "w" #'consult-omni-wikipedia-static)
+
+(use-package consult-omni
+  :defer t
+  :commands (consult-omni-github-static
+             consult-omni-searxng-static
+             consult-omni-wikipedia-static)
+  :config
+  (setq consult-omni-sources-modules-to-load '(consult-omni-gh
+                                               consult-omni-wikipedia
+                                               consult-omni-searxng)
+        consult-omni-show-preview nil)
+  (load! "dd/consult-omni-searxng")
+  (require 'consult-omni-embark)
+  (require 'consult-omni-sources)
+  (consult-omni-sources-load-modules))
+
 ;;; Random stuff...
 
 (setq +dashboard-menu-sections
