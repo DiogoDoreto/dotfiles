@@ -44,7 +44,6 @@
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
-        inputs.llm-agents.overlays.default
         (final: prev: {
           # https://github.com/NixOS/nixpkgs/pull/540681
           calibre-web = prev.calibre-web.overridePythonAttrs (old: {
@@ -62,6 +61,7 @@
             })
           ];
           inherit (inputs.home-manager.packages.${system}) home-manager;
+          llm-agents = inputs.llm-agents.packages.${system};
           orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
         })
       ];
