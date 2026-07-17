@@ -57,7 +57,6 @@
       system = "x86_64-linux";
 
       overlays = [
-        inputs.llm-agents.overlays.default
         inputs.nur.overlays.default
 
         inputs.my-kwtype.overlays.default
@@ -67,6 +66,7 @@
           inherit (inputs.forgejo-cli.packages.${system}) forgejo-cli;
           handy = inputs.handy.packages.${system}.default;
           llama-cpp = inputs.llama-cpp.packages.${system}.vulkan;
+          llm-agents = inputs.llm-agents.packages.${system};
         })
       ]
       ++ builtins.attrValues inputs.my-ipu7.outputs.overlays;
