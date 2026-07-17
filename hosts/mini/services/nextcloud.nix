@@ -76,7 +76,11 @@ in
     };
     extraApps = {
       inherit (pkgs) orgnotes;
-      inherit (nextcloudPkg.packages.apps) oidc_login;
+      inherit (nextcloudPkg.packages.apps)
+        calendar
+        oidc_login
+        whiteboard
+        ;
     };
     extraAppsEnable = true;
   };
