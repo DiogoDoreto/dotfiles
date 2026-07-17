@@ -33,6 +33,8 @@
 (package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")
 
 (package! elfeed-protocol :pin "58936590459ccc2dfd6132f69983011d15d9404a")
+(package! elfeed-protocol-freshrss :recipe (:host codeberg :repo "lou/elfeed-protocol-freshrss")
+  :pin "7f9eca125ffa1e82fbcd2d63b734f13203feb5a4")
 
 (package! evil-textobj-tree-sitter :pin "fecc0e11615df31a6651ce11b012388e53cad4e9")
 

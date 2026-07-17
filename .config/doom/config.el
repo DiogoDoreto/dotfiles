@@ -243,7 +243,7 @@ Based on the code of `doom/bump-package-at-point'"
            (oldid (or (plist-get plist :pin)
                       (doom-package-get package :pin)))
            (url (straight-vc-git--destructure recipe (upstream-repo upstream-host)
-                  (straight-vc-git--encode-url upstream-repo upstream-host)))
+                                              (straight-vc-git--encode-url upstream-repo upstream-host)))
            (id (or (when url
                      (message "Checking last commit...")
                      (cdr (doom-call-process
@@ -267,10 +267,6 @@ Based on the code of `doom/bump-package-at-point'"
       (other-window-prefix)
       (magit-log-other (list (concat "..." id))))))
 
-(map! :leader :prefix ("C-SPC p" . "  package mgmt")
-      :desc "Diff this package with next bump" "d" #'dd/diff-bump-package-at-point
-      :desc "Bump this package" "b" #'doom/bump-package-at-point)
-
 ;;; Extra config files
 
 (load! "dd/common-lisp")
@@ -289,6 +285,10 @@ Based on the code of `doom/bump-package-at-point'"
   ("DT-5RHWB24" (load! "dd/dunst")))
 
 ;;; General mappings
+
+(map! :leader :prefix ("C-SPC p" . "  package mgmt")
+      :desc "Diff this package with next bump" "d" #'dd/diff-bump-package-at-point
+      :desc "Bump this package" "b" #'doom/bump-package-at-point)
 
 ;; navigate through visual lines by default
 (map! :nv "j"  #'evil-next-visual-line
@@ -337,30 +337,6 @@ and return to the original position."
       :desc "Highlight cursor line" :n "L" #'hl-line-mode)
 
 (map! :map dired-mode-map :n "<backspace>" #'dired-up-directory)
-
-(defun dd/elfeed-search-sync ()
-  "Update feeds and re-sync unread status.
-Based on https://github.com/fasheng/elfeed-protocol/issues/28"
-  (interactive)
-  (mark-whole-buffer)
-  (cl-loop for entry in (elfeed-search-selected)
-           do (elfeed-untag-1 entry 'unread)) ; local operation, won't sync
-  (elfeed-search-update--force)
-  (let ((host (cadr (string-split (car (elfeed-protocol-feed-list)) "+"))))
-    (elfeed-protocol-fever-reinit host)))
-
-(map! :map elfeed-search-mode-map
-      :desc "Toggle read tag" "<tab>" (cmd! (elfeed-search-toggle-all 'unread)))
-
-(map! :localleader :map elfeed-search-mode-map
-      :desc "Update feeds"    "m" #'dd/elfeed-search-sync
-      :desc "Mark read"       "r" #'elfeed-search-untag-all-unread
-      :desc "Mark unread"     "u" #'elfeed-search-tag-all-unread
-      :desc "Open in browser" "o" #'elfeed-search-browse-url)
-
-(map! :localleader :map elfeed-show-mode-map
-      :desc "Mark read"   "r" (cmd! (elfeed-show-untag 'unread))
-      :desc "Mark unread" "u" (cmd! (elfeed-show-tag 'unread)))
 
 ;;; After packages
 
@@ -461,17 +437,43 @@ Based on https://github.com/fasheng/elfeed-protocol/issues/28"
     :quit nil
     :ttl nil))
 
-;; (use-package elfeed-protocol
-;;   :after elfeed
-;;   :config
-;;   (setq elfeed-search-filter "@2-weeks-ago +unread")
-;;   (setq elfeed-protocol-enabled-protocols '(fever))
-;;   (setq elfeed-protocol-fever-update-unread-only nil)
-;;   (setq elfeed-protocol-fever-fetch-category-as-tag t)
-;;   (setq elfeed-feeds '(("fever+https://diogo@freshrss.local.doreto.com.br"
-;;                         :api-url "https://freshrss.local.doreto.com.br/api/fever.php"
-;;                         :password "freshrss")))
-;;   (elfeed-protocol-enable))
+(use-package elfeed
+  :defer t
+  :config
+  (setq elfeed-use-curl t
+        elfeed-feeds `(("freshrss+https://diogo@freshrss.local.doreto.com.br"
+                        :api-url "https://freshrss.local.doreto.com.br/api/greader.php"
+                        :password "freshrss"))
+        elfeed-search-filter "@2-weeks-ago +unread")
+  (require 'elfeed-protocol)
+  (require 'elfeed-protocol-freshrss)
+  (elfeed-protocol-enable)
+
+  (map! :map elfeed-search-mode-map
+        :desc "Toggle read tag" "<tab>" (cmd! (elfeed-search-toggle-all 'unread)))
+
+  (map! :localleader :map elfeed-search-mode-map
+        :desc "Update feeds"    "m" #'elfeed-update
+        :desc "Mark read"       "r" #'elfeed-search-untag-all-unread
+        :desc "Mark unread"     "u" #'elfeed-search-tag-all-unread
+        :desc "Open in browser" "o" #'elfeed-search-browse-url)
+
+  (map! :localleader :map elfeed-show-mode-map
+        :desc "Mark read"   "r" (cmd! (elfeed-show-untag 'unread))
+        :desc "Mark unread" "u" (cmd! (elfeed-show-tag 'unread))))
+
+
+(use-package elfeed-protocol
+  :defer t
+  :after elfeed
+  :config
+  (setq elfeed-protocol-enabled-protocols '(freshrss)))
+
+(use-package elfeed-protocol-freshrss
+  :defer t
+  :after elfeed-protocol
+  :config
+  (elfeed-protocol-freshrss-register-protocol))
 
 ;;; Random stuff...
 
