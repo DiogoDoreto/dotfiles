@@ -45,7 +45,17 @@ let
     zstd
   ];
   localCaBundle = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
-  forgejoWithGitPagesPreviewAuth = pkgs.forgejo.overrideAttrs (oldAttrs: {
+  # v15.0.4 is incompatible with the patch below, so let's stay at v15.0.3 until
+  # v16 arrives and then the patch is not needed anymore
+  # https://github.com/NixOS/nixpkgs/pull/542602
+  forgejoPinned = pkgs.callPackage (import (pkgs.path + "/pkgs/by-name/fo/forgejo/generic.nix") {
+    version = "15.0.3";
+    hash = "sha256-tGZ83TEG6iyZd5mfSuSvVkmUJINWLN661YpOk1+dgbM=";
+    npmDepsHash = "sha256-BZSYjEsjUqMYWu3EUP+K35hqSOniv8Y6ek5bEC2vTPg=";
+    vendorHash = "sha256-z3YTjt+SM9yPCsJdfSQbTpy3vRiXaFV2QMz1y6J6k/Q=";
+    lts = true;
+  }) { };
+  forgejoWithGitPagesPreviewAuth = forgejoPinned.overrideAttrs (oldAttrs: {
     pname = "${oldAttrs.pname}-pr-12727";
     patches = (oldAttrs.patches or [ ]) ++ [
       (pkgs.fetchpatch {
