@@ -42,6 +42,9 @@
   # enable CUDA per-program that needs it
   # nixpkgs.config.cudaSupport = true;
 
+  # Use latest kernel.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
   # Early KMS: load i915 in initrd so Intel iGPU output is stable before SDDM starts.
   # Without this, there's a race between driver init and the display manager that
   # causes the HDMI signal to randomly drop on cold boot.
