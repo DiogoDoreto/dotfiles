@@ -49,16 +49,6 @@
       plasma-integration = true;
     };
     ghostty.enable = true;
-
-    claude-code = {
-      enable = true;
-      bubblewrap = {
-        enable = true;
-        extraWritablePaths = [
-          "~/p/"
-        ];
-      };
-    };
   };
 
   services.kdeconnect = {
