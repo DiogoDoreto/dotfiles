@@ -14,7 +14,7 @@ in
     image = "ghcr.io/invoke-ai/invokeai:latest";
     ports = [ "${toString vars.ports.invokeai}:${toString vars.ports.invokeai}" ];
     volumes = [
-      "/var/lib/invokeai:/invokeai"
+      "/data/invokeai:/invokeai"
       "/var/cache/huggingface:/invokeai/.cache/huggingface"
     ];
     environment = {
@@ -27,7 +27,7 @@ in
   };
 
   systemd.tmpfiles.rules = [
-    "d /var/lib/invokeai 0755 root root -"
+    "d /data/invokeai 0755 root root -"
     "d /var/cache/huggingface 0755 root root -"
   ];
 
