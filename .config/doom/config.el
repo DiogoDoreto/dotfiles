@@ -343,7 +343,8 @@ and return to the original position."
 (with-eval-after-load 'corfu
   (setq +corfu-want-tab-prefer-expand-snippets nil
         +corfu-want-tab-prefer-navigating-snippets t
-        +corfu-want-tab-prefer-navigating-org-tables t))
+        +corfu-want-tab-prefer-navigating-org-tables t
+        cape-dabbrev-buffer-function #'cape-text-buffers))
 
 (with-eval-after-load 'ibuffer
   ;; Update the value set by doom's :emacs/ibuffer module to increase the width
