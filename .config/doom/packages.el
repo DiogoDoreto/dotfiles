@@ -1,6 +1,6 @@
 ;;; $DOOMDIR/packages.el -*- lexical-binding: t; no-byte-compile: t; -*-
 
-;; (package! jsts :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
+(package! jsts :recipe (:host github :repo "DiogoDoreto/emacs-jsts"))
 
 (package! tts :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
