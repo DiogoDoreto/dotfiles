@@ -498,8 +498,15 @@ and return to the original position."
 
 ;;; Random stuff...
 
+(defun dd/open-journal ()
+  (interactive)
+  (org-capture '(4) "j"))
+
 (setq +dashboard-menu-sections
-      `(,@(seq-take +dashboard-menu-sections 5)
+      `(("Open Journal"
+         :icon (nerd-icons-octicon "nf-oct-calendar" :face '+dashboard-menu-title)
+         :action dd/open-journal)
+        ,@(seq-take (seq-drop +dashboard-menu-sections 2) 3)
         ("Read Feeds"
          :icon (nerd-icons-mdicon "nf-md-rss_box" :face '+dashboard-menu-title)
          :action elfeed)
