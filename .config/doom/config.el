@@ -402,7 +402,9 @@ and return to the original position."
         "M-p"   #'jinx-previous
         "M-n"   #'jinx-next
         "M-$"   #'jinx-correct
-        "C-M-$" #'jinx-languages))
+        "C-M-$" #'jinx-languages)
+
+  (add-to-list 'jinx-exclude-faces '(json-mode font-lock-string-face)))
 
 (use-package ct :defer t)
 
