@@ -4,7 +4,7 @@
 
 (package! tts :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
-(package! modus-themes :pin "e81c3c6ce3cdeb02266487a6fc1461cb9194c70e")
+(package! modus-themes :pin "7d53a6959c92b40e3f819b134f7db93ec9a31352")
 
 (package! ef-themes :pin "db36d53c090d7820643157f2e81ee37937fe4a0d")
 
