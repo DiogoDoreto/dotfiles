@@ -54,3 +54,17 @@ direnv allow
 ## Deployment Notes
 
 - all NixOS deployments are manually done by the user, you may build lapdog and mini hosts locally for verification when necessary
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked as local Markdown files under `.private/`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This repository uses a single-context domain-doc layout. See `docs/agents/domain.md`.
+
+### Temporary folder
+
+When a skill instructs you to use the tmp dir, use `.private/tmp/`, do not use the system's `/tmp`.
