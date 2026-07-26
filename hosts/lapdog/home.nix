@@ -158,6 +158,7 @@ in
       enable = true;
       extraWritablePaths = [
         "~/projects/"
+        "~/.local/share/forgejo-cli/"
       ];
     };
 
