@@ -281,93 +281,79 @@ PACKAGE-REF must have the form INPUT#ATTR-PATH, such as
 ;;; dd-nix-search
 
 (defvar-local dd-nix-search--package-alist nil
-  "stores (ID . full-package-info) for the search results buffer")
+  "Store (ID . FULL-PACKAGE-INFO) for the search results buffer.")
 
-(defun dd-nix--search-json-payload (query)
-  "Construct the JSON payload for the Nix search API using QUERY."
-  (json-encode
-   `((from . 0)
-     (size . 30)
-     (query
-      (bool
-       (filter ((term (type (value . "package")
-                            (_name . "filter_packages")))))
-       (must ((dis_max
-               (tie_breaker . 0.7)
-               (queries ((multi_match
-                          (type . "cross_fields")
-                          (query . ,query)
-                          (analyzer . "whitespace")
-                          (auto_generate_synonyms_phrase_query . :false)
-                          (operator . "and")
-                          (_name . "multi_match")
-                          (fields . ("package_attr_name^9"
-                                     "package_attr_name.*^5.3999999999999995"
-                                     "package_programs^9"
-                                     "package_programs.*^5.3999999999999995"
-                                     "package_pname^6"
-                                     "package_pname.*^3.5999999999999996"
-                                     "package_description^1.3"
-                                     "package_description.*^0.78"
-                                     "package_longDescription^1"
-                                     "package_longDescription.*^0.6"
-                                     "flake_name^0.5"
-                                     "flake_name.*^0.3"))))
-                        ((wildcard
-                          (package_attr_name
-                           (value . ,(concat "*" query "*"))
-                           (case_insensitive . t)))))))))))))
+(defun dd-nix-search--command (query)
+  "Return the `nh' package search command for QUERY."
+  (list "nh" "search" "packages" "--json" query))
+
+(defun dd-nix-search--parse-output (output)
+  "Parse package records from `nh' JSON OUTPUT."
+  (let* ((response
+          (json-parse-string output
+                             :array-type 'list
+                             :object-type 'alist
+                             :null-object nil))
+         (packages (alist-get 'results response 'missing)))
+    (when (eq packages 'missing)
+      (signal 'json-parse-error '("Expected an nh results array")))
+    packages))
+
+(defun dd-nix-search--package-data (packages)
+  "Return lookup alist and tabulated entries for PACKAGES."
+  (let ((package-alist
+         (mapcar
+          (lambda (package)
+            (cons (or (alist-get 'package_attr_name package) "") package))
+          packages))
+        (entries
+         (mapcar
+          (lambda (package)
+            (let ((attr-name (or (alist-get 'package_attr_name package) "")))
+              (list attr-name
+                    (vector attr-name
+                            (or (alist-get 'package_pversion package) "")
+                            (or (alist-get 'package_description package) "")
+                            (string-join
+                             (or (alist-get 'package_programs package) '()) ", ")
+                            (string-join
+                             (or (alist-get 'package_platforms package) '()) ", ")))))
+          packages)))
+    (cons package-alist entries)))
+
+(defun dd-nix-search--render (packages)
+  "Display PACKAGES in the Nix package search results buffer."
+  (pcase-let ((`(,package-alist . ,entries)
+               (dd-nix-search--package-data packages))
+              (buffer (get-buffer-create "*Nix Package Search*")))
+    (with-current-buffer buffer
+      (setq buffer-read-only nil)
+      (erase-buffer)
+      (dd-nix-search-results-mode)
+      (setq dd-nix-search--package-alist package-alist
+            tabulated-list-entries entries)
+      (tabulated-list-init-header)
+      (tabulated-list-print)
+      (goto-char (point-min))
+      (setq buffer-read-only t))
+    (pop-to-buffer buffer)))
 
 (defun dd-nix-search (query)
-  "Search for Nix packages via https://search.nixos.org using QUERY."
+  "Search Nix packages with `nh' using QUERY."
   (interactive (list (read-string "Nix search query: ")))
-  (let* ((url-request-method "POST")
-         (url-request-extra-headers '(("Content-Type" . "application/json")
-                                      ("Authorization" . "Basic YVdWU0FMWHBadjpYOGdQSG56TDUyd0ZFZWt1eHNmUTljU2g=")))
-         (url-request-data (dd-nix--search-json-payload query))
-         (api-url "https://search.nixos.org/backend/latest-44-nixos-unstable/_search")
-         (buf (generate-new-buffer "*Nix Package Search*")))
-    (message "Searching Nix packages for: %s..." query)
-    (url-retrieve
-     api-url
-     (lambda (_status)
-       (goto-char (point-min))
-       (re-search-forward "\n\n" nil t) ; skip headers
-       (let* ((json-object-type 'alist)
-              (json-array-type 'list)
-              (json-key-type 'symbol)
-              (data (json-read)))
-         (let* ((hits (alist-get 'hits (alist-get 'hits data)))
-                (package-alist
-                 (mapcar (lambda (hit)
-                           (let* ((src (alist-get '_source hit))
-                                  (attr-name (or (alist-get 'package_attr_name src) "")))
-                             (cons attr-name src)))
-                         hits))
-                (table
-                 (mapcar
-                  (lambda (hit)
-                    (let* ((src (alist-get '_source hit))
-                           (attr-name (or (alist-get 'package_attr_name src) ""))
-                           (version (or (alist-get 'package_pversion src) ""))
-                           (desc (or (alist-get 'package_description src) ""))
-                           (programs (string-join (or (alist-get 'package_programs src) '()) ", "))
-                           (platforms (string-join (or (alist-get 'package_platforms src) '()) ", ")))
-                      (list attr-name
-                            (vector attr-name version desc programs platforms))))
-                  hits)))
-           (with-current-buffer buf
-             (setq buffer-read-only nil)
-             (erase-buffer)
-             (dd-nix-search-results-mode)
-             (setq dd-nix-search--package-alist package-alist)
-             (setq tabulated-list-entries table)
-             (tabulated-list-init-header)
-             (tabulated-list-print)
-             (goto-char (point-min))
-             (setq buffer-read-only t)
-             (pop-to-buffer buf)))))
-     nil t)))
+  (when (string-empty-p (string-trim query))
+    (user-error "Search query cannot be empty"))
+  (message "Searching Nix packages for: %s..." query)
+  (dd-nix-version-compare--run
+   (dd-nix-search--command query)
+   (lambda (exit-code output)
+     (if (not (zerop exit-code))
+         (message "Nix package search failed: %s" output)
+       (condition-case error-data
+           (dd-nix-search--render (dd-nix-search--parse-output output))
+         (error
+          (message "Nix package search failed: %s"
+                   (error-message-string error-data))))))))
 
 (defun dd-nix-search--show-details ()
   "Show full information about the currently selected Nix package."
