@@ -9,7 +9,7 @@
   (setopt agent-shell-session-strategy 'prompt
           agent-shell-show-usage-at-turn-end t
           agent-shell-context-sources '(files region error)
-          agent-shell-busy-indicator-frames 'dots-block
+          agent-shell-busy-indicator-frames '("«(-‿-)»" "«(-‿-)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›")
           agent-shell-session-restore-verbosity 'full)
 
   (when (string= (system-name) "lapdog")
