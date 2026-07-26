@@ -479,11 +479,13 @@ and return to the original position."
 (map! :leader :prefix ("/" . "Omni Search")
       :desc "SearxNG"   "/" #'consult-omni-searxng-static
       :desc "GitHub"    "g" #'consult-omni-github-static
+      :desc "Nix packages" "n" #'consult-omni-nix-static
       :desc "Wikipedia" "w" #'consult-omni-wikipedia-static)
 
 (use-package consult-omni
   :defer t
   :commands (consult-omni-github-static
+             consult-omni-nix-static
              consult-omni-searxng-static
              consult-omni-wikipedia-static)
   :config
@@ -492,6 +494,7 @@ and return to the original position."
                                                consult-omni-searxng)
         consult-omni-show-preview nil)
   (load! "dd/consult-omni-searxng")
+  (load! "dd/consult-omni-nix")
   (require 'consult-omni-embark)
   (require 'consult-omni-sources)
   (consult-omni-sources-load-modules))

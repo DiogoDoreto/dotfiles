@@ -161,7 +161,9 @@
      "\n")))
 
 (defun dd-nix-version-compare--run (command callback)
-  "Run COMMAND asynchronously and call CALLBACK with (EXIT-CODE OUTPUT)."
+  "Run COMMAND asynchronously and call CALLBACK with (EXIT-CODE OUTPUT).
+
+Return the created process."
   (let ((buffer (generate-new-buffer " *dd-nix-version-compare*")))
     (make-process
      :name "dd-nix-version-compare"
@@ -355,32 +357,34 @@ PACKAGE-REF must have the form INPUT#ATTR-PATH, such as
           (message "Nix package search failed: %s"
                    (error-message-string error-data))))))))
 
+(defun dd-nix-search-show-package-details (package)
+  "Show full information from Nix PACKAGE record and return its buffer."
+  (let* ((attr-name (or (alist-get 'package_attr_name package) "unknown"))
+         (buf (generate-new-buffer (format "*Nix Package: %s*" attr-name))))
+    (with-current-buffer buf
+      (insert (format "Nix Package details for: %s\n\n" attr-name))
+      (dolist (field package)
+        (pcase-let ((`(,key . ,value) field))
+          (when value
+            (insert (format "%20s: %s\n"
+                            (symbol-name key)
+                            (if (and (listp value) (not (stringp value)))
+                                (mapconcat (lambda (item) (prin1-to-string item t))
+                                           value ", ")
+                              (prin1-to-string value t)))))))
+      (goto-char (point-min))
+      (view-mode 1)
+      (goto-address-mode 1))
+    (pop-to-buffer buf)
+    buf))
+
 (defun dd-nix-search--show-details ()
   "Show full information about the currently selected Nix package."
   (interactive)
   (let* ((id (tabulated-list-get-id))
-         (pkg-src (when (boundp 'dd-nix-search--package-alist)
-                    (cdr (assoc id dd-nix-search--package-alist)))))
-    (if pkg-src
-        (let ((buf (generate-new-buffer (format "*Nix Package: %s*" (or (alist-get 'package_attr_name pkg-src) id)))))
-          (with-current-buffer buf
-            (setq buffer-read-only nil)
-            (erase-buffer)
-            (insert (format "Nix Package details for: %s\n\n" (or (alist-get 'package_attr_name pkg-src) id)))
-            (dolist (field pkg-src)
-              (let ((k (car field))
-                    (v (cdr field)))
-                (when v
-                  (insert (format "%20s: %s\n"
-                                  (symbol-name k)
-                                  (if (and (listp v) (not (stringp v)))
-                                      (mapconcat (lambda (item) (prin1-to-string item t)) v ", ")
-                                    (prin1-to-string v t)))))))
-            (goto-char (point-min))
-            (view-mode 1)
-            (goto-address-mode 1)
-            (setq buffer-read-only t)
-            (pop-to-buffer buf)))
+         (package (cdr (assoc id dd-nix-search--package-alist))))
+    (if package
+        (dd-nix-search-show-package-details package)
       (message "No details available for this package."))))
 
 (define-derived-mode dd-nix-search-results-mode tabulated-list-mode "Nix Search Results"
