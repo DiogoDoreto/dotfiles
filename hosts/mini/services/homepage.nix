@@ -182,6 +182,13 @@ in
                 };
               }
               {
+                "Cockpit" = rec {
+                  icon = "cockpit.png";
+                  href = "https://cockpit.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+              {
                 "VictoriaLogs" = rec {
                   icon = "victorialogs.png";
                   href = "https://logs.local.doreto.com.br/select/vmui/";

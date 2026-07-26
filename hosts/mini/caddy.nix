@@ -32,6 +32,11 @@ in
           reverse_proxy http://127.0.0.1:${p.authentik}
         '';
       };
+      "cockpit.local.doreto.com.br" = {
+        extraConfig = ''
+          reverse_proxy http://127.0.0.1:${p.cockpit}
+        '';
+      };
       "nextcloud.local.doreto.com.br" = {
         extraConfig = ''
           header Strict-Transport-Security "max-age=15552000; includeSubDomains"

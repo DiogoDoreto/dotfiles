@@ -19,6 +19,7 @@ in
     ./caddy.nix
     ./backup.nix
     ./services/authentik.nix
+    ./services/cockpit.nix
     ./services/forgejo.nix
     ./services/git-pages.nix
     ./services/cloudflared.nix
