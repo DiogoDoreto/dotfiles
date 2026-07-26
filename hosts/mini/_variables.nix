@@ -18,7 +18,7 @@
     authentik = 9000; # authentik internal HTTP; default from authentik-nix module
     bazarr = 6767;
     calibre = 18083;
-    cockpit = 9090;
+    cockpit = 9091;
     forgejo = 3000;
     forgejoSsh = 2222;
     gitPages = 3010;

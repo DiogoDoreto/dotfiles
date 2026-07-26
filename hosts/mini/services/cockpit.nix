@@ -15,6 +15,7 @@ in
   };
 
   systemd.sockets.cockpit.listenStreams = lib.mkForce [
+    ""
     "127.0.0.1:${toString vars.ports.cockpit}"
   ];
 }
