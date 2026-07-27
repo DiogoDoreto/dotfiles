@@ -91,7 +91,6 @@ in
         {
           "bar/primary" = defaultBar // {
             modules = defaultBar.modules // {
-              center = "spotify";
               right = "audio battery cpu memory fs eth0 wifi wired date tray";
             };
           };
@@ -213,29 +212,6 @@ in
               "󰤥"
               "󰤨"
             ];
-          };
-          "module/spotify" = {
-            # Shows current playing musing info only when playing. Hides when paused/closed.
-            type = "custom/script";
-            tail = true;
-            click.left = "${pkgs.i3}/bin/i3-msg '[class=Spotify] focus'";
-            format.prefix = "󰝚  ";
-            exec =
-              let
-                playerctl = "${getExe pkgs.playerctl} -p spotify,firefox";
-                zscroll = getExe pkgs.zscroll;
-                statusCmd = pkgs.writeShellScript "player-status.sh" ''
-                  status="$(${playerctl} status 2>/dev/null)"
-                  if [[ "$status" = "Playing" ]]; then
-                    ${playerctl} metadata --format "{{ artist }} - {{ title }}"
-                  fi
-                '';
-                scrollCmd = pkgs.writeShellScript "player-scroll.sh" ''
-                  ${zscroll} -u true '${statusCmd}' &
-                  wait
-                '';
-              in
-              toString scrollCmd;
           };
           "module/audio" = {
             type = "internal/pulseaudio";
