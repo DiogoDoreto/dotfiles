@@ -272,6 +272,7 @@ Based on the code of `doom/bump-package-at-point'"
 (load! "dd/common-lisp")
 (load! "dd/dired")
 (load! "dd/elisp")
+(load! "dd/embark")
 (load! "dd/javascript")
 (load! "dd/lsp")
 (load! "dd/nix")
@@ -554,3 +555,4 @@ Saves to a temp file and puts the filename in the kill ring."
   (interactive)
   (let ((fill-column most-positive-fixnum))
     (fill-region (point-min) (point-max))))
+
