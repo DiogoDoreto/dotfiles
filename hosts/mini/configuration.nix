@@ -10,9 +10,22 @@
 
 let
   vars = import ./_variables.nix;
+  ports = builtins.concatMap (port: if builtins.isList port then port else [ port ]) (
+    builtins.attrValues vars.ports
+  );
+  duplicatePorts = builtins.filter (
+    port: builtins.length (builtins.filter (candidate: candidate == port) ports) > 1
+  ) (pkgs.lib.unique ports);
 in
 
 {
+  assertions = [
+    {
+      assertion = duplicatePorts == [ ];
+      message = "Duplicate ports in hosts/mini/_variables.nix: ${builtins.toJSON duplicatePorts}";
+    }
+  ];
+
   imports = [
     ./hardware.nix # Include the results of the hardware scan.
     ./networking.nix
