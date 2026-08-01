@@ -49,6 +49,7 @@
       plasma-integration = true;
     };
     ghostty.enable = true;
+    plasma-fix-taskbar-icons.enable = true;
   };
 
   services.kdeconnect = {
