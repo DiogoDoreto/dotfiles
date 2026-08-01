@@ -9,6 +9,7 @@
     packages = with pkgs; [
       pods
       ungoogled-chromium
+      nvtopPackages.nvidia
     ];
   };
 
