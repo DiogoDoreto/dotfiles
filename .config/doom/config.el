@@ -339,6 +339,12 @@ and return to the original position."
 
 (map! :map dired-mode-map :n "<backspace>" #'dired-up-directory)
 
+(map! :map diff-hl-mode-map
+      :leader
+      "g p" #'diff-hl-show-hunk
+      "g [" #'diff-hl-show-hunk-previous
+      "g ]" #'diff-hl-show-hunk-next)
+
 ;;; After packages
 
 (with-eval-after-load 'corfu
