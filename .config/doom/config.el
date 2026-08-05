@@ -341,6 +341,7 @@ and return to the original position."
 
 (map! :map diff-hl-mode-map
       :leader
+      "g P" #'diff-hl-set-reference-rev-in-project
       "g p" #'diff-hl-show-hunk
       "g [" #'diff-hl-show-hunk-previous
       "g ]" #'diff-hl-show-hunk-next)
