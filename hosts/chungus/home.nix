@@ -7,6 +7,7 @@
 
   home = {
     packages = with pkgs; [
+      podman-compose
       pods
       ungoogled-chromium
       nvtopPackages.nvidia
