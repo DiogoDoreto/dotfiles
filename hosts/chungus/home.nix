@@ -27,7 +27,11 @@
       enableBashIntegration = false;
     };
 
-    neovim.enable = true;
+    neovim = {
+      enable = true;
+      withPython3 = false;
+      withRuby = false;
+    };
 
     mpv = {
       enable = true;
