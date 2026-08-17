@@ -263,9 +263,9 @@ Based on the code of `doom/bump-package-at-point'"
         (user-error "%s: no update necessary" package))
       (message "Preparing diff...")
       (doom-call-process "git" "fetch" "origin")
-      (magit-diff-range (concat "..." id))
+      (magit-diff-range (concat ".." id))
       (other-window-prefix)
-      (magit-log-other (list (concat "..." id))))))
+      (magit-log-other (list (concat ".." id))))))
 
 ;;; Extra config files
 

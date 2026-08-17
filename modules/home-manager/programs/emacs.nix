@@ -180,6 +180,8 @@ let
         enable = true;
         flags = [
           "+grip"
+          "+lsp"
+          "+tree-sitter"
         ];
       };
       nix = {

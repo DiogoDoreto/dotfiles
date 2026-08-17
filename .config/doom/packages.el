@@ -4,12 +4,12 @@
 
 (package! tts :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
-(package! modus-themes :pin "7d53a6959c92b40e3f819b134f7db93ec9a31352")
+(package! modus-themes :pin "75aa3fa79efd04ddf7980a1d3ec0cef6e4f4af90")
 
 (package! ef-themes :pin "db36d53c090d7820643157f2e81ee37937fe4a0d")
 
 (package! consult-gh :recipe (:host github :repo "armindarvish/consult-gh")
-  :pin "7042619362cd47314d3d0f706fa9cac5bf07950c")
+  :pin "c8707e86d36ea4ec38e177ca8fa0313a5374a0a9")
 
 (package! consult-omni :recipe (:host github :repo "armindarvish/consult-omni" :files (:defaults "sources/*.el"))
   :pin "3a126ee54479755408faed10da945dbc2366303b")
@@ -38,7 +38,7 @@
 
 (package! elfeed-protocol :pin "58936590459ccc2dfd6132f69983011d15d9404a")
 (package! elfeed-protocol-freshrss :recipe (:host codeberg :repo "lou/elfeed-protocol-freshrss")
-  :pin "7f9eca125ffa1e82fbcd2d63b734f13203feb5a4")
+  :pin "117772f9063e62c51a6772524ba129389bd8f3d8")
 
 (package! evil-textobj-tree-sitter :pin "fecc0e11615df31a6651ce11b012388e53cad4e9")
 
