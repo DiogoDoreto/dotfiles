@@ -122,7 +122,7 @@
         dogdot = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
           modules = nixos-modules ++ [
-            nixos-hardware.nixosModules.common-cpu-intel
+            (nixos-hardware.outPath + "/common/cpu/intel/alder-lake")
             inputs.authentik-nix.nixosModules.default
             inputs.microvm.nixosModules.host
             ./configuration.nix
