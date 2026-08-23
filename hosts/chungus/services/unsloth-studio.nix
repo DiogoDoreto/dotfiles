@@ -34,7 +34,7 @@ in
     ];
     volumes = [
       "/data/unsloth/work:/workspace/work"
-      "/data/unsloth/auth:/home/unsloth/.unsloth/studio/auth"
+      "/data/unsloth/auth:/workspace/studio/auth"
       "/nix/store:/nix/store:ro"
       "${llama-server-gpu}:/home/unsloth/.unsloth/llama.cpp/build/bin/llama-server:ro"
     ];
