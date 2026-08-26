@@ -43,7 +43,7 @@ in
         { path = "~/.config/git/config.private"; }
       ];
       ignores = [
-        ".private/"
+        ".private"
         ".wt/"
         # emacs
         ".dir-locals.el"
