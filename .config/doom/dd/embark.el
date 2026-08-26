@@ -36,6 +36,20 @@ When ABSOLUTE is non-nil, abbreviate the absolute path."
   (interactive "bBuffer: ")
   (insert (dd/embark-buffer-path buffer t)))
 
+(defun dd/embark-copy-buffer-relative-path (buffer)
+  "Copy BUFFER's file path relative to the invoking buffer to the kill ring."
+  (interactive "bBuffer: ")
+  (let ((path (dd/embark-buffer-path buffer nil)))
+    (kill-new path)
+    (message "Copied: %s" path)))
+
+(defun dd/embark-copy-buffer-absolute-path (buffer)
+  "Copy BUFFER's abbreviated absolute file path to the kill ring."
+  (interactive "bBuffer: ")
+  (let ((path (dd/embark-buffer-path buffer t)))
+    (kill-new path)
+    (message "Copied: %s" path)))
+
 (defun dd/embark-insert-file-relative-path (file)
   "Insert FILE relative to the invoking buffer."
   (interactive "FFile: ")
@@ -46,12 +60,30 @@ When ABSOLUTE is non-nil, abbreviate the absolute path."
   (interactive "FFile: ")
   (insert (dd/embark-path file t)))
 
+(defun dd/embark-copy-file-relative-path (file)
+  "Copy FILE relative to the invoking buffer to the kill ring."
+  (interactive "FFile: ")
+  (let ((path (dd/embark-path file nil)))
+    (kill-new path)
+    (message "Copied: %s" path)))
+
+(defun dd/embark-copy-file-absolute-path (file)
+  "Copy FILE's abbreviated absolute path to the kill ring."
+  (interactive "FFile: ")
+  (let ((path (dd/embark-path file t)))
+    (kill-new path)
+    (message "Copied: %s" path)))
+
 (after! embark
   (map! :map embark-buffer-map
         "i" #'dd/embark-insert-buffer-relative-path
         "I" #'dd/embark-insert-buffer-absolute-path
+        "y" #'dd/embark-copy-buffer-relative-path
+        "Y" #'dd/embark-copy-buffer-absolute-path
         :map embark-file-map
         "i" #'dd/embark-insert-file-relative-path
-        "I" #'dd/embark-insert-file-absolute-path))
+        "I" #'dd/embark-insert-file-absolute-path
+        "y" #'dd/embark-copy-file-relative-path
+        "Y" #'dd/embark-copy-file-absolute-path))
 
 (provide 'dd-embark)
