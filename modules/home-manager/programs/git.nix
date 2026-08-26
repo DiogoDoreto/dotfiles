@@ -59,6 +59,7 @@ in
         ".playwright/"
         ".playwright-cli/"
         ".claude/*.local.json"
+        ".claude/worktrees/"
       ];
     };
   };
