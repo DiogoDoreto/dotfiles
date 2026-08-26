@@ -61,6 +61,7 @@
         :desc "New session"       "n"   #'agent-shell-restart
         :desc "Fork session"      "f"   #'agent-shell-fork
         :desc "Rename buffer"     "r"   #'agent-shell-rename-buffer
+        :desc "Delete message"    "d"   #'agent-shell-delete-interaction-at-point
         :desc "Put shell cmd"     "x"   #'agent-shell-insert-shell-command-output
         :desc "Paste image"       "i"   #'agent-shell-send-clipboard-image
         :desc "Set Mode"          "TAB" #'agent-shell-set-session-mode
