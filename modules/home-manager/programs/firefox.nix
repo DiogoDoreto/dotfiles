@@ -83,6 +83,7 @@ in
               privacy-badger
               raindropio
               sidebery
+              stylus
               ublock-origin
               vimium
             ]
