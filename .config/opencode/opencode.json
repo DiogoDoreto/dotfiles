@@ -23,15 +23,33 @@
         }
       }
     },
-    "myprovider": {
+    "chungus": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Chungus",
       "options": {
-        "baseURL": "http://192.168.0.3:8080/v1"
+        "baseURL": "https://llama.local.doreto.com.br/v1"
       },
       "models": {
-        "qwen3.5-35b-a3b-coding": {
-          "name": "Qwen3.5"
+        "qwen3.8-27b-quality": {
+          "name": "Qwen3.8 Quality",
+          "limit": {
+            "context": 65536,
+            "output": 65536,
+          }
+        },
+        "qwen3.8-27b-quality-full": {
+          "name": "Qwen3.8 Quality Full",
+          "limit": {
+            "context": 262144,
+            "output": 262144,
+          }
+        },
+        "qwen3.8-27b-coding": {
+          "name": "Qwen3.8 Coding",
+          "limit": {
+            "context": 262144,
+            "output": 262144,
+          }
         }
       }
     }

@@ -12,7 +12,8 @@
           agent-shell-busy-indicator-frames '("«(-‿-)»" "«(-‿-)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›")
           agent-shell-session-restore-verbosity 'full)
 
-  (when (string= (system-name) "lapdog")
+  (when (or (string= (system-name) "lapdog")
+            (string= (system-name) "chungus"))
     (setopt agent-shell-agent-configs (list (agent-shell-opencode-make-agent-config))
             agent-shell-preferred-agent-config (car agent-shell-agent-configs)
             agent-shell-opencode-acp-command '("opencode2" "acp")))

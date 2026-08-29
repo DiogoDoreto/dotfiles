@@ -56,6 +56,12 @@
     };
     ghostty.enable = true;
     plasma-fix-taskbar-icons.enable = true;
+    opencode = {
+      enable = true;
+      extraWritablePaths = [
+        "~/p/"
+      ];
+    };
   };
 
   services.kdeconnect = {
