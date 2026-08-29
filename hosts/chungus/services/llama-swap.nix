@@ -10,6 +10,14 @@ in
 #     --include "*UD-Q4_K_XL*"
 #   sudo mv /tmp/qwen35/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf /var/lib/llama-swap/models
 
+# Download Qwen3.8-27B with:
+#   hf download unsloth/Qwen3.8-27B-GGUF \
+#     Qwen3.8-27B-UD-Q4_K_M.gguf mmproj-F16.gguf \
+#     --local-dir /tmp/qwen38
+#   sudo install -d -m 0755 /var/lib/llama-swap/models/qwen3.8
+#   sudo install -m 0644 /tmp/qwen38/{Qwen3.8-27B-UD-Q4_K_M.gguf,mmproj-F16.gguf} \
+#     /var/lib/llama-swap/models/qwen3.8/
+
 # Memory calculator: https://www.kolosal.ai/memory-calculator
 
 let
@@ -29,6 +37,19 @@ let
     "-b 512"
     "--cache-type-k q4_0"
     "--cache-type-v q4_0"
+    "--top-k 20"
+    "--top-p 0.95"
+    "--min-p 0.00"
+  ];
+
+  qwen38BaseFlags = llamaBaseFlags ++ [
+    "-m ${modelDir}/qwen3.8/Qwen3.8-27B-UD-Q4_K_M.gguf"
+    "-ngl all"
+    "--parallel 1"
+    "--flash-attn on"
+    "-b 512"
+    "--ubatch-size 512"
+    "--load-mode mmap"
     "--top-k 20"
     "--top-p 0.95"
     "--min-p 0.00"
@@ -81,6 +102,51 @@ in
             ]
           );
           aliases = [ "qwen3.5-general" ];
+        };
+        "qwen3.8-27b-quality" = {
+          # Vision and F16 KV remain on the GPU; 64K leaves runtime headroom.
+          cmd = mkCmd (
+            qwen38BaseFlags
+            ++ [
+              "--mmproj ${modelDir}/qwen3.8/mmproj-F16.gguf"
+              "-c 65536"
+              "--cache-type-k f16"
+              "--cache-type-v f16"
+              "--temp 1.0"
+            ]
+          );
+          aliases = [ "qwen3.8-quality" ];
+        };
+        "qwen3.8-27b-quality-full" = {
+          # Keep weights and vision on the GPU, with the full F16 cache in RAM.
+          cmd = mkCmd (
+            qwen38BaseFlags
+            ++ [
+              "--mmproj ${modelDir}/qwen3.8/mmproj-F16.gguf"
+              "-c 262144"
+              "--cache-type-k f16"
+              "--cache-type-v f16"
+              "--no-kv-offload"
+              "--temp 1.0"
+            ]
+          );
+          aliases = [ "qwen3.8-quality-full" ];
+        };
+        "qwen3.8-27b-coding" = {
+          # Text-only q4 KV fits the full native context on the GPU.
+          cmd = mkCmd (
+            qwen38BaseFlags
+            ++ [
+              "-c 262144"
+              "--cache-type-k q4_0"
+              "--cache-type-v q4_0"
+              "--temp 0.6"
+            ]
+          );
+          aliases = [
+            "qwen3.8"
+            "qwen3.8-coding"
+          ];
         };
       };
     };
