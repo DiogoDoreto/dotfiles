@@ -32,23 +32,73 @@
       "models": {
         "qwen3.8-27b-quality": {
           "name": "Qwen3.8 Quality",
+          "family": "qwen",
+          "attachment": true,
+          "reasoning": true,
+          "temperature": true,
+          "tool_call": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ]
+          },
           "limit": {
             "context": 65536,
-            "output": 65536,
+            "output": 32768,
           }
         },
         "qwen3.8-27b-quality-full": {
           "name": "Qwen3.8 Quality Full",
+          "family": "qwen",
+          "attachment": true,
+          "reasoning": true,
+          "temperature": true,
+          "tool_call": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ]
+          },
           "limit": {
             "context": 262144,
-            "output": 262144,
+            "output": 32768,
           }
         },
         "qwen3.8-27b-coding": {
           "name": "Qwen3.8 Coding",
+          "family": "qwen",
+          "attachment": true,
+          "reasoning": true,
+          "temperature": true,
+          "tool_call": true,
+          "variants": {
+            "low": {
+              "options": {
+                "reasoning": {
+                  "effort": "low",
+                }
+              }
+            },
+            "medium": {
+              "options": {
+                "reasoning": {
+                  "effort": "medium",
+                }
+              }
+            },
+            "xhigh": {
+              "options": {
+                "reasoning": {
+                  "effort": "xhigh",
+                }
+              }
+            },
+          },
           "limit": {
             "context": 262144,
-            "output": 262144,
+            "output": 32768,
           }
         }
       }
