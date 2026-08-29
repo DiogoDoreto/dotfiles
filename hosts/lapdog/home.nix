@@ -180,10 +180,6 @@ in
         app = {
           rss.enable = true;
         };
-        term = {
-          ghostel.enable = true;
-          vterm.enable = false;
-        };
         lang = {
           # common-lisp.enable = true;
           # elixir = {

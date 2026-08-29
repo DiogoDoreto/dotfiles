@@ -135,8 +135,8 @@ let
     };
     term = {
       eshell.enable = true;
-      ghostel.enable = false;
-      vterm.enable = true;
+      ghostel.enable = true;
+      vterm.enable = false;
     };
     checkers = {
       syntax.enable = true;
