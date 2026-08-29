@@ -14,7 +14,8 @@
 
   (when (string= (system-name) "lapdog")
     (setopt agent-shell-agent-configs (list (agent-shell-opencode-make-agent-config))
-            agent-shell-preferred-agent-config (car agent-shell-agent-configs)))
+            agent-shell-preferred-agent-config (car agent-shell-agent-configs)
+            agent-shell-opencode-acp-command '("opencode2" "acp")))
 
   (when (string= (system-name) "DT-5RHWB24")
     (setopt agent-shell-agent-configs (list (agent-shell-anthropic-make-claude-code-config)

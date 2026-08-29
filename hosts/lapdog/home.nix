@@ -156,6 +156,7 @@ in
 
     opencode = {
       enable = true;
+      package = pkgs.llm-agents.opencode2;
       extraWritablePaths = [
         "~/projects/"
         "~/.local/share/forgejo-cli/"

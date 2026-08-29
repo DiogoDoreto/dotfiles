@@ -16,6 +16,8 @@ in
   options.dog.programs.opencode = {
     enable = mkEnableOption "opencode";
 
+    package = mkPackageOption pkgs.llm-agents "opencode" { };
+
     extraWritablePaths = mkOption {
       type = types.listOf types.str;
       default = [ ];
@@ -38,7 +40,7 @@ in
   config = mkIf cfg.enable {
     home.packages = [
       (bubblewrapAi {
-        package = pkgs.llm-agents.opencode;
+        package = cfg.package;
         extraWritablePaths = [
           "~/.config/opencode/"
           "~/.local/share/opencode/"
