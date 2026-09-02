@@ -5,7 +5,7 @@
 (package! gptel-agent :pin "e833bcaf617baf8c8075eac098231c4457386814")
 
 (package! shell-maker :pin "ab4f8ebaf4ef7a7db4762c5d5075baea580044ba")
-(package! acp :pin "4d7d58dc39870e9390e94617e13d7ada175d7945")
-(package! agent-shell :pin "833b2a8031a22068c0528a1f7600926b7359154a")
+(package! acp :pin "2a59373ddf252c78e8d6b25b094458f67aba9e10")
+(package! agent-shell :pin "d027d8de2b74019ae83e36b1edcd0b968295ac31")
 
 (package! copilot :pin "277ca357422ba34bcf7fe650cb720580994eea84")
