@@ -311,6 +311,7 @@ in
 
     home.packages = with pkgs; [
       ripgrep
+      marksman
 
       # spell checking
       wordnet
