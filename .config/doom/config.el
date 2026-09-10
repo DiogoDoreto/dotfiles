@@ -275,6 +275,7 @@ Based on the code of `doom/bump-package-at-point'"
 (load! "dd/embark")
 (load! "dd/javascript")
 (load! "dd/lsp")
+(load! "dd/magit-delta")
 (load! "dd/nix")
 (load! "dd/pandoc")
 (load! "dd/terminal")
@@ -394,10 +395,6 @@ and return to the original position."
 (use-package tts
   :defer t
   :commands (tts-read tts-mode tts-kokoro-start-server))
-
-(use-package magit-delta
-  :defer t
-  :hook magit-mode)
 
 (use-package info-rename-buffer
   :defer t
