@@ -90,6 +90,8 @@ in
 
   # Enable the KDE Plasma Desktop Environment.
   services.displayManager.sddm.enable = true;
+  services.displayManager.sessionPackages = [ pkgs.kdePackages.plasma-bigscreen ];
+  services.displayManager.defaultSession = "plasma-bigscreen-wayland";
   services.desktopManager.plasma6.enable = true;
 
   # Configure keymap in X11
@@ -168,6 +170,7 @@ in
   # List packages installed in system profile.
   environment.systemPackages = with pkgs; [
     home-manager
+    kdePackages.plasma-bigscreen
 
     fd
     htop
