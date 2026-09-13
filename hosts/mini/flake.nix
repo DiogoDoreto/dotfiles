@@ -6,6 +6,10 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     authentik-nix.url = "github:nix-community/authentik-nix";
     llm-agents.url = "github:numtide/llm-agents.nix";
+    paseo-src = {
+      url = "github:getpaseo/paseo/v0.4.0";
+      flake = false;
+    };
     git-pages = {
       url = "git+https://codeberg.org/git-pages/git-pages";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -63,6 +67,7 @@
           inherit (inputs.home-manager.packages.${system}) home-manager;
           llm-agents = inputs.llm-agents.packages.${system};
           orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
+          paseo = final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") { };
         })
       ];
       pkgs = import nixpkgs {
@@ -79,6 +84,7 @@
         dnsmasqBindInterfaces = false;
         dnsUpstreams = [ ];
         caddy.enable = true;
+        paseo.enable = true;
       };
       specialArgs = {
         inherit inputs self opencodeAgentVm;

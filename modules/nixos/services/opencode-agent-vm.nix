@@ -103,6 +103,7 @@ let
       -u ${cfg.vmName}-init.service \
       -u microvm@${cfg.vmName}.service \
       -u ${cfg.vmName}-proxy.service \
+      ${optionalString cfg.paseo.enable "-u ${cfg.vmName}-paseo-proxy.service \\"}
       "$@"
   '';
 
@@ -352,6 +353,28 @@ in
         description = "Base URL for the Authentik outpost used by Caddy forward_auth.";
       };
     };
+
+    paseo = {
+      enable = mkEnableOption "Paseo inside the OpenCode agent MicroVM guest";
+
+      guestPort = mkOption {
+        type = types.port;
+        default = 6767;
+        description = "Port where the Paseo daemon listens inside the guest.";
+      };
+
+      hostLocalPort = mkOption {
+        type = types.port;
+        default = 32861;
+        description = "Host loopback port forwarded to the guest Paseo daemon.";
+      };
+
+      hostName = mkOption {
+        type = types.str;
+        default = "paseo.local.doreto.com.br";
+        description = "Caddy virtual host for Paseo access.";
+      };
+    };
   };
 
   config = mkMerge [
@@ -365,6 +388,10 @@ in
           {
             assertion = hasHostMicrovmModule;
             message = "dog.services.opencode-agent-vm.enable requires microvm.nixosModules.host.";
+          }
+          {
+            assertion = !cfg.paseo.enable || cfg.paseo.hostLocalPort != cfg.hostLocalPort;
+            message = "dog.services.opencode-agent-vm.paseo.hostLocalPort must differ from hostLocalPort.";
           }
         ];
 
@@ -526,6 +553,19 @@ in
           };
         };
 
+        systemd.services."${cfg.vmName}-paseo-proxy" = mkIf cfg.paseo.enable {
+          description = "Local-only proxy to Paseo inside ${cfg.vmName}";
+          after = [ "microvm@${cfg.vmName}.service" ];
+          partOf = [ "microvm@${cfg.vmName}.service" ];
+          wantedBy = [ "microvm@${cfg.vmName}.service" ];
+          serviceConfig = {
+            Type = "simple";
+            Restart = "always";
+            RestartSec = "2s";
+            ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:${toString cfg.paseo.hostLocalPort},bind=${cfg.hostLocalAddress},fork,reuseaddr TCP:${cfg.guestAddress}:${toString cfg.paseo.guestPort}";
+          };
+        };
+
         security.sudo.extraRules = [
           {
             users = [ cfg.controlUser ];
@@ -563,6 +603,24 @@ in
             reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.hostLocalPort}
           '';
         };
+
+        services.caddy.virtualHosts.${cfg.paseo.hostName} = mkIf (cfg.caddy.enable && cfg.paseo.enable) {
+          extraConfig = ''
+            request_header X-Forwarded-Host {http.request.host}
+
+            @outpost path /outpost.goauthentik.io/*
+            reverse_proxy @outpost ${cfg.caddy.authentikUrl}
+
+            @protected not path /outpost.goauthentik.io/*
+            forward_auth @protected ${cfg.caddy.authentikUrl} {
+              uri /outpost.goauthentik.io/auth/caddy
+              copy_headers X-Authentik-Username
+              trusted_proxies private_ranges
+            }
+
+            reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.paseo.hostLocalPort}
+          '';
+        };
       }
       // optionalAttrs hasHostMicrovmModule {
         microvm.vms.${cfg.vmName} = {
@@ -592,6 +650,9 @@ in
               22
               cfg.opencodePort
             ];
+            extraInputRules = optionalString cfg.paseo.enable ''
+              ip saddr ${cfg.hostAddress} tcp dport ${toString cfg.paseo.guestPort} accept
+            '';
           };
         };
 
@@ -665,7 +726,8 @@ in
           before = [
             "sshd.service"
             "${cfg.vmName}-opencode.service"
-          ];
+          ]
+          ++ optional cfg.paseo.enable "paseo.service";
           after = [ "local-fs.target" ];
           serviceConfig.Type = "oneshot";
           script = ''
@@ -700,6 +762,43 @@ in
           };
         };
 
+        systemd.services.paseo = mkIf cfg.paseo.enable {
+          description = "Paseo agent control surface inside ${cfg.vmName}";
+          wantedBy = [ "multi-user.target" ];
+          wants = [ "network-online.target" ];
+          after = [
+            "network-online.target"
+            "${cfg.vmName}-guest-ssh-setup.service"
+          ];
+          environment = {
+            PATH = mkForce (
+              concatStringsSep ":" [
+                "/home/${cfg.guestUser}/.nix-profile/bin"
+                "/home/${cfg.guestUser}/.local/state/nix/profile/bin"
+                "/etc/profiles/per-user/${cfg.guestUser}/bin"
+                "/run/current-system/sw/bin"
+                "/run/wrappers/bin"
+                "/nix/var/nix/profiles/default/bin"
+              ]
+            );
+            PASEO_HOME = "/home/${cfg.guestUser}/.paseo";
+            PASEO_HOSTNAMES = cfg.paseo.hostName;
+            PASEO_LISTEN = "${cfg.guestAddress}:${toString cfg.paseo.guestPort}";
+            PASEO_TRUSTED_PROXIES = cfg.hostAddress;
+            PASEO_WEB_UI_ENABLED = "true";
+          };
+          serviceConfig = {
+            Type = "simple";
+            User = cfg.guestUser;
+            WorkingDirectory = cfg.workingDirectory;
+            ExecStart = "${pkgs.paseo}/bin/paseo-server --no-relay";
+            Restart = "on-failure";
+            RestartSec = "5s";
+            KillSignal = "SIGTERM";
+            TimeoutStopSec = 15;
+          };
+        };
+
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
@@ -708,9 +807,12 @@ in
               username = cfg.guestUser;
               homeDirectory = "/home/${cfg.guestUser}";
               stateVersion = "25.05";
-              packages = with pkgs; [
-                llm-agents.opencode
-              ];
+              packages =
+                with pkgs;
+                [
+                  llm-agents.opencode
+                ]
+                ++ optional cfg.paseo.enable paseo;
             };
 
             targets.genericLinux.enable = true;
