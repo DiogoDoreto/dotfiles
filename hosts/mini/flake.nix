@@ -67,7 +67,9 @@
           inherit (inputs.home-manager.packages.${system}) home-manager;
           llm-agents = inputs.llm-agents.packages.${system};
           orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
-          paseo = final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") { };
+          paseo = final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") {
+            npmDepsHash = "sha256-gDB48rHd0K1VOAblaQlPP4XnKGHI8cAt9S09aRxx6b4=";
+          };
         })
       ];
       pkgs = import nixpkgs {
