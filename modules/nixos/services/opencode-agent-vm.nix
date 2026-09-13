@@ -649,10 +649,8 @@ in
             allowedTCPPorts = [
               22
               cfg.opencodePort
-            ];
-            extraInputRules = optionalString cfg.paseo.enable ''
-              ip saddr ${cfg.hostAddress} tcp dport ${toString cfg.paseo.guestPort} accept
-            '';
+            ]
+            ++ optional cfg.paseo.enable cfg.paseo.guestPort;
           };
         };
 
