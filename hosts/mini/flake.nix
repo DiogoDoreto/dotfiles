@@ -7,7 +7,7 @@
     authentik-nix.url = "github:nix-community/authentik-nix";
     llm-agents.url = "github:numtide/llm-agents.nix";
     paseo-src = {
-      url = "github:getpaseo/paseo/v0.4.0";
+      url = "github:getpaseo/paseo/v0.8.0";
       flake = false;
     };
     git-pages = {
