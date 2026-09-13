@@ -67,9 +67,19 @@
           inherit (inputs.home-manager.packages.${system}) home-manager;
           llm-agents = inputs.llm-agents.packages.${system};
           orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
-          paseo = final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") {
-            npmDepsHash = "sha256-gDB48rHd0K1VOAblaQlPP4XnKGHI8cAt9S09aRxx6b4=";
-          };
+          # https://github.com/getpaseo/paseo/pull/3853
+          # Resolve node-pty from the server workspace when tracing the daemon
+          # closure, so the native pty.node prebuild is packaged whether npm
+          # hoists node-pty or installs it workspace-locally. Without it,
+          # terminal creation fails with "Terminal worker is not running".
+          paseo =
+            (final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") {
+              npmDepsHash = "sha256-gDB48rHd0K1VOAblaQlPP4XnKGHI8cAt9S09aRxx6b4=";
+            }).overrideAttrs
+              (old: {
+                pname = "${old.pname}-pr-3853";
+                patches = (old.patches or [ ]) ++ [ ./patches/paseo-pr-3853.patch ];
+              });
         })
       ];
       pkgs = import nixpkgs {
