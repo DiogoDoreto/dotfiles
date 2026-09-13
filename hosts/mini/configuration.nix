@@ -10,6 +10,13 @@
 
 let
   vars = import ./_variables.nix;
+  plasmaBigscreen = pkgs.kdePackages.plasma-bigscreen.overrideAttrs (old: {
+    buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.kdePackages.kdeconnect-kde ];
+    preFixup = (old.preFixup or "") + ''
+      wrapQtApp "$out/bin/plasma-bigscreen-wayland" \
+        --prefix QML2_IMPORT_PATH : "${pkgs.kdePackages.kdeconnect-kde}/lib/qt-6/qml"
+    '';
+  });
   ports = builtins.concatMap (port: if builtins.isList port then port else [ port ]) (
     builtins.attrValues vars.ports
   );
@@ -90,7 +97,7 @@ in
 
   # Enable the KDE Plasma Desktop Environment.
   services.displayManager.sddm.enable = true;
-  services.displayManager.sessionPackages = [ pkgs.kdePackages.plasma-bigscreen ];
+  services.displayManager.sessionPackages = [ plasmaBigscreen ];
   services.displayManager.defaultSession = "plasma-bigscreen-wayland";
   services.desktopManager.plasma6.enable = true;
 
@@ -170,7 +177,7 @@ in
   # List packages installed in system profile.
   environment.systemPackages = with pkgs; [
     home-manager
-    kdePackages.plasma-bigscreen
+    plasmaBigscreen
 
     fd
     htop
