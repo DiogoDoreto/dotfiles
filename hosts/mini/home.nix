@@ -70,6 +70,7 @@
 
   dog.programs = {
     cli-tools.enable = true;
+    denon.enable = true;
     emacs.enable = true;
     firefox = {
       enable = true;
