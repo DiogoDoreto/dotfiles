@@ -8,6 +8,12 @@
       onedrivegui
       pods # podman GUI
       ungoogled-chromium
+      yt-dlp
+
+      # To function the browser extension must be installed and open-in-mpv must be set as the default scheme-handler for mpv:// eg.:
+      #   xdg-mime default open-in-mpv.desktop x-scheme-handler/mpv
+      # https://addons.mozilla.org/en-US/firefox/addon/iina-open-in-mpv/
+      open-in-mpv
     ];
 
     # I remember this fixed something, but I don't recall what. So I'm leaving
@@ -29,11 +35,20 @@
     mpv = {
       enable = true;
       package = pkgs.mpv.override {
-        youtubeSupport = false;
+        youtubeSupport = true;
         scripts = with pkgs.mpvScripts; [
           uosc # Feature-rich minimalist proximity-based UI for MPV player
           mpris # allows control of the player using standard media keys
+          # YouTube improvements
+          sponsorblock
+          quality-menu
+          youtube-upnext
         ];
+      };
+      config = {
+        "ytdl-raw-options" = "cookies-from-browser=chromium";
+        # "ytdl-raw-options" = "extractor-args=\"youtube:player_client=default,web_embedded\"";
+        "ytdl-format" = "bestvideo+bestaudio[channels>2]/bestvideo+bestaudio/best";
       };
     };
 
