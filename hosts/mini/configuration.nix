@@ -58,6 +58,7 @@ in
     ./services/victoriametrics.nix
     ./services/victorialogs.nix
     ./services/monitoring-exporters.nix
+    ./services/keyd.nix
   ];
 
   # Bootloader.
@@ -178,6 +179,7 @@ in
   environment.systemPackages = with pkgs; [
     home-manager
     plasmaBigscreen
+    my.denon
 
     fd
     htop

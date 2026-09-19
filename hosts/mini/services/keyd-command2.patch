@@ -1,0 +1,93 @@
+diff --git a/docs/keyd.scdoc b/docs/keyd.scdoc
+index d48439a..5d3cd3d 100644
+--- a/docs/keyd.scdoc
++++ b/docs/keyd.scdoc
+@@ -790,0 +791,13 @@ use this feature judiciously.
++*command2(<timeout>, <repeat timeout>, <shell command>)*
++	Execute the given shell command and repeat it while the bound key remains held.
++	The first repetition occurs after <timeout> milliseconds, with subsequent
++	repetitions occurring every <repeat timeout> milliseconds. Repetition stops
++	when the bound key is released or another key event occurs.
++
++	E.g.
++
++	command2(400, 200, brightness up)
++
++*NOTE:* Each repetition starts a new detached process. The configured interval
++should be long enough for the command to finish before its next invocation.
++
+diff --git a/src/config.c b/src/config.c
+index 3557fb0..d967bf6 100644
+--- a/src/config.c
++++ b/src/config.c
+@@ -77,0 +78 @@ static struct {
++		ARG_COMMAND,
+@@ -101,0 +103 @@ static struct {
++	{ "command2", 	NULL,	OP_COMMAND2,	{ ARG_TIMEOUT, ARG_TIMEOUT, ARG_COMMAND } },
+@@ -798,0 +801,17 @@ static int parse_descriptor(char *s,
++						break;
++					case ARG_COMMAND:
++						if (strlen(argstr) >= sizeof(config->commands[0].cmd)) {
++							err("max command length (%ld) exceeded\n", sizeof(config->commands[0].cmd) - 1);
++							return -1;
++						}
++
++						if (config->nr_commands >= ARRAY_SIZE(config->commands)) {
++							err("max commands (%d), exceeded", ARRAY_SIZE(config->commands));
++							return -1;
++						}
++
++						arg->idx = config->nr_commands;
++						strcpy(config->commands[config->nr_commands].cmd, argstr);
++						str_escape(config->commands[config->nr_commands].cmd);
++						config->nr_commands++;
++
+diff --git a/src/config.h b/src/config.h
+index f09f800..db3b9c9 100644
+--- a/src/config.h
++++ b/src/config.h
+@@ -52,0 +53 @@ enum op {
++	OP_COMMAND2,
+diff --git a/src/keyboard.c b/src/keyboard.c
+index 97797c3..80115a2 100644
+--- a/src/keyboard.c
++++ b/src/keyboard.c
+@@ -440,0 +441 @@ static void clear(struct keyboard *kbd)
++	kbd->active_command = NULL;
+@@ -777,0 +779 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
++	case OP_COMMAND2:
+@@ -780 +782,3 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
+-			execute_command(kbd->config.commands[d->args[0].idx].cmd);
++			int command_idx = d->op == OP_COMMAND2 ? d->args[2].idx : d->args[0].idx;
++
++			execute_command(kbd->config.commands[command_idx].cmd);
+@@ -782,0 +787,7 @@ static long process_descriptor(struct keyboard *kbd, uint8_t code,
++
++			if (d->op == OP_COMMAND2) {
++				kbd->active_command = &kbd->config.commands[d->args[2].idx];
++				kbd->command_repeat_interval = d->args[1].timeout;
++				kbd->command_timeout = time + d->args[0].timeout;
++				schedule_timeout(kbd, kbd->command_timeout);
++			}
+@@ -1215,0 +1227,11 @@ static long process_event(struct keyboard *kbd, uint8_t code, int pressed, long
++	if (kbd->active_command) {
++		if (code) {
++			kbd->active_command = NULL;
++		} else if (time >= kbd->command_timeout) {
++			execute_command(kbd->active_command->cmd);
++
++			kbd->command_timeout = time + kbd->command_repeat_interval;
++			schedule_timeout(kbd, kbd->command_timeout);
++		}
++	}
++
+diff --git a/src/keyboard.h b/src/keyboard.h
+index ed1b200..69f8951 100644
+--- a/src/keyboard.h
++++ b/src/keyboard.h
+@@ -58,0 +59 @@ struct keyboard {
++	const struct command *active_command;
+@@ -61,0 +63 @@ struct keyboard {
++	long command_timeout;
+@@ -64,0 +67 @@ struct keyboard {
++	long command_repeat_interval;

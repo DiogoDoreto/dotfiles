@@ -6,7 +6,6 @@
     ./claude-code.nix
     ./cli-tools.nix
     ./codex.nix
-    ./denon.nix
     ./emacs.nix
     ./firefox.nix
     ./flameshot.nix

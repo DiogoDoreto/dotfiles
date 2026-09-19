@@ -66,6 +66,9 @@
           ];
           inherit (inputs.home-manager.packages.${system}) home-manager;
           llm-agents = inputs.llm-agents.packages.${system};
+          my = (prev.my or { }) // {
+            denon = final.callPackage ./packages/denon.nix { };
+          };
           orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
           # https://github.com/getpaseo/paseo/pull/3853
           # Resolve node-pty from the server workspace when tracing the daemon
