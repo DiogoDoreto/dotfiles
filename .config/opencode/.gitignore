@@ -1,5 +1,6 @@
-# dependencies (bun install)
+# dependencies (bun install / npm)
 node_modules
+bun.lock
 package-lock.json
 
 # local machine state (do not commit; service.json holds the service password)
