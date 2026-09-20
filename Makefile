@@ -69,6 +69,10 @@ gc:
 nixos-delete-generations:
 	sudo -A systemctl start nixos-generation-cleanup.service
 
+.PHONY: nix-store-repair
+nix-store-repair:
+	sudo -A nix-store --verify --check-contents --repair
+
 .PHONY: format-nix
 format-nix:
 	git ls-files -z '*.nix' | xargs -0 -r nixfmt
