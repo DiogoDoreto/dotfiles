@@ -58,6 +58,7 @@
     plasma-fix-taskbar-icons.enable = true;
     opencode = {
       enable = true;
+      package = pkgs.llm-agents.opencode2;
       extraWritablePaths = [
         "~/p/"
       ];
