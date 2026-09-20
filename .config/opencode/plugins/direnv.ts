@@ -1,29 +1,40 @@
-import type { Plugin } from "@opencode-ai/plugin"
+import { Plugin } from "@opencode/plugin"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
 
-export const DirenvPlugin: Plugin = async ({ project, client, $, directory, worktree }) => {
-  return {
-    async "shell.env"(input, output) {
-      try {
-        const localEnv = await $`direnv export json`.cwd(input.cwd).json();
-        Object.assign(output.env, localEnv)
-        client.app.log({
-          body: {
-            service: "direnv",
-            level: "info",
-            message: ".envrc loaded",
-            extra: { DIRENV_FILE: localEnv.DIRENV_FILE, cwd: input.cwd },
-          },
-        })
-      } catch (err) {
-        client.app.log({
-          body: {
-            service: "direnv",
-            level: "error",
-            message: ".envrc failed to load",
-            extra: { cwd: input.cwd, err },
-          },
-        })
-      }
-    },
+const run = promisify(execFile)
+
+async function applyDirenv(cwd: string, env: Record<string, string>) {
+  try {
+    const { stdout } = await run("direnv", ["export", "json"], { cwd })
+    const localEnv = JSON.parse(stdout) as Record<string, string>
+    Object.assign(env, localEnv)
+    console.log(`[direnv] .envrc loaded (file=${localEnv.DIRENV_FILE}, cwd=${cwd})`)
+  } catch (err) {
+    console.error(`[direnv] .envrc failed to load (cwd=${cwd})`, err)
   }
+}
+
+export default {
+  // OpenCode V2: loader reads `id` + `setup`, ignores `server()`
+  ...Plugin.define({
+    id: "direnv",
+    async setup(ctx) {
+      await ctx.shell.hook("create.before", async (event) => {
+        await applyDirenv(event.cwd, event.env)
+      })
+    },
+  }),
+
+  // OpenCode V1 (>= 1.18.29): loader calls `server()`, ignores `id`/`setup`
+  async server() {
+    return {
+      "shell.env": async (
+        input: { cwd: string },
+        output: { env: Record<string, string> },
+      ) => {
+        await applyDirenv(input.cwd, output.env)
+      },
+    }
+  },
 }
