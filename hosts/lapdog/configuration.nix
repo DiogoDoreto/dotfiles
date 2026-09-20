@@ -111,6 +111,15 @@
     platform = "ipu7x";
   };
 
+  # intel-compute-runtime splits its Level Zero driver from the OpenCL runtime
+  # and dynamically loads IGC when compiling SYCL kernels. Neither dependency
+  # is propagated by the split driver output, so expose both in the graphics
+  # driver search path.
+  hardware.graphics.extraPackages = [
+    pkgs.intel-compute-runtime.drivers
+    pkgs.intel-graphics-compiler
+  ];
+
   hardware.enableAllFirmware = true;
 
   # Bluetooth
