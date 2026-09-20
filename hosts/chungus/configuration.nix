@@ -9,6 +9,7 @@
     # Include the results of the hardware scan.
     ./hardware.nix
     ./rgb.nix
+    ./psvr2.nix
     ./services/immich.nix
     ./services/llama-swap.nix
     # ./services/invokeai.nix
@@ -84,6 +85,13 @@
       intelBusId = "PCI:0:2:0"; # Intel UHD Graphics 770
       nvidiaBusId = "PCI:1:0:0"; # NVIDIA RTX 4090
     };
+  };
+
+  # Bluetooth — the wlp5s0 card is a Wi-Fi/BT combo. Required for the PSVR2
+  # Sense controllers (see psvr2.nix and PSVR2.md).
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
   };
 
   # Bootloader.
@@ -215,6 +223,22 @@
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
+
+    # SteamVR on Wayland must use the Vulkan device that owns the leased HMD
+    # connector. Hide the idle Intel iGPU from Steam so Ignition's Windows
+    # driver, the native compositor, and dashboard texture sharing all use the
+    # RTX 4090. The NVIDIA Optimus layer selects the renderer, but Steam's
+    # dashboard still breaks if its pressure-vessel exposes the Intel ICD.
+    package = pkgs.steam.override {
+      extraEnv = {
+        __NV_PRIME_RENDER_OFFLOAD = "1";
+        __NV_PRIME_RENDER_OFFLOAD_PROVIDER = "NVIDIA-G0";
+        __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+        __VK_LAYER_NV_optimus = "NVIDIA_only";
+        VK_DRIVER_FILES = "/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.json:/run/opengl-driver-32/share/vulkan/icd.d/nvidia_icd.json";
+        VK_ICD_FILENAMES = "/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.json:/run/opengl-driver-32/share/vulkan/icd.d/nvidia_icd.json";
+      };
+    };
   };
 
   # List packages installed in system profile. To search, run:
