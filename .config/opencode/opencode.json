@@ -100,6 +100,47 @@
             "context": 262144,
             "output": 32768,
           }
+        },
+        "qwen3.8-27b-iq3s": {
+          "name": "Qwen3.8 IQ3_S",
+          "family": "qwen",
+          "attachment": true,
+          "reasoning": true,
+          "temperature": true,
+          "tool_call": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ]
+          },
+          "variants": {
+            "low": {
+              "options": {
+                "reasoning": {
+                  "effort": "low",
+                }
+              }
+            },
+            "medium": {
+              "options": {
+                "reasoning": {
+                  "effort": "medium",
+                }
+              }
+            },
+            "xhigh": {
+              "options": {
+                "reasoning": {
+                  "effort": "xhigh",
+                }
+              }
+            },
+          },
+          "limit": {
+            "context": 262144,
+            "output": 32768,
+          }
         }
       }
     }
