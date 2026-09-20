@@ -18,6 +18,14 @@ in
 #   sudo install -m 0644 /tmp/qwen38/{Qwen3.8-27B-UD-Q4_K_M.gguf,mmproj-F16.gguf} \
 #     /var/lib/llama-swap/models/qwen3.8/
 
+# Download Qwen3.8-27B GSQ-RCO IQ3_S (with MTP head) with:
+#   hf download ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF \
+#     Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf mmproj-Qwen3.8-27B-BF16.gguf \
+#     --local-dir /tmp/qwen38-gsq
+#   sudo install -d -m 0755 /var/lib/llama-swap/models/qwen3.8-gsq
+#   sudo install -m 0644 /tmp/qwen38-gsq/{Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf,mmproj-Qwen3.8-27B-BF16.gguf} \
+#     /var/lib/llama-swap/models/qwen3.8-gsq/
+
 # Memory calculator: https://www.kolosal.ai/memory-calculator
 
 let
@@ -143,9 +151,34 @@ in
               "--temp 0.6"
             ]
           );
+          aliases = [ "qwen3.8-coding" ];
+        };
+        "qwen3.8-27b-iq3s" = {
+          cmd = mkCmd (
+            llamaBaseFlags
+            ++ [
+              "-m ${modelDir}/qwen3.8-gsq/Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf"
+              "--mmproj ${modelDir}/qwen3.8-gsq/mmproj-Qwen3.8-27B-BF16.gguf"
+              "-ngl all"
+              "--parallel 1"
+              "--flash-attn on"
+              "-b 512"
+              "--ubatch-size 512"
+              "--load-mode mmap"
+              "-c 262144"
+              "--cache-type-k q4_0"
+              "--cache-type-v q4_0"
+              "--spec-type draft-mtp"
+              "--spec-draft-n-max 2"
+              "--top-k 20"
+              "--top-p 0.95"
+              "--min-p 0.00"
+              "--temp 1.0"
+            ]
+          );
           aliases = [
             "qwen3.8"
-            "qwen3.8-coding"
+            "qwen3.8-iq3s"
           ];
         };
       };
