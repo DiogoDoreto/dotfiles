@@ -19,9 +19,8 @@
             agent-shell-opencode-acp-command '("opencode2" "acp")))
 
   (when (string= (system-name) "DT-5RHWB24")
-    (setopt agent-shell-agent-configs (list (agent-shell-anthropic-make-claude-code-config)
-                                            (agent-shell-opencode-make-agent-config))
-            agent-shell-opencode-acp-command '("opencode" "acp" "--attach" "http://localhost:4242")))
+    (setopt agent-shell-agent-configs (list (agent-shell-anthropic-make-claude-code-config))
+            agent-shell-preferred-agent-config (car agent-shell-agent-configs)))
 
   (defun +dd/agent-shell--on-idle (event)
     "Send an OS notification when agent is idle"
