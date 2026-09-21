@@ -23,14 +23,15 @@
 
 (add-to-list 'auto-mode-alist '("\\.cts\\'" . typescript-ts-mode))
 (add-to-list 'auto-mode-alist '("\\.mts\\'" . typescript-ts-mode))
+(add-to-list 'auto-mode-alist '("\\.jsonc\\'" . json-ts-mode))
 
 (when (modulep! :tools lookup)
   (add-to-list '+lookup-provider-url-alist '("NPM" "https://www.npmjs.com/search?q=%s")))
 
 ;;; Use Packages
 
-; (use-package jsts :defer t)
-; (use-package jsts-package-json-mode :hook (json-ts-mode-hook . jsts-package-json--maybe-activate))
+;; (use-package jsts :defer t)
+;; (use-package jsts-package-json-mode :hook (json-ts-mode-hook . jsts-package-json--maybe-activate))
 
 ;;; After Packages
 
