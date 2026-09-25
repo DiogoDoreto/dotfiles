@@ -42,7 +42,7 @@
 
   (defun +dd/agent-shell-submit ()
     (interactive)
-    (shell-maker-submit)
+    (agent-shell-submit)
     (save-excursion
       (comint-previous-prompt 1)
       (recenter 0)))
