@@ -16,7 +16,6 @@
     ./services/auto-suspend.nix
     ./services/storage.nix
     ./services/monitoring.nix
-    ../../modules/nixos/services/nixos-generation-cleanup.nix
   ];
 
   nix.settings = {
@@ -246,6 +245,8 @@
   };
 
   virtualisation.podman.enable = true;
+
+  dog.services.nixos-generation-cleanup.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];

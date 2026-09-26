@@ -38,7 +38,6 @@ in
     ./networking.nix
     ./caddy.nix
     ./backup.nix
-    ../../modules/nixos/services/nixos-generation-cleanup.nix
     ./services/authentik.nix
     ./services/cockpit.nix
     ./services/forgejo.nix
@@ -172,14 +171,6 @@ in
 
   environment.variables.SYSTEMD_PAGER = "";
 
-  systemd.timers.nixos-generation-cleanup = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "Fri *-*-* 04:00:00";
-      Persistent = true;
-    };
-  };
-
   programs.firefox.enable = true;
   programs.fish.enable = true;
   programs.kdeconnect.enable = true;
@@ -270,6 +261,11 @@ in
 
   dog.services.opencode-agent-vm = opencodeAgentVm // {
     enable = true;
+  };
+
+  dog.services.nixos-generation-cleanup = {
+    enable = true;
+    timer.enable = true;
   };
 
   # This value determines the NixOS release from which the default

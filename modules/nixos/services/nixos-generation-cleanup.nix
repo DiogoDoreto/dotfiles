@@ -1,6 +1,12 @@
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
+  cfg = config.dog.services.nixos-generation-cleanup;
   cleanup = pkgs.writeShellApplication {
     name = "nixos-generation-cleanup";
     runtimeInputs = [
@@ -58,12 +64,27 @@ let
   };
 in
 {
-  systemd.services.nixos-generation-cleanup = {
-    description = "Prune old NixOS generations while keeping rollback options";
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${cleanup}/bin/nixos-generation-cleanup";
-      TimeoutStartSec = "infinity";
+  options.dog.services.nixos-generation-cleanup = {
+    enable = lib.mkEnableOption "NixOS system generation cleanup";
+    timer.enable = lib.mkEnableOption "Friday 04:00 generation cleanup timer";
+  };
+
+  config = lib.mkIf cfg.enable {
+    systemd.services.nixos-generation-cleanup = {
+      description = "Prune old NixOS generations while keeping rollback options";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${cleanup}/bin/nixos-generation-cleanup";
+        TimeoutStartSec = "infinity";
+      };
+    };
+
+    systemd.timers.nixos-generation-cleanup = lib.mkIf cfg.timer.enable {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "Fri *-*-* 04:00:00";
+        Persistent = true;
+      };
     };
   };
 }

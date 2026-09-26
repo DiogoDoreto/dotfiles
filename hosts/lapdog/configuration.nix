@@ -12,7 +12,6 @@
   imports = [
     ./hardware.nix # Include the results of the hardware scan.
     ./services/llama-swap.nix
-    ../../modules/nixos/services/nixos-generation-cleanup.nix
   ];
 
   nix.settings = {
@@ -295,6 +294,8 @@
   dog.services.opencode-agent-vm = opencodeAgentVm // {
     enable = true;
   };
+
+  dog.services.nixos-generation-cleanup.enable = true;
 
   systemd.services.restart-networkmanager-after-resume = {
     description = "Restart NetworkManager after resume";
