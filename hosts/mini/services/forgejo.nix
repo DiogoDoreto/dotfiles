@@ -140,6 +140,13 @@ in
       ];
       # See `gitea-runner generate-config` for the schema.
       settings = {
+        # The automatically detected address can be a VPN/other interface
+        # unreachable from Podman job containers. Advertise mini's LAN IP
+        # instead, on a fixed port permitted only from Podman bridges.
+        cache = {
+          host = "192.168.0.2";
+          port = vars.ports.forgejoRunnerCache;
+        };
         container.options = "--mount type=bind,source=/etc/ssl/certs,target=/etc/ssl/certs,readonly";
         container.valid_volumes = [ "/etc/ssl/certs" ];
         # Node.js does not read the system CA bundle by default, so the

@@ -20,6 +20,7 @@
     calibre = 18083;
     cockpit = 9091;
     forgejo = 3000;
+    forgejoRunnerCache = 3013;
     forgejoSsh = 2222;
     gitPages = 3010;
     gitPagesCaddy = 3011;

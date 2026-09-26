@@ -141,6 +141,9 @@ in
     };
     firewall = {
       enable = true;
+      # The Ubuntu runner's cache server is on the host; only job containers
+      # on Podman's bridges need to connect to it.
+      interfaces."podman+".allowedTCPPorts = [ vars.ports.forgejoRunnerCache ];
       allowedTCPPorts =
         with vars.ports;
         [
