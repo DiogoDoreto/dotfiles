@@ -16,6 +16,7 @@
     ./services/auto-suspend.nix
     ./services/storage.nix
     ./services/monitoring.nix
+    ../../modules/nixos/services/nixos-generation-cleanup.nix
   ];
 
   nix.settings = {

@@ -38,6 +38,7 @@ in
     ./networking.nix
     ./caddy.nix
     ./backup.nix
+    ../../modules/nixos/services/nixos-generation-cleanup.nix
     ./services/authentik.nix
     ./services/cockpit.nix
     ./services/forgejo.nix
@@ -170,6 +171,14 @@ in
   nixpkgs.config.allowUnfree = true;
 
   environment.variables.SYSTEMD_PAGER = "";
+
+  systemd.timers.nixos-generation-cleanup = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "Fri *-*-* 04:00:00";
+      Persistent = true;
+    };
+  };
 
   programs.firefox.enable = true;
   programs.fish.enable = true;

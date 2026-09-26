@@ -23,3 +23,7 @@ _Avoid_: Agent webserver, desktop app
 **Paseo daemon**:
 The headless Agent VM process that manages coding agents and serves Paseo's Agent control surface.
 _Avoid_: Paseo Desktop, Paseo app
+
+**NixOS system generation**:
+A version of a host's NixOS system retained in its system profile as a rollback option.
+_Avoid_: Generation (when referring to other Nix profiles)

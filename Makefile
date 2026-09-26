@@ -67,10 +67,7 @@ gc:
 
 .PHONY: nixos-delete-generations
 nixos-delete-generations:
-	sudo -A nix-env --delete-generations 40d --profile /nix/var/nix/profiles/system
-	sudo -A nix-collect-garbage --delete-older-than 40d
-	sudo -A /nix/var/nix/profiles/system/bin/switch-to-configuration switch
-	nix store optimise
+	sudo -A systemctl start nixos-generation-cleanup.service
 
 .PHONY: format-nix
 format-nix:
