@@ -21,6 +21,9 @@ let
       exec 9>/run/lock/nixos-generation-cleanup.lock
       flock -n 9 || { echo 'Generation cleanup is already running' >&2; exit 1; }
 
+      echo 'Disk space before cleanup:'
+      df -h /nix/store
+
       system_profile=/nix/var/nix/profiles/system
       cutoff=$(date -d '40 days ago' +%s)
       selected=$(readlink -f "$system_profile")
@@ -60,6 +63,9 @@ let
       "$system_profile/bin/switch-to-configuration" boot
       nix-store --gc
       nix store optimise
+
+      echo 'Disk space after cleanup:'
+      df -h /nix/store
     '';
   };
 in
