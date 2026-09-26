@@ -143,7 +143,13 @@ in
       enable = true;
       # The Ubuntu runner's cache server is on the host; only job containers
       # on Podman's bridges need to connect to it.
-      interfaces."podman+".allowedTCPPorts = [ vars.ports.forgejoRunnerCache ];
+      # nftables uses a quoted glob; iptables uses a trailing + for prefix matching.
+      extraInputRules = lib.mkIf config.networking.nftables.enable ''
+        iifname "podman*" tcp dport ${toString vars.ports.forgejoRunnerCache} accept
+      '';
+      interfaces."podman+".allowedTCPPorts = lib.mkIf (!config.networking.nftables.enable) [
+        vars.ports.forgejoRunnerCache
+      ];
       allowedTCPPorts =
         with vars.ports;
         [
