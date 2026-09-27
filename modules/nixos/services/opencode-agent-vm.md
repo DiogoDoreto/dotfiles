@@ -208,6 +208,8 @@ The previous host-level `opencode-web` service has been removed. `opencode.local
 
 `mini` enables `guest.tailscale.enable = true` for its `opencode-agent-vm` guest configuration, so the VM has the Tailscale service available independently of the host's own Tailscale daemon.
 
+The `mini` guest checks its writable Nix store volume at 03:00 Europe/Madrid time each day. `nix-gc.service` runs only when `/nix/.rw-store` has less than 15 GiB available; otherwise its systemd `ExecCondition` skips the run. Missed runs are not replayed when the guest starts later. The check measures the ext4 upper-layer volume rather than the host's read-only store or the guest's tmpfs root. GC does not delete system or Home Manager paths that are still rooted.
+
 `mini` already runs dnsmasq for LAN and local-domain DNS. Its dnsmasq `listen-address` values are list-shaped so the VM module can append `10.0.101.1`, while `dnsmasqBindBridgeInterface = false` and `dnsmasqBindInterfaces = false` preserve the host's non-strict binding behavior.
 
 ## Validation
