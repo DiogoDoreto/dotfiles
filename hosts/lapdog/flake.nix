@@ -28,10 +28,6 @@
       url = "../../modules/flakes/kwtype";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    my-ipu7 = {
-      url = "../../modules/flakes/ipu7";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     llm-agents.url = "github:numtide/llm-agents.nix";
     linux-systems.url = "github:nix-systems/x86_64-linux";
     handy = {
@@ -119,8 +115,7 @@
 
           llm-agents = inputs.llm-agents.packages.${system};
         })
-      ]
-      ++ builtins.attrValues inputs.my-ipu7.outputs.overlays;
+      ];
 
       opencodeAgentVm = {
         workingDirectory = "/home/agent/projects";
@@ -170,20 +165,17 @@
       nixosConfigurations = {
         lapdog = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
-          modules =
-            nixos-modules
-            ++ builtins.attrValues inputs.my-ipu7.outputs.nixosModules
-            ++ [
-              inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
-              inputs.musnix.nixosModules.musnix
-              inputs.microvm.nixosModules.host
-              {
-                home-manager.sharedModules = [
-                  inputs.handy.homeManagerModules.default
-                ];
-              }
-              ./configuration.nix
-            ];
+          modules = nixos-modules ++ [
+            inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
+            inputs.musnix.nixosModules.musnix
+            inputs.microvm.nixosModules.host
+            {
+              home-manager.sharedModules = [
+                inputs.handy.homeManagerModules.default
+              ];
+            }
+            ./configuration.nix
+          ];
         };
 
         opencode-agent-vm = nixpkgs.lib.nixosSystem {

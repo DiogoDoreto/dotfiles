@@ -111,13 +111,10 @@
     platform = "ipu7x";
   };
 
-  # intel-compute-runtime splits its Level Zero driver from the OpenCL runtime
-  # and dynamically loads IGC when compiling SYCL kernels. Neither dependency
-  # is propagated by the split driver output, so expose both in the graphics
-  # driver search path.
+  # Expose Intel's Level Zero and OpenCL driver to graphics applications.
+  # nixpkgs now packages the driver in the main output and sets its IGC rpath.
   hardware.graphics.extraPackages = [
-    pkgs.intel-compute-runtime.drivers
-    pkgs.intel-graphics-compiler
+    pkgs.intel-compute-runtime
   ];
 
   hardware.enableAllFirmware = true;
