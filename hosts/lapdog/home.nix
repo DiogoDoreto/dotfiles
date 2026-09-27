@@ -1,24 +1,9 @@
 {
   pkgs,
   config,
-  dog-lib,
   ...
 }:
 
-let
-  inherit (dog-lib) dotfilesSymlink;
-  inherit (pkgs.lib) filterAttrs listToAttrs nameValuePair;
-
-  agentSkillNames = builtins.attrNames (
-    filterAttrs (_: type: type == "directory") (builtins.readDir ../../.config/agents/skills)
-  );
-  agentSkillFiles = listToAttrs (
-    map (
-      name:
-      nameValuePair ".agents/skills/${name}" { source = dotfilesSymlink ".config/agents/skills/${name}"; }
-    ) agentSkillNames
-  );
-in
 {
   imports = [
     ./music.nix
@@ -57,8 +42,6 @@ in
     enable = true;
     entries = [ "${pkgs.onedrivegui}/share/applications/OneDriveGUI.desktop" ];
   };
-
-  home.file = agentSkillFiles;
 
   programs = {
     mpv = {
@@ -144,6 +127,7 @@ in
   };
 
   dog.programs = {
+    agent-skills.enable = true;
     cli-tools.enable = true;
     ghostty.enable = true;
     git.enable = true;

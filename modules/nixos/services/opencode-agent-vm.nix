@@ -801,6 +801,8 @@ in
           useGlobalPkgs = true;
           useUserPackages = true;
           users.${cfg.guestUser} = { pkgs, ... }: {
+            dog.dotfilesPath = "/home/${cfg.guestUser}/projects/dotfiles";
+
             home = {
               username = cfg.guestUser;
               homeDirectory = "/home/${cfg.guestUser}";
@@ -816,6 +818,7 @@ in
             targets.genericLinux.enable = true;
 
             dog.programs = {
+              agent-skills.enable = true;
               cli-tools.enable = true;
               git.enable = true;
               forgejo-cli = {

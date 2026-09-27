@@ -158,6 +158,8 @@ This broad share is an accepted initial testing tradeoff on `lapdog`. It gives t
 
 `mini` intentionally has no additional host directory shares. It starts OpenCode and Paseo in `/home/agent`, which is backed by VM-owned persistent state under `/var/lib/opencode-agent-vm/home`. Because the services are exposed through Caddy, `mini` sets `autostart = true` so the host-local proxies are present after boot.
 
+The guest Home Manager configuration links each skill directory in the guest's `/home/<guestUser>/projects/dotfiles/.config/agents/skills/` checkout into `/home/<guestUser>/.agents/skills/`. Adding a new skill requires tracking it in Git and deploying an updated VM configuration so Home Manager creates its link; edits to an already linked skill take effect directly from the guest checkout.
+
 Always keep sensitive host state out of the share list unless that access is intentional.
 
 ## Guest Runtime
