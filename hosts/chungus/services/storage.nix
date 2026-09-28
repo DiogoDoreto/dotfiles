@@ -85,8 +85,6 @@ in
     dataDisks = {
       d1 = "/data";
     };
-    sync.interval = "";
-    scrub.interval = "";
     exclude = [
       "*.unrecoverable"
       "/tmp/"
@@ -95,6 +93,12 @@ in
       "/.snapshots/"
     ];
   };
+
+  # The upstream SnapRAID module schedules its own sync and scrub services.
+  # Keep them available for manual use, but do not generate their timers:
+  # the btrfs-aware runner below handles the scheduled sync instead.
+  systemd.services.snapraid-sync.startAt = lib.mkForce [ ];
+  systemd.services.snapraid-scrub.startAt = lib.mkForce [ ];
 
   services.snapper = {
     configs = {
