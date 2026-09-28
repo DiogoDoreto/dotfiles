@@ -119,6 +119,14 @@ in
             }
           }
 
+          redir /custom-openscad-models /custom-openscad-models/ 308
+
+          handle /custom-openscad-models/* {
+            reverse_proxy 127.0.0.1:${p.gitPages} {
+              header_up Host diogo.pages.local.doreto.com.br
+            }
+          }
+
           handle {
             respond "not found" 404
           }
