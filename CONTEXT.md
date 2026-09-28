@@ -27,3 +27,7 @@ _Avoid_: Paseo Desktop, Paseo app
 **NixOS system generation**:
 A version of a host's NixOS system retained in its system profile as a rollback option.
 _Avoid_: Generation (when referring to other Nix profiles)
+
+**Rescue image**:
+A portable bootable system for diagnosing and repairing a variety of x86-64 machines.
+_Avoid_: Host-specific recovery image
