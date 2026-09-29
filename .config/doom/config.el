@@ -12,7 +12,8 @@
                            "%b"
                            (:eval (if (buffer-modified-p) " ×"))
                            " | Emacs "
-                           emacs-version))
+                           emacs-version)
+      icon-title-format frame-title-format)
 
 (set-frame-parameter nil 'alpha 98)
 (add-to-list 'default-frame-alist '(alpha . 98))
