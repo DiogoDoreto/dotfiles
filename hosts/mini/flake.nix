@@ -7,7 +7,7 @@
     authentik-nix.url = "github:nix-community/authentik-nix";
     llm-agents.url = "github:numtide/llm-agents.nix";
     paseo-src = {
-      url = "github:getpaseo/paseo/v0.8.0";
+      url = "github:getpaseo/paseo/v0.10.2";
       flake = false;
     };
     git-pages = {
@@ -77,7 +77,7 @@
           # terminal creation fails with "Terminal worker is not running".
           paseo =
             (final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") {
-              npmDepsHash = "sha256-gDB48rHd0K1VOAblaQlPP4XnKGHI8cAt9S09aRxx6b4=";
+              npmDepsHash = "sha256-tT7qrQpJSxXTJMc9KinfnDQoeTdvLt7NWanYANKunqg=";
             }).overrideAttrs
               (old: {
                 pname = "${old.pname}-pr-3853";
