@@ -10,6 +10,7 @@
   gnused,
   snapraid,
   snapper,
+  bash,
 }:
 
 let
@@ -22,34 +23,18 @@ let
     snapraid
     snapper
   ];
-  script =
-    (writeScriptBin name
-      # NOTE: Original version from automorphism88
-      #       unfortunately, it breaks with new snapper version 0.11.1
-      # (builtins.readFile ((fetchFromGitHub {
-      #     owner = "automorphism88";
-      #     repo = "snapraid-btrfs";
-      #     rev = "8cdbf54100c2b630ee9fcea11b14f58a894b4bf3";
-      #     sha256 = "IQgL55SMwViOnl3R8rQ9oGsanpFOy4esENKTwl8qsgo=";
-      #   })
-      #   + "/snapraid-btrfs"))
-
-      # NOTE: Forked version from D34DC3N73R to fix snapper 0.11.1 compatibility
-      (
-        builtins.readFile (
-          (fetchFromGitHub {
-            owner = "D34DC3N73R";
-            repo = "snapraid-btrfs";
-            rev = "ea9a1cfbfbe1cefcae9c038e1a4962d4bc2de843";
-            sha256 = "sha256-+UCBGlGFqRKgFjCt1GdOSxaayTONfwisxdnZEwxOnSY=";
-          })
-          + "/snapraid-btrfs"
-        )
-      )
-    ).overrideAttrs
-      (old: {
-        buildCommand = "${old.buildCommand}\n patchShebangs $out";
-      });
+  # NOTE: Forked version from D34DC3N73R to fix snapper 0.11.1 compatibility.
+  src = fetchFromGitHub {
+    owner = "D34DC3N73R";
+    repo = "snapraid-btrfs";
+    rev = "ea9a1cfbfbe1cefcae9c038e1a4962d4bc2de843";
+    sha256 = "sha256-+UCBGlGFqRKgFjCt1GdOSxaayTONfwisxdnZEwxOnSY=";
+  };
+  script = writeScriptBin name (
+    builtins.replaceStrings [ "#!/bin/bash -" ] [ "#!${bash}/bin/bash -" ] (
+      builtins.readFile (src + "/snapraid-btrfs")
+    )
+  );
 in
 symlinkJoin {
   inherit name;
