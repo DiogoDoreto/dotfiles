@@ -14,7 +14,11 @@
           agent-shell-session-restore-verbosity 'full
           agent-shell-header-style 'text
           agent-shell-busy-submit-default-function #'agent-shell-busy-submit-steer
-          agent-shell-busy-submit-override-function #'agent-shell-busy-submit-queue)
+          agent-shell-busy-submit-override-function #'agent-shell-busy-submit-queue
+          agent-shell-session-choices-function (lambda (choices)
+                                                 (seq-remove (lambda (choice)
+                                                               (memq (cdr choice) '(:downloads-shell :temp-shell)))
+                                                             choices)))
 
   (when (or (string= (system-name) "lapdog")
             (string= (system-name) "chungus"))
