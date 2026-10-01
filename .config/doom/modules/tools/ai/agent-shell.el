@@ -8,9 +8,13 @@
 
   (setopt agent-shell-session-strategy 'prompt
           agent-shell-show-usage-at-turn-end t
+          agent-shell-show-cost-indicator t
           agent-shell-context-sources '(files region error)
           agent-shell-busy-indicator-frames '("«(-‿-)»" "«(-‿-)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›" "«(•‿•)»" "«(•‿•)»" "‹(•‿•)›" "‹(•‿•)›")
-          agent-shell-session-restore-verbosity 'full)
+          agent-shell-session-restore-verbosity 'full
+          agent-shell-header-style 'text
+          agent-shell-busy-submit-default-function #'agent-shell-busy-submit-steer
+          agent-shell-busy-submit-override-function #'agent-shell-busy-submit-queue)
 
   (when (or (string= (system-name) "lapdog")
             (string= (system-name) "chungus"))
