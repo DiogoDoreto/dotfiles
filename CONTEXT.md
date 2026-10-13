@@ -35,3 +35,7 @@ _Avoid_: Generation (when referring to other Nix profiles)
 **Rescue image**:
 A portable bootable system for diagnosing and repairing a variety of x86-64 machines.
 _Avoid_: Host-specific recovery image
+
+**Voice command runner**:
+An always-listening local tool that recognizes a wake phrase followed by a configured spoken command and invokes its associated action.
+_Avoid_: Voice assistant (when referring to this fixed-command tool)
