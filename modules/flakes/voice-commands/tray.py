@@ -1,4 +1,4 @@
-"""THROWAWAY: Plasma-compatible tray control for the selected Vosk listener."""
+"""System tray control for the local Vosk voice command runner."""
 
 import argparse
 import json
@@ -178,7 +178,7 @@ def main():
     parser.add_argument("--start-paused", action="store_true", help="Show the tray without opening the microphone")
     args, listener_arguments = parser.parse_known_args()
     app = QApplication([])
-    app.setApplicationName("lapdog-voice-commands")
+    app.setApplicationName("voice-commands")
     app.setQuitOnLastWindowClosed(False)
     if not QSystemTrayIcon.isSystemTrayAvailable():
         print("No system tray is available. Run inside your Plasma desktop session.", file=sys.stderr)

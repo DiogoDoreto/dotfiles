@@ -38,7 +38,7 @@ buildPythonPackage rec {
   pythonImportsCheck = [ "vosk" ];
 
   meta = {
-    description = "Vosk wheel for the throwaway lapdog recognition comparison";
+    description = "Offline Vosk speech recognition engine";
     homepage = "https://alphacephei.com/vosk/";
     license = lib.licenses.asl20;
     platforms = [ "x86_64-linux" ];

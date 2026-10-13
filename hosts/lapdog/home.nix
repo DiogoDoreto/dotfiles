@@ -128,6 +128,15 @@
     watchedDirectories = [ "/home/dog/Nextcloud/Notes" ];
   };
 
+  dog.services.voice-commands = {
+    enable = true;
+    extraArgs = [
+      "--execute"
+      "--wake"
+      "hey computer"
+    ];
+  };
+
   dog.programs = {
     agent-skills.enable = true;
     cli-tools.enable = true;
