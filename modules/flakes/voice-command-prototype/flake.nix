@@ -56,11 +56,30 @@
             exec ${env}/bin/python -u ${./runner.py} --engine ${engine} --model ${speechModel} "$@"
           '';
         };
+
+      voskRunner = runner "vosk" voskModel;
+      trayPython = python.withPackages (ps: [ ps.pyside6 ]);
+      tray =
+        pkgs.runCommand "voice-command-vosk-tray-prototype"
+          {
+            nativeBuildInputs = [ pkgs.qt6.wrapQtAppsHook ];
+            buildInputs = [
+              pkgs.qt6.qtbase
+              pkgs.qt6.qtwayland
+            ];
+            meta.mainProgram = "voice-command-vosk-tray-prototype";
+          }
+          ''
+            mkdir -p "$out/bin"
+            makeQtWrapper ${trayPython}/bin/python "$out/bin/voice-command-vosk-tray-prototype" \
+              --add-flags "-u ${./tray.py} --listener ${pkgs.lib.getExe voskRunner}"
+          '';
     in
     {
       packages.${system} = rec {
         sherpa = runner "sherpa" sherpaModel;
-        vosk = runner "vosk" voskModel;
+        vosk = voskRunner;
+        vosk-tray = tray;
         default = sherpa;
         sherpa-model = sherpaModel;
         vosk-model = voskModel;

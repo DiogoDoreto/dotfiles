@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import tempfile
 import time
@@ -122,7 +123,7 @@ def audio(args):
                "--properties={ node.name=voice-command-prototype }"]
     if args.source:
         command += ["--target", args.source]
-    with subprocess.Popen([*command, "-"], stdout=subprocess.PIPE, start_new_session=True) as capture:
+    with subprocess.Popen([*command, "-"], stdout=subprocess.PIPE) as capture:
         try:
             def read():
                 pcm = capture.stdout.read(CHUNK * 2)
@@ -174,6 +175,12 @@ def main():
     parser.add_argument("--trailing-blanks", type=int, default=1, help="sherpa trailing blanks before triggering")
     parser.add_argument("--int8", action="store_true", help="Use quantized sherpa encoder/joiner")
     args = parser.parse_args()
+
+    def stop(signum, frame):
+        # Tray stop and terminal Ctrl+C both unwind capture/model/tracker cleanup.
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, stop)
     wake = normalize(args.wake)
     if not wake or args.threads < 1 or args.duration < 0 or args.stats_every <= 0:
         parser.error("Wake phrase must contain English words; threads/stats interval must be positive and duration nonnegative")
@@ -207,20 +214,23 @@ def main():
     try:
         with tempfile.TemporaryDirectory(prefix="voice-command-prototype-") as directory:
             recognizer = (SherpaRecognizer if args.engine == "sherpa" else VoskRecognizer)(args, phrases, directory)
+            model_load_seconds = time.monotonic() - started
             # No argument runs playerctld in the foreground. Reuse an existing daemon if it owns the bus.
             if args.execute:
-                tracker = subprocess.Popen(["playerctld"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                           start_new_session=True)
+                tracker = subprocess.Popen(["playerctld"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 time.sleep(0.3)
-            event("listening", engine=args.engine, phrases=list(phrases), source=args.source or "default",
-                  input=str(args.wav) if args.wav else "microphone", execute=args.execute,
-                  model_load_s=round(time.monotonic() - started, 3))
             next_report = args.stats_every
             with audio(args) as read:
+                announced = False
                 while not args.duration or total_audio < args.duration:
                     pcm = read()
                     if not pcm:
                         break
+                    if not announced:
+                        event("listening", engine=args.engine, phrases=list(phrases), source=args.source or "default",
+                              input=str(args.wav) if args.wav else "microphone", execute=args.execute,
+                              model_load_s=round(model_load_seconds, 3))
+                        announced = True
                     total_audio += len(pcm) / (RATE * 2)
                     begin = time.monotonic()
                     commands = recognizer.feed(pcm)

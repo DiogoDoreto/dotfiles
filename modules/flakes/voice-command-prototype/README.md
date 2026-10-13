@@ -24,6 +24,27 @@ nix run path:./modules/flakes/voice-command-prototype#vosk -- --execute
 
 Commands are `play`, `pause`, `next`, `previous`. Each needs its own wake phrase. Play invokes MPRIS Play (resumes/starts an existing session; does not launch a player), never a toggle. Next/previous depend on the app's playlist/page capabilities.
 
+## Vosk system tray controller
+
+Vosk was selected after the user's practical comparison: similar reported power usage, better recognition quality. Run its Qt tray layer inside lapdog's Plasma session:
+
+```sh
+nix run path:./modules/flakes/voice-command-prototype#vosk-tray -- --execute
+```
+
+- **Click the microphone icon** to stop/resume listening. Right-click for **Pause listening / Resume listening** and **Quit**.
+- **Green:** listening. **Grey:** paused. **Yellow:** starting/stopping. **Red:** listener failed; hover for the error and click to retry.
+- Pause gracefully exits the listener, closes its PipeWire capture, and releases model memory. Resume loads a fresh listener, so pending audio/commands are discarded. This is not process suspension with the microphone held open.
+- Quit (or Ctrl+C in the launching terminal) stops the listener and removes the icon. Errors remain visible in the tray rather than silently leaving a green icon.
+- Use `--start-paused` to show the icon without starting capture. Runner options such as `--wake`, `--source`, `--player`, and `--execute` are forwarded unchanged.
+
+```sh
+nix run path:./modules/flakes/voice-command-prototype#vosk-tray -- \
+  --start-paused --execute --wake "hey computer" --player mpv
+```
+
+The tray controller supervises one Vosk process with event-driven Qt signals; it does not poll recognition or run it on the UI thread. Qt's tray protocol integrates with Plasma on Wayland. This is still a manually launched prototype; desktop autostart and lock/suspend policy belong to the eventual runner configuration.
+
 ## Common controls
 
 Use identical options for both runs:
@@ -89,5 +110,6 @@ On the agent machine, 2026-10-13:
 - Custom `hello computer pause` worked for both engines; sherpa's INT8 option loaded and recognized it. Cached runs worked with Nix's offline flag.
 - Both live capture paths recognized the synthesized play phrase through a real, isolated PipeWire/WirePlumber virtual microphone and `pw-record`.
 - Both engines invoked all four actions against real mpv/MPRIS in an isolated D-Bus session, with playback/playlist state checked. Recent-player selection with two mpv instances and no-player handling also passed.
+- The Qt tray controller passed headless checks with real Vosk and a virtual PipeWire source: click/menu pause-resume, fresh-listener restart, startup cancellation, error/retry, crash cleanup, Quit, and Unix-signal shutdown. Pausing/quitting left no listener or microphone helper running. The packaged Qt launcher and missing-tray failure path were also checked; icon placement and click behavior in Plasma remain for the on-lapdog evaluation.
 
 These are plumbing and smoke checks, not accuracy estimates. Your physical microphone, accent, speaker leakage, Firefox endpoints, Handy coexistence, perceived latency, and laptop power remain for the on-lapdog comparison.
