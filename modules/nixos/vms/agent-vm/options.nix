@@ -46,6 +46,7 @@ in
   options.dog.services.agent-vm = {
     guest.tailscale.enable = mkEnableOption "Tailscale inside the Agent VM guest";
     opencode.enable = mkEnableOption "OpenCode inside the Agent VM guest";
+    pi.enable = mkEnableOption "the Pi coding agent inside the Agent VM guest";
 
     vmName = mkOption {
       type = types.str;

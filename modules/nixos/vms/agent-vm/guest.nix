@@ -182,7 +182,9 @@ in
         stateVersion = "25.05";
         packages =
           with pkgs;
-          optional cfg.opencode.enable llm-agents.opencode ++ optional cfg.paseo.enable paseo;
+          optional cfg.opencode.enable llm-agents.opencode
+          ++ optional cfg.paseo.enable paseo
+          ++ optional cfg.pi.enable llm-agents.pi;
       };
       targets.genericLinux.enable = true;
       dog.programs = {

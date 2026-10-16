@@ -55,6 +55,7 @@ expect those common ingredients, plus `inputs` and `self` in `specialArgs`.
 | Agent working directory | `/home/agent/projects` | `/home/agent` |
 | OpenCode | Disabled | Enabled |
 | Paseo | Enabled | Enabled |
+| Pi | Enabled | Disabled |
 | Public frontends | None | Caddy with Authentik for OpenCode and Paseo |
 | Guest Tailscale | Disabled | Enabled |
 | Guest Nix GC | No automatic policy | Daily space check; collect below 15 GiB free |
@@ -189,6 +190,11 @@ local HTTPS services. Home Manager configures Git, CLI tools, agent skills,
 Playwright CLI, and Forgejo CLI; the system includes SSH, GitHub CLI, and common
 maintenance tools. OpenCode uses a login shell, while Paseo's explicit PATH
 includes the guest's Nix and Home Manager profiles.
+
+Pi is optional (`pi.enable`, default `false`). Enabling it installs
+`llm-agents.pi` in the guest user's Home Manager profile without starting a
+service or opening ports. Lapdog enables it in its guest deployment; run it with
+`agent-vm-ssh -t pi`.
 
 The dotfiles checkout is expected at `/home/agent/projects/dotfiles`. Agent skills
 are linked from that checkout into `~/.agents/skills`. Edits to linked skills

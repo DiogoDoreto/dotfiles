@@ -7,6 +7,7 @@
   ];
 
   dog.services.agent-vm = (import ./settings.nix) // {
+    pi.enable = true;
     workingDirectory = "/home/agent/projects";
   };
 }
