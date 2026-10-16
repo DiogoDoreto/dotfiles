@@ -1,5 +1,5 @@
 {
-  chungusProxyIp = "192.168.0.4";
+  chungusIp = "192.168.0.3";
 
   ports = {
     # standard / well-known

@@ -14,7 +14,6 @@
     ./services/llama-swap.nix
     # ./services/invokeai.nix
     ./services/unsloth-studio.nix
-    ./services/auto-suspend.nix
     ./services/storage.nix
     ./services/monitoring.nix
     ./services/harmonia.nix
@@ -154,6 +153,21 @@
   # Enable the KDE Plasma Desktop Environment.
   services.desktopManager.plasma6.enable = true;
   services.displayManager.plasma-login-manager.enable = true;
+
+  # Manual power control: neither logind nor Plasma may suspend on inactivity.
+  services.logind.settings.Login.IdleAction = "ignore";
+  # KConfig's [$i] keeps existing per-user settings from restoring idle sleep.
+  # Only the idle action is fixed; manual suspend and display power saving remain available.
+  environment.etc."xdg/powerdevilrc".text = ''
+    [AC][SuspendAndShutdown]
+    AutoSuspendAction[$i]=0
+
+    [Battery][SuspendAndShutdown]
+    AutoSuspendAction[$i]=0
+
+    [LowBattery][SuspendAndShutdown]
+    AutoSuspendAction[$i]=0
+  '';
 
   # Configure keymap in X11
   services.xserver.xkb = {

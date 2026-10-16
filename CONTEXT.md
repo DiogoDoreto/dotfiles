@@ -51,3 +51,7 @@ _Avoid_: Generation (without qualification outside voice-command code)
 **Listener lifetime**:
 One run of the Voice command runner's recognition process, from startup intent through readiness to stop or exit, ending its subordinate activity as well. A resumed listener begins a fresh lifetime, while the recognition generation can continue across lifetimes.
 _Avoid_: Recognition session (which conflates process lifetime and command-acceptance epoch)
+
+**Manual power control**:
+Chungus's operating policy in which suspend, shutdown, and reboot are explicitly user-initiated; inactivity, screen locking, and logout do not put the machine to sleep.
+_Avoid_: Disable sleep (manual suspend remains available)

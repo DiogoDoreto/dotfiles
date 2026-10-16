@@ -191,17 +191,17 @@ in
       };
       "photos.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy http://${vars.chungusProxyIp}:${p.immich}
+          reverse_proxy http://${vars.chungusIp}:${p.immich}
         '';
       };
       "llama.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy http://${vars.chungusProxyIp}:${p.llama}
+          reverse_proxy http://${vars.chungusIp}:${p.llama}
         '';
       };
       "invokeai.local.doreto.com.br" = {
         extraConfig = ''
-          reverse_proxy http://${vars.chungusProxyIp}:${p.invokeai}
+          reverse_proxy http://${vars.chungusIp}:${p.invokeai}
         '';
       };
       "www.local.doreto.com.br" = {

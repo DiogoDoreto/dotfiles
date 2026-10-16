@@ -82,15 +82,12 @@ helper would simplify multiple modules, add it to `dog-lib` here.
 | Reusable Nix helper function | `modules/home-manager/lib/default.nix` |
 | App config file (non-nix) | `.config/<app>/` tracked in the repo |
 
-### Adding Services on chungus
+### Power Control on chungus
 
-When adding a long-running service on chungus that should not be interrupted
-(e.g. a compute job, media server, or persistent API), check
-`hosts/chungus/services/auto-suspend.nix` and consider adding a matching
-autosuspend check so the machine doesn't suspend while that service is active.
-Existing checks cover GPU utilisation, llama-server, AI ports (8080/9090), and
-remote SSH — add an `ActiveConnection`, `ExternalCommand`, or `Users` check as
-appropriate.
+Chungus uses manual power control: inactivity, screen locking, and logout must
+not suspend the machine. New services do not need autosuspend activity checks.
+Mini routes service requests directly to chungus without waking it; services
+are unavailable while chungus is asleep or powered off.
 
 ### Offer Reusable Modules
 

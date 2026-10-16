@@ -62,14 +62,12 @@ let
       "::1"
       "127.0.0.1"
       staticIp
-      vars.chungusProxyIp
     ]
     ++ lib.optional (agentVm != null) agentVm.hostAddress;
     address = [
       "/${config.networking.hostName}.home/${staticIp}"
       "/local.doreto.com.br/${staticIp}"
-      "/chungus.home/192.168.0.3"
-      "/chungus-proxy.home/${vars.chungusProxyIp}"
+      "/chungus.home/${vars.chungusIp}"
     ];
   };
 
@@ -135,7 +133,6 @@ in
     nameservers = [ "127.0.0.1" ];
     networkmanager = {
       enable = true;
-      unmanaged = [ "chungus-proxy" ];
     };
     firewall = {
       enable = true;
@@ -209,24 +206,4 @@ in
     ];
   };
 
-  systemd.services.chungus-proxy-iface = {
-    description = "dummy interface + proxy ARP for chungus proxy (${vars.chungusProxyIp})";
-    wantedBy = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    after = [ "network-online.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = pkgs.writeShellScript "chungus-proxy-iface-up" ''
-        ${pkgs.iproute2}/bin/ip link add chungus-proxy type dummy 2>/dev/null || true
-        ${pkgs.iproute2}/bin/ip addr add ${vars.chungusProxyIp}/32 dev chungus-proxy 2>/dev/null || true
-        ${pkgs.iproute2}/bin/ip link set chungus-proxy up
-        ${pkgs.procps}/bin/sysctl -w net.ipv4.conf.wlo1.proxy_arp=1
-      '';
-      ExecStop = pkgs.writeShellScript "chungus-proxy-iface-down" ''
-        ${pkgs.iproute2}/bin/ip link del chungus-proxy 2>/dev/null || true
-        ${pkgs.procps}/bin/sysctl -w net.ipv4.conf.wlo1.proxy_arp=0
-      '';
-    };
-  };
 }
