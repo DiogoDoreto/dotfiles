@@ -7,7 +7,7 @@
 
 let
   vars = import ./_variables.nix;
-  opencodeAgentVm = config.dog.services.opencode-agent-vm;
+  agentVm = config.dog.services.agent-vm or null;
   lanGateway = "192.168.0.1";
   lanInterface = "wlo1";
   staticIp = "192.168.0.2"; # needs to be set manually in Network Manager
@@ -64,9 +64,7 @@ let
       staticIp
       vars.chungusProxyIp
     ]
-    ++ lib.optionals opencodeAgentVm.enable [
-      opencodeAgentVm.hostAddress
-    ];
+    ++ lib.optional (agentVm != null) agentVm.hostAddress;
     address = [
       "/${config.networking.hostName}.home/${staticIp}"
       "/local.doreto.com.br/${staticIp}"

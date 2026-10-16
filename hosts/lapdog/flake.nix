@@ -117,30 +117,8 @@
         })
       ];
 
-      opencodeAgentVm = {
-        workingDirectory = "/home/agent/projects";
-        dnsForwardZones = [
-          {
-            domain = "local.doreto.com.br";
-            server = "192.168.0.2";
-          }
-          {
-            domain = "home";
-            server = "192.168.0.2";
-          }
-        ];
-        shares = [
-          {
-            tag = "projects";
-            source = "/home/dog/projects";
-            mountPoint = "/home/agent/projects";
-            readOnly = false;
-          }
-        ];
-      };
-
       specialArgs = {
-        inherit inputs self opencodeAgentVm;
+        inherit inputs self;
         pkgs-unstable = import nixpkgs {
           inherit system overlays;
           config.allowUnfree = true;
@@ -168,7 +146,7 @@
           modules = nixos-modules ++ [
             inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
             inputs.musnix.nixosModules.musnix
-            inputs.microvm.nixosModules.host
+            ./vms/agent-vm/host.nix
             {
               home-manager.sharedModules = [
                 inputs.handy.homeManagerModules.default
@@ -178,15 +156,10 @@
           ];
         };
 
-        opencode-agent-vm = nixpkgs.lib.nixosSystem {
+        agent-vm = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
           modules = nixos-modules ++ [
-            inputs.microvm.nixosModules.microvm
-            {
-              dog.services.opencode-agent-vm = opencodeAgentVm // {
-                guest.enable = true;
-              };
-            }
+            ./vms/agent-vm/guest.nix
           ];
         };
       };

@@ -4,7 +4,6 @@
 
 {
   pkgs,
-  opencodeAgentVm,
   ...
 }:
 
@@ -258,10 +257,6 @@ in
   };
 
   virtualisation.podman.enable = true;
-
-  dog.services.opencode-agent-vm = opencodeAgentVm // {
-    enable = true;
-  };
 
   dog.services.nixos-generation-cleanup = {
     enable = true;

@@ -92,17 +92,8 @@
           allowUnfreePredicate = _: true;
         };
       };
-      opencodeAgentVm = {
-        autostart = true;
-        workingDirectory = "/home/agent";
-        dnsmasqBindBridgeInterface = false;
-        dnsmasqBindInterfaces = false;
-        dnsUpstreams = [ ];
-        caddy.enable = true;
-        paseo.enable = true;
-      };
       specialArgs = {
-        inherit inputs self opencodeAgentVm;
+        inherit inputs self;
         pkgs-unstable = pkgs;
       };
       home-manager-modules = [
@@ -145,37 +136,15 @@
           modules = nixos-modules ++ [
             (nixos-hardware.outPath + "/common/cpu/intel/alder-lake")
             inputs.authentik-nix.nixosModules.default
-            inputs.microvm.nixosModules.host
+            ./vms/agent-vm/host.nix
             ./configuration.nix
           ];
         };
 
-        opencode-agent-vm = nixpkgs.lib.nixosSystem {
+        agent-vm = nixpkgs.lib.nixosSystem {
           inherit system specialArgs;
           modules = nixos-modules ++ [
-            inputs.microvm.nixosModules.microvm
-            {
-              dog.services.opencode-agent-vm = opencodeAgentVm // {
-                guest.enable = true;
-                guest.tailscale.enable = true;
-              };
-
-              nix.gc = {
-                automatic = true;
-                dates = "*-*-* 03:00:00 Europe/Madrid";
-                persistent = false;
-              };
-
-              systemd.services.nix-gc = {
-                unitConfig.RequiresMountsFor = [ "/nix/.rw-store" ];
-                serviceConfig.ExecCondition = pkgs.writeShellScript "opencode-agent-vm-gc-low-space" ''
-                  set -euo pipefail
-                  stats="$(${pkgs.coreutils}/bin/stat -f -c '%a %S' /nix/.rw-store)"
-                  read -r available_blocks block_size <<< "$stats"
-                  (( available_blocks * block_size < 15 * 1024 * 1024 * 1024 ))
-                '';
-              };
-            }
+            ./vms/agent-vm/guest.nix
           ];
         };
       };

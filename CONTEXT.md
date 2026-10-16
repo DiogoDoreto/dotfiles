@@ -16,6 +16,10 @@ _Avoid_: Package lookup
 An isolated machine in which coding agents and their control surfaces operate with their own persistent state.
 _Avoid_: OpenCode VM
 
+**Agent VM deployment**:
+An Agent VM configured for a particular host, including that host's choices about access, shared files, and operation.
+_Avoid_: Agent VM type
+
 **Agent control surface**:
 A protected web interface for observing or directing coding agents running in the Agent VM.
 _Avoid_: Agent webserver, desktop app
