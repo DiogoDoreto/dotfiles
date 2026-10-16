@@ -82,13 +82,6 @@ helper would simplify multiple modules, add it to `dog-lib` here.
 | Reusable Nix helper function | `modules/home-manager/lib/default.nix` |
 | App config file (non-nix) | `.config/<app>/` tracked in the repo |
 
-### Power Control on chungus
-
-Chungus uses manual power control: inactivity, screen locking, and logout must
-not suspend the machine. New services do not need autosuspend activity checks.
-Mini routes service requests directly to chungus without waking it; services
-are unavailable while chungus is asleep or powered off.
-
 ### Offer Reusable Modules
 
 When a change is host-specific but would clearly benefit other hosts, suggest

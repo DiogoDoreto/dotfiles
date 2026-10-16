@@ -154,18 +154,10 @@
   services.desktopManager.plasma6.enable = true;
   services.displayManager.plasma-login-manager.enable = true;
 
-  # Manual power control: neither logind nor Plasma may suspend on inactivity.
-  services.logind.settings.Login.IdleAction = "ignore";
-  # KConfig's [$i] keeps existing per-user settings from restoring idle sleep.
-  # Only the idle action is fixed; manual suspend and display power saving remain available.
+  # Plasma otherwise defaults to suspending after 15 idle minutes, even on AC.
+  # [$i] overrides per-user idle-suspend settings; manual suspend remains available.
   environment.etc."xdg/powerdevilrc".text = ''
     [AC][SuspendAndShutdown]
-    AutoSuspendAction[$i]=0
-
-    [Battery][SuspendAndShutdown]
-    AutoSuspendAction[$i]=0
-
-    [LowBattery][SuspendAndShutdown]
     AutoSuspendAction[$i]=0
   '';
 
