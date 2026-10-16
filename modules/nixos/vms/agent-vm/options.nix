@@ -45,6 +45,7 @@ in
 {
   options.dog.services.agent-vm = {
     guest.tailscale.enable = mkEnableOption "Tailscale inside the Agent VM guest";
+    opencode.enable = mkEnableOption "OpenCode inside the Agent VM guest";
 
     vmName = mkOption {
       type = types.str;
@@ -145,7 +146,7 @@ in
     hostLocalAddress = mkOption {
       type = types.str;
       default = "127.0.0.1";
-      description = "Host address for the local-only proxy to the guest OpenCode server.";
+      description = "Host address for the local-only proxies to guest agent services.";
     };
     hostLocalPort = mkOption {
       type = types.port;
@@ -199,7 +200,7 @@ in
       enable = mkOption {
         type = types.bool;
         default = false;
-        description = "Expose the host-local OpenCode proxy through Caddy with Authentik forward_auth.";
+        description = "Expose enabled host-local agent proxies through Caddy with Authentik forward_auth.";
       };
       hostName = mkOption {
         type = types.str;

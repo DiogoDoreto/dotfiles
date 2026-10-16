@@ -1,7 +1,7 @@
 # Agent VM
 
 The Agent VM runs coding agents and their control surfaces in an isolated
-MicroVM. It starts `opencode serve`, optionally runs the Paseo daemon, and exposes
+MicroVM. It optionally runs `opencode serve` and the Paseo daemon, and exposes
 their interfaces through host-local proxies. Its storage consists of VM-owned
 persistent state and explicitly configured host-directory shares.
 
@@ -53,8 +53,8 @@ expect those common ingredients, plus `inputs` and `self` in `specialArgs`.
 | Starts at host boot | No | Yes |
 | Additional host shares | `/home/dog/projects` → `/home/agent/projects`, read-write | None |
 | Agent working directory | `/home/agent/projects` | `/home/agent` |
-| OpenCode | Enabled | Enabled |
-| Paseo | Disabled | Enabled |
+| OpenCode | Disabled | Enabled |
+| Paseo | Enabled | Enabled |
 | Public frontends | None | Caddy with Authentik for OpenCode and Paseo |
 | Guest Tailscale | Disabled | Enabled |
 | Guest Nix GC | No automatic policy | Daily space check; collect below 15 GiB free |
@@ -87,7 +87,8 @@ agent-vm-logs
 ```
 
 `start-agent-vm` initializes state, starts `microvm@agent-vm.service`, and prints
-the OpenCode URL: `http://127.0.0.1:32860`. `autostart = true` starts the VM at host
+the URLs of enabled services (OpenCode: `http://127.0.0.1:32860`, Paseo:
+`http://127.0.0.1:32861`). `autostart = true` starts the VM at host
 boot instead, as configured on mini.
 
 `agent-vm-public-key` prints the outbound SSH public key for manually adding to
@@ -157,7 +158,9 @@ The host enables forwarding and NAT, serves guest DNS on the bridge address, and
 logs DNS queries and new outbound TCP/UDP connections. This logging is audit
 visibility, not an outbound allowlist; the guest can reach the LAN and internet.
 
-OpenCode listens on guest `10.0.101.2:32859`. A host-local socat proxy forwards
+OpenCode is optional (`opencode.enable`, default `false`) and enabled only on mini.
+When enabled, its package, guest service, firewall port, and host proxy are included.
+It listens on guest `10.0.101.2:32859`. A host-local socat proxy forwards
 `127.0.0.1:32860` to it. On mini, Caddy exposes
 `https://opencode.local.doreto.com.br` with Authentik forward authentication.
 

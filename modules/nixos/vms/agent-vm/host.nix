@@ -21,7 +21,8 @@ let
     sudo ${startCommand}
     echo "Agent VM starting: microvm@${cfg.vmName}.service"
     echo ""
-    echo "Web UI:              http://${cfg.hostLocalAddress}:${toString cfg.hostLocalPort}"
+    ${optionalString cfg.opencode.enable ''echo "OpenCode:            http://${cfg.hostLocalAddress}:${toString cfg.hostLocalPort}"''}
+    ${optionalString cfg.paseo.enable ''echo "Paseo:               http://${cfg.hostLocalAddress}:${toString cfg.paseo.hostLocalPort}"''}
     echo "SSH:                 agent-vm-ssh"
     echo "VM public key:       agent-vm-public-key"
     echo "DNS audit:           journalctl -u dnsmasq -g 'query'"
@@ -56,8 +57,8 @@ let
     exec ${pkgs.systemd}/bin/journalctl \
       -u ${cfg.vmName}-init.service \
       -u microvm@${cfg.vmName}.service \
-      -u ${cfg.vmName}-proxy.service \
-      ${optionalString cfg.paseo.enable "-u ${cfg.vmName}-paseo-proxy.service \\"}
+      ${optionalString cfg.opencode.enable "-u ${cfg.vmName}-proxy.service"} \
+      ${optionalString cfg.paseo.enable "-u ${cfg.vmName}-paseo-proxy.service"} \
       "$@"
   '';
 in
@@ -70,7 +71,8 @@ in
       message = "dog.services.agent-vm.flake must be set when importing the host module.";
     }
     {
-      assertion = !cfg.paseo.enable || cfg.paseo.hostLocalPort != cfg.hostLocalPort;
+      assertion =
+        !(cfg.opencode.enable && cfg.paseo.enable) || cfg.paseo.hostLocalPort != cfg.hostLocalPort;
       message = "dog.services.agent-vm.paseo.hostLocalPort must differ from hostLocalPort.";
     }
   ];
@@ -210,7 +212,7 @@ in
     '';
   };
 
-  systemd.services."${cfg.vmName}-proxy" = {
+  systemd.services."${cfg.vmName}-proxy" = mkIf cfg.opencode.enable {
     description = "Local-only proxy to OpenCode inside ${cfg.vmName}";
     after = [ "microvm@${cfg.vmName}.service" ];
     partOf = [ "microvm@${cfg.vmName}.service" ];
@@ -253,7 +255,7 @@ in
     }
   ];
 
-  services.caddy.virtualHosts.${cfg.caddy.hostName} = mkIf cfg.caddy.enable {
+  services.caddy.virtualHosts.${cfg.caddy.hostName} = mkIf (cfg.caddy.enable && cfg.opencode.enable) {
     extraConfig = ''
       request_header X-Forwarded-Host {http.request.host}
 

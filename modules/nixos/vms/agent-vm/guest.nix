@@ -23,8 +23,8 @@ in
       enable = true;
       allowedTCPPorts = [
         22
-        cfg.opencodePort
       ]
+      ++ optional cfg.opencode.enable cfg.opencodePort
       ++ optional cfg.paseo.enable cfg.paseo.guestPort;
     };
   };
@@ -97,8 +97,8 @@ in
     wantedBy = [ "multi-user.target" ];
     before = [
       "sshd.service"
-      "${cfg.vmName}-opencode.service"
     ]
+    ++ optional cfg.opencode.enable "${cfg.vmName}-opencode.service"
     ++ optional cfg.paseo.enable "paseo.service";
     after = [ "local-fs.target" ];
     serviceConfig.Type = "oneshot";
@@ -116,7 +116,7 @@ in
     '';
   };
 
-  systemd.services."${cfg.vmName}-opencode" = {
+  systemd.services."${cfg.vmName}-opencode" = mkIf cfg.opencode.enable {
     description = "OpenCode web UI inside ${cfg.vmName}";
     wantedBy = [ "multi-user.target" ];
     wants = [ "network-online.target" ];
@@ -180,7 +180,9 @@ in
         username = cfg.guestUser;
         homeDirectory = "/home/${cfg.guestUser}";
         stateVersion = "25.05";
-        packages = with pkgs; [ llm-agents.opencode ] ++ optional cfg.paseo.enable paseo;
+        packages =
+          with pkgs;
+          optional cfg.opencode.enable llm-agents.opencode ++ optional cfg.paseo.enable paseo;
       };
       targets.genericLinux.enable = true;
       dog.programs = {
