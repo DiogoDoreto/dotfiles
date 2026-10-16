@@ -161,8 +161,9 @@ OpenCode listens on guest `10.0.101.2:32859`. A host-local socat proxy forwards
 `127.0.0.1:32860` to it. On mini, Caddy exposes
 `https://opencode.local.doreto.com.br` with Authentik forward authentication.
 
-Mini also runs `paseo-server --no-relay` with its bundled web interface on guest
-port `6767`. The host proxy listens on `127.0.0.1:32861`, and Caddy exposes
+Both deployments also run `paseo-server --no-relay` with its bundled web interface
+on guest port `6767`. The host proxy listens on `127.0.0.1:32861` (on lapdog, open
+`http://127.0.0.1:32861`). On mini, Caddy exposes
 `https://paseo.local.doreto.com.br` with the same authentication. Paseo accepts that
 hostname through DNS-rebinding protection and trusts the host bridge address for
 forwarded requests. Its state lives in the persistent guest home at

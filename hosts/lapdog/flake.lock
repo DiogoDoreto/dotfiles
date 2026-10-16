@@ -481,6 +481,23 @@
         "type": "github"
       }
     },
+    "paseo-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792088959,
+        "narHash": "sha256-UhQVi9qq2WaUKGwyxfis4JN8qhMJH5i8EvvA58wO0IM=",
+        "owner": "getpaseo",
+        "repo": "paseo",
+        "rev": "dc5b02f7d7c120baea380d76def8b968020d8823",
+        "type": "github"
+      },
+      "original": {
+        "owner": "getpaseo",
+        "ref": "v0.11.4",
+        "repo": "paseo",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "doomemacs": "doomemacs",
@@ -495,7 +512,8 @@
         "my-kwtype": "my-kwtype",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_4",
-        "nur": "nur"
+        "nur": "nur",
+        "paseo-src": "paseo-src"
       }
     },
     "spectrum": {
