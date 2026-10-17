@@ -30,7 +30,8 @@
 (setq doom-font (font-spec
                  :family "VictorMono Nerd Font Mono"
                  :weight 'light
-                 :size (if (string= "lapdog" (system-name)) 24 17)))
+                 :size (if (string= "lapdog" (system-name)) 24 17))
+      doom-symbol-font (font-spec :family "Noto Sans Symbols 2"))
 
 (defun dd--night? ()
   "Return t if current time is after 8pm or before 8am, else nil."
