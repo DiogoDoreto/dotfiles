@@ -117,6 +117,9 @@
             });
           llama-cpp = final.llama-cpp-sycl;
 
+          # Disable speech transcription and its whisper-cpp dependency.
+          ffmpeg-full = prev.ffmpeg-full.override { withWhisper = false; };
+
           llm-agents = inputs.llm-agents.packages.${system};
           paseo = final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") {
             npmDepsHash = "sha256-nBFW6cm/4LO3q9BAsZSjBoNQN1i1PshCfcKbup0G/Lg=";
