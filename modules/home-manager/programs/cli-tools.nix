@@ -16,6 +16,12 @@ in
   };
 
   config = mkIf cfg.enable {
+    xdg.configFile."starship/bash.toml".text = ''
+      [character]
+      success_symbol = "[$](bold green)"
+      error_symbol = "[$](bold red)"
+    '';
+
     home.packages = with pkgs; [
       delta # A syntax-highlighting pager for git
       eza # ls replacement
@@ -47,7 +53,12 @@ in
         enableFishIntegration = true;
       };
 
-      bash.enable = true;
+      bash = {
+        enable = true;
+        initExtra = ''
+          export STARSHIP_CONFIG="${config.xdg.configHome}/starship/bash.toml"
+        '';
+      };
 
       bottom.enable = true;
 
@@ -109,6 +120,7 @@ in
 
       starship = {
         enable = true;
+        enableBashIntegration = true;
         enableFishIntegration = true;
       };
 
