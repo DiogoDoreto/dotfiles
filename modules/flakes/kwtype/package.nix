@@ -21,6 +21,13 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-1MG5YGNdylNSPwNbe1buNrcPOtW1MgiDtb0x6J4bDIY=";
   };
 
+  postPatch = ''
+    # Declare close() explicitly instead of relying on transitive includes.
+    substituteInPlace src/xkb.h \
+      --replace-fail '#include <sys/mman.h>' '#include <sys/mman.h>
+    #include <unistd.h>'
+  '';
+
   nativeBuildInputs = [
     meson
     ninja
