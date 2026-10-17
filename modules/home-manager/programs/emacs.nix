@@ -15,12 +15,7 @@ let
 
   inherit (dog-lib) dotfilesSymlink;
 
-  aspell' = pkgs.aspellWithDicts (
-    dicts: with dicts; [
-      en
-      en-computers
-    ]
-  );
+  aspell' = pkgs.aspellWithDicts (dicts: with dicts; [ en ]);
   enchant' = pkgs.enchant_2.override { aspell = aspell'; };
 
   makeDoomMacroModules =
@@ -327,9 +322,6 @@ in
         data-dir ${aspell'}/lib/aspell
         dict-dir ${aspell'}/lib/aspell
         master en_US
-        # TODO en-computers does not seem to be recognized
-        add-extra-dicts en-computers.rws
-        extra-dicts en-computers.rws
       '';
     };
 
