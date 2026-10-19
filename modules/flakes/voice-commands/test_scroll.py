@@ -31,6 +31,8 @@ class ScrollTests(unittest.TestCase):
         self.events = []
         self.desktop.scroll.log_event = lambda state, **details: self.events.append((state, details))
         self.desktop.grid.log_event = lambda state, **details: self.events.append((state, details))
+        self.transitions = []
+        self.desktop.session.changed.connect(lambda mode, generation: self.transitions.append((mode, generation)))
 
     def tearDown(self):
         self.desktop.cleanup()
@@ -79,11 +81,21 @@ class ScrollTests(unittest.TestCase):
         self.assertEqual(self.events[-1], ("scroll-closed", {"reason": "timeout"}))
 
     def test_switching_groups_uses_one_generation(self):
-        modes = []
-        self.desktop.session.changed.connect(lambda mode, generation: modes.append(mode))
-        with patch.object(app, "platformName", return_value="wayland"):
+        screen = app.screens()[0]
+        with patch.object(app, "platformName", return_value="wayland"), patch.object(
+                app, "screens", return_value=[screen, screen]):
             self.say("click")
-            self.assertTrue(self.desktop.grid.active)
+            self.assertEqual(self.events[-1][0], "grid-monitors")
+            monitor_generation = self.desktop.session.generation
+            self.say("two")
+            self.say("three", monitor_generation)
+            self.assertEqual(self.desktop.grid.path, [], "A monitor-stage result must not refine the grid")
+            self.say("three")
+            self.assertEqual(self.desktop.grid.path, [3])
+            self.say("back")
+            self.say("back")
+            self.assertEqual(self.events[-1][0], "grid-monitors")
+            self.say("one")
             grid_generation = self.desktop.session.generation
             self.say("scroll")
             self.assertFalse(self.desktop.grid.active)
@@ -96,16 +108,17 @@ class ScrollTests(unittest.TestCase):
             self.assertFalse(self.desktop.scroll.active)
             self.assertTrue(self.desktop.grid.active)
             self.assertFalse(self.desktop.scroll.timer.isActive())
-            self.assertEqual(modes, ["grid", "scroll", "grid"],
-                             "Group switches must not pass through normal mode")
+            self.assertEqual(self.transitions, [("grid", 1), ("grid", 2), ("grid", 3), ("grid", 4),
+                                                ("scroll", 5), ("grid", 6)],
+                              "Group switches must not pass through normal mode")
             self.say("up", scroll_generation)
             self.assertEqual(self.desktop.grid.path, [])
             self.desktop.cancel("listener-exited")
-            self.assertEqual(modes, ["grid", "scroll", "grid", "normal"])
+            self.assertEqual(self.transitions[-1], ("normal", 7))
             self.assertEqual(self.desktop.session.mode, "normal")
             self.assertFalse(self.desktop.grid.active)
 
-    def test_scroll_cancels_committed_grid_click(self):
+    def test_lifecycle_cancels_committed_click_after_overlay_closed(self):
         grid = self.desktop.grid
         grid.execute = True
         grid.timer.setInterval(5000)
@@ -114,16 +127,112 @@ class ScrollTests(unittest.TestCase):
         with patch.object(app, "platformName", return_value="wayland"), patch.object(
                 grid.click_process, "setArguments",
                 side_effect=lambda unused: set_arguments(["-c", "import time; time.sleep(60)"])):
-            self.say("click")
-            self.say("click")
-            self.assertTrue(grid.pending_click is not None)
-            self.assertFalse(grid.active)
-            self.say("scroll")
-            QTest.qWait(50)
-        self.assertIsNone(grid.pending_click)
-        self.assertEqual(grid.click_process.state(), QProcess.ProcessState.NotRunning)
-        self.assertTrue(self.desktop.scroll.active)
+            for event in ["scroll", "pause", "restart"]:
+                with self.subTest(event=event):
+                    self.say("click")
+                    self.say("click")
+                    QTest.qWait(30)
+                    self.assertIsNotNone(grid.pending_click)
+                    self.assertFalse(grid.active)
+                    old_generation = self.desktop.session.generation
+                    if event == "scroll":
+                        self.say("scroll")
+                    elif event == "pause":
+                        self.desktop.cancel("listening-stopped")
+                    else:
+                        self.desktop.session.synchronize()
+                    QTest.qWait(50)
+                    self.assertIsNone(grid.pending_click)
+                    self.assertEqual(grid.click_process.state(), QProcess.ProcessState.NotRunning)
+                    self.assertEqual(self.desktop.scroll.active, event == "scroll")
+                    self.assertIn(("grid-click-cancelled", {"reason": {
+                        "scroll": "mode-changed", "pause": "listening-stopped", "restart": "listener-restarted",
+                    }[event]}), self.events)
+                    self.assertEqual(self.desktop.session.generation, old_generation + (event == "scroll"))
         self.assertFalse(any(state == "executed" for state, details in self.events))
+
+    def test_failed_grid_entry_cancels_scroll_and_returns_to_normal_once(self):
+        scroll = self.desktop.scroll
+        scroll.execute = True
+        scroll.process.setProgram(sys.executable)
+        set_arguments = scroll.process.setArguments
+        with patch.object(scroll.process, "setArguments",
+                          side_effect=lambda unused: set_arguments(["-c", "import time; time.sleep(60)"])):
+            self.say("scroll")
+            self.say("up")
+            self.say("down")
+        QTest.qWait(30)
+        generation = self.desktop.session.generation
+        with patch.object(app, "screens", return_value=[]):
+            self.say("click")
+            self.assertEqual(self.transitions, [("scroll", 1), ("normal", 2)])
+            self.assertFalse(self.desktop.grid.active)
+            self.assertFalse(scroll.timer.isActive())
+            self.assertEqual(scroll.process.state(), QProcess.ProcessState.NotRunning)
+            self.assertEqual(list(scroll.queue), [])
+            self.assertIn("grid-error", [state for state, details in self.events])
+            count = len(self.events)
+            self.say("scroll", generation)
+            self.say("down", generation)
+            self.assertEqual(len(self.events), count)
+            self.say("click")
+            self.assertEqual(self.events[-1][0], "grid-error")
+            self.assertEqual(self.transitions, [("scroll", 1), ("normal", 2)],
+                             "Failed entry from normal must not reset recognition again")
+        self.assertFalse(any(state == "executed" for state, details in self.events))
+
+    def test_display_change_and_timeout_close_groups_and_reject_old_results(self):
+        self.desktop.grid.timer.setInterval(50)
+        self.desktop.scroll.timer.setInterval(50)
+        with patch.object(app, "platformName", return_value="wayland"):
+            for entry in ["click", "scroll"]:
+                for cause in ["timeout", "display-change"]:
+                    with self.subTest(entry=entry, cause=cause):
+                        self.say(entry)
+                        generation = self.desktop.session.generation
+                        if cause == "timeout":
+                            QTest.qWait(100)
+                        else:
+                            screen = app.screens()[0]
+                            screen.geometryChanged.emit(screen.geometry())
+                        self.assertFalse(self.desktop.grid.active)
+                        self.assertFalse(self.desktop.scroll.active)
+                        self.assertEqual(self.desktop.grid.windows, [])
+                        self.assertFalse(self.desktop.scroll.timer.isActive())
+                        self.assertEqual(self.transitions[-1], ("normal", generation + 1))
+                        count = len(self.events)
+                        for command in ["click", "scroll", "one", "up"]:
+                            self.say(command, generation)
+                        self.assertEqual(len(self.events), count)
+
+    def test_restart_synchronizes_normal_and_preserves_generation_safety(self):
+        session = self.desktop.session
+        # Initial readiness publishes the zero snapshot without an unnecessary reset.
+        session.synchronize()
+        self.assertEqual(self.transitions, [("normal", 0)])
+        with patch.object(app, "platformName", return_value="wayland"):
+            self.say("click")
+            self.say("three")
+            generation = session.generation
+            session.synchronize()
+            self.assertEqual(self.transitions, [("normal", 0), ("grid", 1), ("normal", 2)])
+            self.assertFalse(self.desktop.grid.active)
+            self.assertEqual(self.desktop.grid.windows, [])
+            count = len(self.events)
+            self.say("click", 0)  # A new listener can have queued results before it reads control.
+            self.say("click", generation)
+            self.assertEqual(len(self.events), count)
+            self.say("scroll")
+            self.say("down")
+            self.assertEqual(self.events[-1], ("scroll-would-scroll", {"direction": "down"}))
+            self.desktop.cancel("listener-exited")
+            session.synchronize()
+            self.assertEqual(self.transitions[-2:], [("normal", 4), ("normal", 4)],
+                             "Readiness resends the current snapshot, not generation zero")
+            count = len(self.events)
+            self.say("scroll", 0)
+            self.say("up", 3)
+            self.assertEqual(len(self.events), count)
 
     def test_cancel_discards_inflight_and_queued_actions(self):
         scroll = self.desktop.scroll

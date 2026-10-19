@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QProcess, QSocketNotifier, QTimer, QUrl
+from PySide6.QtCore import QObject, QProcess, QSocketNotifier, QTimer, QUrl, Slot
 from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
@@ -44,6 +44,7 @@ class GridController(QObject):
         self.pointer = pointer
         self.execute = execute
         self.session = session if session is not None else CommandSession(self)
+        self.session.grid = self
         self.stage = None
         self.screens = []
         self.windows = []
@@ -63,7 +64,7 @@ class GridController(QObject):
         self.timer.setInterval(round(timeout * 1000))
         self.timer.timeout.connect(lambda: self.cancel("timeout"))
         app.screenAdded.connect(self.screen_added)
-        app.screenRemoved.connect(lambda unused: self.cancel("display-removed"))
+        app.screenRemoved.connect(self.display_removed)
         for screen in app.screens():
             self.watch_screen(screen)
 
@@ -80,8 +81,22 @@ class GridController(QObject):
         return self.stage is not None
 
     def watch_screen(self, screen):
-        screen.geometryChanged.connect(lambda unused: self.cancel("display-changed"))
-        screen.logicalDotsPerInchChanged.connect(lambda unused: self.cancel("scale-changed"))
+        # QObject slots disconnect with the controller. Lambdas retained by a
+        # long-lived QScreen could otherwise cancel an already destroyed session.
+        screen.geometryChanged.connect(self.display_changed)
+        screen.logicalDotsPerInchChanged.connect(self.scale_changed)
+
+    @Slot()
+    def display_changed(self):
+        self.cancel("display-changed")
+
+    @Slot()
+    def scale_changed(self):
+        self.cancel("scale-changed")
+
+    @Slot()
+    def display_removed(self):
+        self.cancel("display-removed")
 
     def screen_added(self, screen):
         self.cancel("display-added")
@@ -90,7 +105,7 @@ class GridController(QObject):
     def log_event(self, state, **details):
         print(json.dumps({"state": state, "generation": self.generation, **details}), flush=True)
 
-    def open(self):
+    def _open(self):
         if self.click_process.state() != QProcess.ProcessState.NotRunning:
             self.log_event("grid-error", error="Previous click is still pending")
             return
@@ -127,7 +142,7 @@ class GridController(QObject):
         self.screen = self.window = None
         self.history = []
         self.path = []
-        self.session.enter("grid")
+        self.session._grid_stage_changed()
         for window in self.windows:
             window.setProperty("choosingMonitor", True)
             window.show()
@@ -148,7 +163,7 @@ class GridController(QObject):
         geometry = self.screen.geometry()
         self.history = [Region(0, 0, geometry.width(), geometry.height())]
         self.path = []
-        self.session.enter("grid")
+        self.session._grid_stage_changed()
         self.update()
         self.window.show()
 
@@ -166,13 +181,9 @@ class GridController(QObject):
                        path=list(self.path), region=region.__dict__, center=region.center, execute=self.execute)
 
     def command(self, command, generation):
-        # Ignore buffered recognition from an earlier overlay/session, including after timeout.
-        if generation != self.generation:
-            return
-        if not self.active:
-            if command == "click":
-                self.open()
-            return
+        self.session.command(command, generation)
+
+    def _command(self, command):
         if self.stage == "monitors":
             if command in NUMBERS:
                 index = NUMBERS.index(command)
@@ -213,23 +224,30 @@ class GridController(QObject):
             center = self.history[-1].center
             geometry = self.screen.geometry()
             position = (center[0] + geometry.x(), center[1] + geometry.y())
-            self.cancel("click", cancel_click=False)
-            if self.execute:
-                self.pending_click = position
-                self.click_process.setArguments([str(value) for value in position])
-                self.click_process.start()
-            else:
-                self.log_event("grid-would-click", position=position)
+            self.session._commit_click(position)
             return
         else:
             return
         self.update()
 
-    def cancel(self, reason="cancelled", cancel_click=True, enter_normal=True):
-        if cancel_click and self.pending_click is not None:
+    def _click(self, position):
+        if self.execute:
+            self.pending_click = position
+            self.click_process.setArguments([str(value) for value in position])
+            self.click_process.start()
+        else:
+            self.log_event("grid-would-click", position=position)
+
+    def cancel(self, reason="cancelled"):
+        self.session.cancel(reason)
+
+    def _cancel_click(self, reason):
+        if self.pending_click is not None:
             self.pending_click = None
             self.click_process.kill()
             self.log_event("grid-click-cancelled", reason=reason)
+
+    def _close(self, reason):
         if not self.active:
             return
         self.stage = None
@@ -237,8 +255,6 @@ class GridController(QObject):
         self.path = []
         self.timer.stop()
         self.close_windows()
-        if enter_normal:
-            self.session.enter("normal")
         self.log_event("grid-closed", reason=reason)
 
     def close_windows(self):

@@ -144,8 +144,7 @@ class TrayController(QObject):
                 continue
             if event.get("state") == "listening" and not self.requested_stop:
                 if self.desktop:
-                    # A restarted listener begins with generation zero and the normal grammar.
-                    self.set_recognition_mode("normal", self.desktop.session.generation)
+                    self.desktop.session.synchronize()
                 self.set_state("Listening")
             elif event.get("state") == "error":
                 self.last_error = event.get("error", "Listener error")

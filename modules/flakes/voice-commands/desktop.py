@@ -1,4 +1,4 @@
-"""Route desktop command groups through one recognition session."""
+"""Assemble desktop command groups around their transition owner."""
 
 from PySide6.QtCore import QObject
 
@@ -18,30 +18,10 @@ class DesktopCommands(QObject):
             self.grid.setParent(self)
 
     def command(self, command, generation):
-        if generation != self.session.generation:
-            return
-        if command == "scroll":
-            if self.grid:
-                # Switch directly between groups: an intermediate normal mode would
-                # restart capture twice and can discard speech immediately after entry.
-                # Always cancel: a committed click may still be pending after the grid closed.
-                self.grid.cancel("mode-changed", enter_normal=False)
-            self.scroll.open()
-        elif command == "click" and self.scroll.active and self.grid:
-            self.scroll.cancel("mode-changed", enter_normal=False)
-            self.grid.command(command, self.session.generation)
-            if not self.grid.active:
-                self.session.enter("normal")
-        elif self.scroll.active:
-            # Media commands were already dispatched inside the listener by wake phrase.
-            self.scroll.command(command)
-        elif self.grid:
-            self.grid.command(command, generation)
+        self.session.command(command, generation)
 
     def cancel(self, reason):
-        if self.grid:
-            self.grid.cancel(reason)
-        self.scroll.cancel(reason)
+        self.session.cancel(reason)
 
     def cleanup(self):
         if self.grid:

@@ -39,3 +39,11 @@ _Avoid_: Host-specific recovery image
 **Voice command runner**:
 An always-listening local tool that recognizes a wake phrase followed by a configured spoken command and invokes its associated action.
 _Avoid_: Voice assistant (when referring to this fixed-command tool)
+
+**Command group**:
+A Voice command runner interaction in which related commands, such as scroll directions or mouse-grid targeting, are accepted without repeating the wake phrase until the interaction ends.
+_Avoid_: Command session (when referring to a single group)
+
+**Recognition generation**:
+The Voice command runner's current command-acceptance epoch; recognition from an earlier epoch cannot act in the current interaction. A new epoch can begin within the same command group, such as when monitor selection gives way to grid refinement.
+_Avoid_: Generation (without qualification outside voice-command code)

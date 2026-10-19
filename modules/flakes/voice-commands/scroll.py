@@ -12,6 +12,7 @@ class ScrollController(QObject):
     def __init__(self, parent, pointer, session, execute=False):
         super().__init__(parent)
         self.session = session
+        self.session.scroll = self
         self.execute = execute
         self.queue = deque()
         self.current = None
@@ -22,7 +23,7 @@ class ScrollController(QObject):
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
         self.timer.setInterval(60_000)
-        self.timer.timeout.connect(lambda: self.cancel("timeout"))
+        self.timer.timeout.connect(lambda: self.session.cancel("timeout"))
 
     @property
     def active(self):
@@ -31,17 +32,15 @@ class ScrollController(QObject):
     def log_event(self, state, **details):
         print(json.dumps({"state": state, "generation": self.session.generation, **details}), flush=True)
 
-    def open(self):
-        if not self.active:
-            self.session.enter("scroll")
-            self.log_event("scroll-opened", timeout_s=60, execute=self.execute)
+    def _open(self):
+        self.log_event("scroll-opened", timeout_s=60, execute=self.execute)
         self.timer.start()
 
-    def command(self, command):
-        if not self.active:
-            return
+    def _command(self, command):
         if command == "cancel":
-            self.cancel("command")
+            self.session.cancel("command")
+        elif command == "scroll":
+            self.timer.start()
         elif command in SCROLL_DIRECTIONS:
             self.timer.start()
             if self.execute:
@@ -70,7 +69,7 @@ class ScrollController(QObject):
             self.current = None
             self.queue.clear()
 
-    def cancel(self, reason="cancelled", enter_normal=True):
+    def _close(self, reason):
         self.timer.stop()
         self.queue.clear()
         self.current = None
@@ -79,11 +78,9 @@ class ScrollController(QObject):
             self.process.kill()
             self.process.waitForFinished(1000)
         if self.active:
-            if enter_normal:
-                self.session.enter("normal")
             self.log_event("scroll-closed", reason=reason)
 
     def cleanup(self):
-        self.cancel("shutdown")
+        self.session.cancel("shutdown")
         if self.process.state() != QProcess.ProcessState.NotRunning:
             self.process.waitForFinished(1000)
