@@ -38,6 +38,7 @@ let
     fileset = lib.fileset.unions [
       ./runner.py
       ./tray.py
+      ./listener.py
       ./vocabulary.py
       ./session.py
       ./desktop.py
@@ -51,6 +52,8 @@ let
     fileset = lib.fileset.unions [
       ./test_grid.py
       ./test_scroll.py
+      ./test_listener.py
+      ./listener_test_child.py
     ];
   };
 
@@ -124,11 +127,15 @@ let
           --set VOICE_TEST_RENDERING_PROBE ${./test_rendering.py} \
           --set VOICE_TEST_OLD_CRYPTO ${lib.getLib openssl_3_5}/lib/libcrypto.so.3 \
           --add-flags "-B ${testSource}/test_grid.py"
+        makeQtWrapper ${testPython}/bin/python "$out/bin/check-voice-listener" \
+          --prefix PYTHONPATH : ${source} \
+          --add-flags "-B ${testSource}/test_listener.py"
       '';
 
   tests = runCommand "voice-commands-tests" { } ''
     export HOME="$TMPDIR" XDG_CACHE_HOME="$TMPDIR/.cache"
     export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software
+    ${testRunner}/bin/check-voice-listener
     ${testRunner}/bin/check-voice-grid
     touch "$out"
   '';

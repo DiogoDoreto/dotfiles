@@ -47,3 +47,7 @@ _Avoid_: Command session (when referring to a single group)
 **Recognition generation**:
 The Voice command runner's current command-acceptance epoch; recognition from an earlier epoch cannot act in the current interaction. A new epoch can begin within the same command group, such as when monitor selection gives way to grid refinement.
 _Avoid_: Generation (without qualification outside voice-command code)
+
+**Listener lifetime**:
+One run of the Voice command runner's recognition process, from startup intent through readiness to stop or exit, ending its subordinate activity as well. A resumed listener begins a fresh lifetime, while the recognition generation can continue across lifetimes.
+_Avoid_: Recognition session (which conflates process lifetime and command-acceptance epoch)

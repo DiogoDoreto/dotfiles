@@ -6,9 +6,11 @@ import os
 import signal
 import sys
 
-from PySide6.QtCore import QObject, QProcess, QSocketNotifier, Qt, QTimer
+from PySide6.QtCore import QObject, QSocketNotifier, Qt
 from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
+
+from listener import ListenerLifetime
 
 
 def display_state(state, scrolling):
@@ -39,29 +41,13 @@ class TrayController(QObject):
         super().__init__(app)
         self.app = app
         self.desktop = desktop
-        self.state = "Paused"
-        self.last_error = ""
-        self.output = ""
-        self.quitting = False
-        self.requested_stop = False
-        self.group_id = 0
-        self.process = QProcess(self)
-        self.process.setProgram(listener)
-        self.process.setArguments(arguments)
-        # Own one process group so even a crashed listener cannot leave its mic helper behind.
-        self.process.setUnixProcessParameters(QProcess.UnixProcessFlag.CreateNewSession)
-        self.process.setProcessChannelMode(QProcess.ProcessChannelMode.ForwardedErrorChannel)
-        self.process.started.connect(self.started)
-        self.process.readyReadStandardOutput.connect(self.read_output)
-        self.process.finished.connect(self.finished)
-        self.process.errorOccurred.connect(self.process_error)
+        self.listener = ListenerLifetime(listener, arguments, self)
+        self.listener.state_changed.connect(self.listener_state_changed)
+        self.listener.shutdown_complete.connect(app.quit)
         if desktop:
-            desktop.session.changed.connect(self.set_recognition_mode)
-
-        self.stop_timer = QTimer(self)
-        self.stop_timer.setSingleShot(True)
-        self.stop_timer.setInterval(5000)
-        self.stop_timer.timeout.connect(self.kill_group)
+            self.listener.ready.connect(desktop.session.synchronize)
+            self.listener.command.connect(desktop.command)
+            desktop.session.changed.connect(self.recognition_changed)
 
         self.menu = QMenu()
         self.status_action = self.menu.addAction("Voice Commands — Paused")
@@ -77,124 +63,55 @@ class TrayController(QObject):
         self.app.aboutToQuit.connect(self.cleanup)
 
     def set_state(self, state):
-        self.state = state
         colors = {"Listening": "#239b56", "Paused": "#7f8c8d", "Starting": "#d4ac0d",
                   "Stopping": "#d4ac0d", "Error": "#c0392b", "Scrolling": "#2980b9"}
         label = display_state(state, self.desktop and self.desktop.scroll.active)
         self.tray.setIcon(microphone_icon(colors[label]))
-        detail = f"\n{self.last_error}" if state == "Error" else ""
+        detail = f"\n{self.listener.last_error}" if state == "Error" else ""
         if label == "Scrolling":
             detail = "\nSay up, down, or cancel · exits after one inactive minute"
         self.tray.setToolTip(f"Voice Commands — {label}{detail}\nClick to pause/resume listening")
         self.status_action.setText(f"Voice Commands — {label}")
         self.toggle_action.setText("Pause listening" if state in ("Listening", "Starting", "Stopping") else "Resume listening")
-        self.toggle_action.setEnabled(state != "Stopping" and not self.quitting)
-        print(json.dumps({"tray": label, "error": self.last_error if state == "Error" else ""}), flush=True)
+        self.toggle_action.setEnabled(state != "Stopping" and not self.listener.closing)
+        print(json.dumps({"tray": label, "error": self.listener.last_error if state == "Error" else ""}), flush=True)
+
+    def listener_state_changed(self, state):
+        if self.desktop and state in ("Stopping", "Paused", "Error"):
+            self.desktop.cancel("listening-stopped" if state == "Stopping" else "listener-exited")
+        self.set_state(state)
 
     def activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.toggle()
 
     def toggle(self):
-        if self.quitting or self.state == "Stopping":
+        if self.listener.closing or self.listener.state == "Stopping":
             return
-        if self.process.state() == QProcess.ProcessState.NotRunning:
+        if self.listener.state in ("Paused", "Error"):
             self.start()
         else:
             self.stop()
 
     def start(self):
-        if self.quitting or self.process.state() != QProcess.ProcessState.NotRunning:
-            return
-        self.requested_stop = False
-        self.last_error = self.output = ""
-        self.set_state("Starting")
-        self.process.start()
-
-    def started(self):
-        self.group_id = self.process.processId()
-        if self.requested_stop:
-            self.process.terminate()
+        self.listener.start()
 
     def stop(self):
-        if self.desktop:
-            self.desktop.cancel("listening-stopped")
-        if self.process.state() == QProcess.ProcessState.NotRunning:
-            return
-        self.requested_stop = True
-        self.set_state("Stopping")
-        self.process.terminate()
-        self.stop_timer.start()
+        self.listener.stop()
 
-    def kill_group(self):
-        if self.group_id:
-            try:
-                os.killpg(self.group_id, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-
-    def read_output(self):
-        self.output += bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
-        while "\n" in self.output:
-            line, self.output = self.output.split("\n", 1)
-            print(line, flush=True)
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if event.get("state") == "listening" and not self.requested_stop:
-                if self.desktop:
-                    self.desktop.session.synchronize()
-                self.set_state("Listening")
-            elif event.get("state") == "error":
-                self.last_error = event.get("error", "Listener error")
-            elif (event.get("state") == "command" and self.desktop and not self.requested_stop
-                  and self.state == "Listening" and self.process.state() == QProcess.ProcessState.Running):
-                self.desktop.command(event.get("command"), event.get("generation"))
-
-    def set_recognition_mode(self, mode, generation):
-        if self.process.state() == QProcess.ProcessState.Running:
-            self.process.write((json.dumps({"mode": mode, "generation": generation}) + "\n").encode())
-        if self.state == "Listening":
+    def recognition_changed(self, mode, generation):
+        self.listener.send_control(mode, generation)
+        if self.listener.state == "Listening":
             self.set_state("Listening")
 
-    def process_error(self, error):
-        if error == QProcess.ProcessError.FailedToStart:
-            self.last_error = self.process.errorString()
-            self.set_state("Error")
-            if self.quitting:
-                self.app.quit()
-
-    def finished(self, code, status):
-        if self.desktop:
-            self.desktop.cancel("listener-exited")
-        self.read_output()
-        self.stop_timer.stop()
-        self.kill_group()
-        self.group_id = 0
-        if self.requested_stop or (code == 0 and status == QProcess.ExitStatus.NormalExit):
-            self.set_state("Paused")
-        else:
-            self.last_error = self.last_error or f"Listener exited with code {code}; see terminal output"
-            self.set_state("Error")
-        if self.quitting:
-            self.app.quit()
-
     def quit(self):
-        self.quitting = True
-        if self.process.state() == QProcess.ProcessState.NotRunning:
-            self.app.quit()
-        else:
-            self.stop()
+        self.listener.shutdown()
 
     def cleanup(self):
+        self.listener.shutdown()
         if self.desktop:
             self.desktop.cleanup()
-        if self.process.state() != QProcess.ProcessState.NotRunning:
-            self.stop()
-            if not self.process.waitForFinished(6000):
-                self.kill_group()
-                self.process.waitForFinished(2000)
+        self.listener.cleanup()
         self.tray.hide()
 
 

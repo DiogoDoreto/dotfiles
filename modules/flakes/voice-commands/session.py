@@ -1,4 +1,4 @@
-"""Command-group transitions; listener transport remains in the tray process.
+"""Command-group transitions; listener transport belongs to ListenerLifetime.
 
 The concrete grid/scroll controllers attach during construction. Their underscored
 operations are internal to this module's implementation: callers send commands or
@@ -74,7 +74,7 @@ class CommandSession(QObject):
         """Publish one normal-mode snapshot to a newly ready listener.
 
         A fresh listener starts at generation zero. Keep our monotonic generation,
-        close any surviving group/input, and let the tray deliver the snapshot.
+        close any surviving group/input, and publish the snapshot for transport.
         """
         self._close_groups("listener-restarted")
         if self.mode != "normal":
