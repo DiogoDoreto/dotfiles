@@ -166,6 +166,16 @@ class GridTests(unittest.TestCase):
         target.close()
 
 
+class StartupTests(unittest.TestCase):
+    def test_grid_stdin_after_older_desktop_crypto(self):
+        tray = str(Path(sys.modules[GridController.__module__].__file__).with_name("tray.py"))
+        result = subprocess.run([sys.executable, "-B", os.environ["VOICE_TEST_STARTUP_PROBE"],
+                                 tray, os.environ["VOICE_TEST_OLD_CRYPTO"]],
+                                stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('"state": "grid-stdin"', result.stdout)
+
+
 class RecognitionTests(unittest.TestCase):
     def test_mode_boundary_discards_upstream_capture_and_closes_processes(self):
         processes = []

@@ -204,12 +204,15 @@ def main():
         parser.error("--grid-timeout must be between 0.1 and 3600 seconds")
     if args.grid_stdin and args.start_paused:
         parser.error("--grid-stdin cannot be combined with --start-paused")
+    if args.mouse_grid or args.grid_stdin:
+        # Load the packaged QML/SSL dependency chain before QApplication can load
+        # desktop theme plugins linked against an older libcrypto with the same SONAME.
+        from grid import GridController, SyntheticController
     app = QApplication([])
     app.setApplicationName("voice-commands")
     app.setQuitOnLastWindowClosed(False)
     grid = None
     if args.mouse_grid or args.grid_stdin:
-        from grid import GridController, SyntheticController
         grid = GridController(app, args.pointer, execute="--execute" in listener_arguments, timeout=args.grid_timeout)
     if not args.grid_stdin and not QSystemTrayIcon.isSystemTrayAvailable():
         print("No system tray is available. Run inside your Plasma desktop session.", file=sys.stderr)
