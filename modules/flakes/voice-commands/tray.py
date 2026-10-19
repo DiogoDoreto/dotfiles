@@ -196,7 +196,7 @@ def main():
     parser.add_argument("--listener", required=True, help=argparse.SUPPRESS)
     parser.add_argument("--pointer", required=True, help=argparse.SUPPRESS)
     parser.add_argument("--start-paused", action="store_true", help="Show the tray without opening the microphone")
-    parser.add_argument("--mouse-grid", action="store_true", help="Enable experimental single-display Plasma Wayland mouse commands")
+    parser.add_argument("--mouse-grid", action="store_true", help="Enable experimental Plasma Wayland mouse commands with monitor selection")
     parser.add_argument("--grid-stdin", action="store_true", help="Read synthetic grid commands from stdin instead of listening (no tray)")
     parser.add_argument("--grid-timeout", type=float, default=20, help="Cancel targeting after this many inactive seconds (default: 20)")
     args, listener_arguments = parser.parse_known_args()

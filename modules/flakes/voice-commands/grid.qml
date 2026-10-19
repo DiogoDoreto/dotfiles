@@ -4,6 +4,10 @@ import org.kde.layershell as LayerShell
 
 Window {
     id: overlay
+    required property QtObject targetScreen
+    required property int monitorNumber
+    required property string monitorName
+    property bool choosingMonitor: false
     visible: false
     color: "transparent"
     width: targetScreen.geometry.width
@@ -18,9 +22,29 @@ Window {
     property string breadcrumb: "Full screen"
     property bool dryRun: true
 
+    Rectangle {
+        anchors.fill: parent
+        visible: overlay.choosingMonitor
+        color: "#55000000"
+        Rectangle {
+            anchors.centerIn: parent
+            width: monitorLegend.width + 64; height: monitorLegend.height + 48
+            color: "#ee222222"; radius: 16; border.color: "#ffdf60"
+            Column {
+                id: monitorLegend
+                anchors.centerIn: parent
+                spacing: 12
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Choose monitor"; color: "white"; font.pixelSize: 24 }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: overlay.monitorNumber; color: "#ffdf60"; font.pixelSize: 96; font.bold: true }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: overlay.monitorName; color: "white"; font.pixelSize: 20 }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Say the number · cancel: exit"; color: "white"; font.pixelSize: 18 }
+            }
+        }
+    }
+
     // Shade only the area outside the selected rectangle.
     Repeater {
-        model: [
+        model: overlay.choosingMonitor ? [] : [
             {x: 0, y: 0, w: overlay.width, h: region.y},
             {x: 0, y: region.y + region.height, w: overlay.width,
              h: overlay.height - region.y - region.height},
@@ -37,6 +61,7 @@ Window {
     }
 
     Item {
+        visible: !overlay.choosingMonitor
         x: region.x; y: region.y
         width: region.width; height: region.height
         Rectangle { anchors.fill: parent; color: "transparent"; border.color: "#ffdf60" }
@@ -61,6 +86,7 @@ Window {
 
     // A persistent target marker, including when the cell becomes smaller than its labels.
     Item {
+        visible: !overlay.choosingMonitor
         x: region.x + region.width / 2
         y: region.y + region.height / 2
         Rectangle { x: -12; y: -1; width: 25; height: 3; color: "#ff4040" }
@@ -68,6 +94,7 @@ Window {
     }
 
     Rectangle {
+        visible: !overlay.choosingMonitor
         // Keep the legend away from the target, including targets along screen edges.
         x: region.x + region.width / 2 < overlay.width / 2 ? overlay.width - width - 12 : 12
         y: region.y + region.height / 2 < overlay.height / 2 ? overlay.height - height - 12 : 12
@@ -76,7 +103,7 @@ Window {
         Column {
             id: legend
             x: 12; y: 12; spacing: 8
-            Text { text: "Mouse grid" + (dryRun ? " — preview only" : ""); color: "#ffdf60"; font.pixelSize: 18 }
+            Text { text: "Mouse grid · monitor " + overlay.monitorNumber + (dryRun ? " — preview only" : ""); color: "#ffdf60"; font.pixelSize: 18 }
             Text { text: breadcrumb; color: "white"; font.pixelSize: 16 }
             // Enlarged reference keypad, rather than unreadable numbers at deep levels.
             Text {

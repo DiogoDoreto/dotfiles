@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QProcess, QSocketNotifier, QTimer, QUrl, Signal
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
 from vocabulary import GRID_COMMANDS, NUMBERS
@@ -45,10 +45,14 @@ class GridController(QObject):
         self.pointer = pointer
         self.execute = execute
         self.generation = 0
+        self.stage = None
+        self.screens = []
+        self.windows = []
         self.history = []
         self.path = []
         self.screen = None
         self.engine = None
+        self.component = None
         self.window = None
         self.pending_click = None
         self.click_process = QProcess(self)
@@ -59,12 +63,22 @@ class GridController(QObject):
         self.timer.setSingleShot(True)
         self.timer.setInterval(round(timeout * 1000))
         self.timer.timeout.connect(lambda: self.cancel("timeout"))
-        app.screenAdded.connect(lambda unused: self.cancel("display-added"))
+        app.screenAdded.connect(self.screen_added)
         app.screenRemoved.connect(lambda unused: self.cancel("display-removed"))
+        for screen in app.screens():
+            self.watch_screen(screen)
 
     @property
     def active(self):
-        return bool(self.history)
+        return self.stage is not None
+
+    def watch_screen(self, screen):
+        screen.geometryChanged.connect(lambda unused: self.cancel("display-changed"))
+        screen.logicalDotsPerInchChanged.connect(lambda unused: self.cancel("scale-changed"))
+
+    def screen_added(self, screen):
+        self.cancel("display-added")
+        self.watch_screen(screen)
 
     def log_event(self, state, **details):
         print(json.dumps({"state": state, "generation": self.generation, **details}), flush=True)
@@ -73,29 +87,59 @@ class GridController(QObject):
         if self.click_process.state() != QProcess.ProcessState.NotRunning:
             self.log_event("grid-error", error="Previous click is still pending")
             return
-        screens = self.app.screens()
-        if self.app.platformName() != "wayland" or len(screens) != 1:
-            self.log_event("grid-error", error="Mouse grid requires Plasma Wayland with exactly one enabled display")
+        screens = sorted(self.app.screens(), key=lambda screen: (
+            screen.geometry().x(), screen.geometry().y(), screen.name()))
+        if self.app.platformName() != "wayland" or not 1 <= len(screens) <= len(NUMBERS):
+            self.log_event("grid-error", error="Mouse grid requires Plasma Wayland with one to nine enabled displays")
             return
-        screen = screens[0]
-        if self.screen is not screen:
-            self.screen = screen
-            screen.geometryChanged.connect(lambda unused: self.cancel("display-changed"))
-            screen.logicalDotsPerInchChanged.connect(lambda unused: self.cancel("scale-changed"))
         if self.engine is None:
             self.engine = QQmlApplicationEngine(self)
-            self.engine.rootContext().setContextProperty("targetScreen", screen)
-            self.engine.load(QUrl.fromLocalFile(str(Path(__file__).with_name("grid.qml"))))
-            if not self.engine.rootObjects():
-                self.log_event("grid-error", error="Could not load mouse-grid overlay")
-                self.engine.deleteLater()
-                self.engine = None
+            self.component = QQmlComponent(self.engine, QUrl.fromLocalFile(str(Path(__file__).with_name("grid.qml"))))
+        self.screens = screens
+        for number, screen in enumerate(screens, 1):
+            # Every root owns its screen binding: a shared context property would move
+            # all overlays to whichever monitor was assigned last.
+            window = self.component.createWithInitialProperties({
+                "targetScreen": screen, "monitorNumber": number, "monitorName": screen.name(),
+                "dryRun": not self.execute,
+            })
+            if window is None:
+                self.log_event("grid-error", error="; ".join(error.toString() for error in self.component.errors()))
+                self.close_windows()
                 return
-            self.window = self.engine.rootObjects()[0]
-            self.window.visibleChanged.connect(self.visibility_changed)
-        self.engine.rootContext().setContextProperty("targetScreen", screen)
-        self.window.setScreen(screen)
-        geometry = screen.geometry()
+            window.setScreen(screen)
+            window.visibleChanged.connect(lambda visible, window=window: self.visibility_changed(window, visible))
+            self.windows.append(window)
+        if len(screens) > 1:
+            self.show_monitors()
+        else:
+            self.select_monitor(0)
+
+    def show_monitors(self):
+        self.stage = "monitors"
+        self.screen = self.window = None
+        self.history = []
+        self.path = []
+        self.generation += 1
+        for window in self.windows:
+            window.setProperty("choosingMonitor", True)
+            window.show()
+        self.timer.start()
+        self.log_event("grid-monitors", monitors=[
+            {"number": number, "name": screen.name(), "x": screen.geometry().x(), "y": screen.geometry().y(),
+             "width": screen.geometry().width(), "height": screen.geometry().height()}
+            for number, screen in enumerate(self.screens, 1)
+        ])
+        self.mode_changed.emit("grid", self.generation)
+
+    def select_monitor(self, index):
+        self.stage = "grid"
+        self.screen, self.window = self.screens[index], self.windows[index]
+        self.window.setProperty("choosingMonitor", False)
+        for window in self.windows:
+            if window is not self.window:
+                window.hide()
+        geometry = self.screen.geometry()
         self.history = [Region(0, 0, geometry.width(), geometry.height())]
         self.path = []
         self.generation += 1
@@ -103,8 +147,8 @@ class GridController(QObject):
         self.window.show()
         self.mode_changed.emit("grid", self.generation)
 
-    def visibility_changed(self, visible):
-        if not visible and self.active:
+    def visibility_changed(self, window, visible):
+        if not visible and (self.stage == "monitors" or (self.stage == "grid" and window is self.window)):
             self.cancel("overlay-hidden")
 
     def update(self):
@@ -113,7 +157,8 @@ class GridController(QObject):
         self.window.setProperty("breadcrumb", " → ".join(map(str, self.path)) or "Full screen")
         self.window.setProperty("dryRun", not self.execute)
         self.timer.start()
-        self.log_event("grid", path=list(self.path), region=region.__dict__, center=region.center, execute=self.execute)
+        self.log_event("grid", monitor=self.window.property("monitorNumber"), screen=self.screen.name(),
+                       path=list(self.path), region=region.__dict__, center=region.center, execute=self.execute)
 
     def command(self, command, generation):
         # Ignore buffered recognition from an earlier overlay/session, including after timeout.
@@ -122,6 +167,20 @@ class GridController(QObject):
         if not self.active:
             if command == "click":
                 self.open()
+            return
+        if self.stage == "monitors":
+            if command in NUMBERS:
+                index = NUMBERS.index(command)
+                if index < len(self.screens):
+                    self.select_monitor(index)
+                else:
+                    self.log_event("grid-rejected", command=command, error="No monitor with that number")
+            elif command == "cancel":
+                self.cancel("command")
+            elif command == "click":
+                self.log_event("grid-select-monitor", error="Say a monitor number before clicking")
+            if self.active:
+                self.timer.start()
             return
         if command in NUMBERS:
             region = self.history[-1]
@@ -136,6 +195,9 @@ class GridController(QObject):
             if self.path:
                 self.path.pop()
                 self.history.pop()
+            elif len(self.screens) > 1:
+                self.show_monitors()
+                return
         elif command == "reset":
             self.history = self.history[:1]
             self.path = []
@@ -165,13 +227,22 @@ class GridController(QObject):
             self.log_event("grid-click-cancelled", reason=reason)
         if not self.active:
             return
+        self.stage = None
         self.history = []
         self.path = []
         self.timer.stop()
-        self.window.hide()
+        self.close_windows()
         self.generation += 1
         self.log_event("grid-closed", reason=reason)
         self.mode_changed.emit("normal", self.generation)
+
+    def close_windows(self):
+        for window in self.windows:
+            window.hide()
+            window.deleteLater()
+        self.windows = []
+        self.screens = []
+        self.screen = self.window = None
 
     def click_error(self, error):
         if error == QProcess.ProcessError.FailedToStart:

@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 
 from grid import GridController, Region
 from runner import VoskRecognizer, audio
-from vocabulary import GRID_COMMANDS, phrases_for
+from vocabulary import GRID_COMMANDS, NUMBERS, phrases_for
 
 app = QApplication([])
 app.setQuitOnLastWindowClosed(False)
@@ -78,7 +78,7 @@ class GridTests(unittest.TestCase):
         self.say("click")
         self.say("cancel")
         self.assertFalse(self.grid.active)
-        self.assertFalse(self.grid.window.isVisible())
+        self.assertEqual(self.grid.windows, [])
         self.assertFalse(any(state == "grid-would-click" for state, details in self.events))
 
     def test_pixel_limit_and_display_change(self):
@@ -106,8 +106,65 @@ class GridTests(unittest.TestCase):
         self.assertIsNone(self.grid.pending_click)
         self.assertFalse(any(state == "executed" for state, details in self.events))
 
+    def test_monitor_selection_before_grid_and_back_to_monitors(self):
+        screen = app.screens()[0]
+        # Reuse a real QScreen for offscreen state/UI checks; distinct monitors and
+        # their global coordinate offsets are covered in the KWin integration test.
+        with patch.object(app, "screens", return_value=[screen, screen]):
+            self.say("click")
+            self.assertEqual(self.grid.stage, "monitors")
+            self.assertEqual(len(self.grid.windows), 2)
+            self.assertEqual([window.property("monitorNumber") for window in self.grid.windows], [1, 2])
+            self.assertTrue(all(window.property("choosingMonitor") for window in self.grid.windows))
+            self.assertEqual(self.grid.history, [])
+            selection_generation = self.grid.generation
+            self.say("click")
+            self.say("nine")
+            self.assertEqual(self.grid.stage, "monitors")
+            self.assertFalse(any(state == "grid-would-click" for state, details in self.events))
+            second_window = self.grid.windows[1]
+            self.say("two")
+            self.assertEqual(self.grid.stage, "grid")
+            self.assertIs(self.grid.window, second_window)
+            self.assertEqual(self.grid.path, [], "Monitor number must not also narrow the grid")
+            self.assertEqual([window.isVisible() for window in self.grid.windows], [False, True])
+            self.say("three", selection_generation)
+            self.assertEqual(self.grid.path, [], "Buffered monitor-stage results must not affect the grid")
+            self.say("three")
+            self.say("back")
+            self.assertEqual(self.grid.stage, "grid")
+            self.say("back")
+            self.assertEqual(self.grid.stage, "monitors")
+            self.assertTrue(all(window.isVisible() for window in self.grid.windows))
+            self.say("one")
+            self.say("five")
+            self.say("reset")
+            self.assertEqual(self.grid.stage, "grid")
+            self.assertEqual(self.grid.path, [])
+            self.say("click")
+            self.assertFalse(self.grid.active)
+            self.assertEqual(self.grid.windows, [])
+            self.assertEqual(self.events[-1][0], "grid-would-click")
+
+    def test_monitor_selection_timeout_and_display_change(self):
+        screen = app.screens()[0]
+        with patch.object(app, "screens", return_value=[screen, screen]):
+            self.say("click")
+            generation = self.grid.generation
+            QTest.qWait(180)
+            self.assertFalse(self.grid.active)
+            self.assertEqual(self.grid.windows, [])
+            self.say("two", generation)
+            self.assertFalse(self.grid.active)
+            self.say("click")
+            screen.geometryChanged.emit(screen.geometry())
+            self.assertFalse(self.grid.active)
+            self.assertEqual(self.grid.windows, [])
+
     @unittest.skipUnless(DESKTOP, "requires an isolated KWin Wayland session")
     def test_real_absolute_click_and_focus(self):
+        if len(app.screens()) != 1:
+            self.skipTest("single-monitor regression; use the multi-monitor test for multiple outputs")
         class Target(QWidget):
             def __init__(self):
                 super().__init__()
@@ -167,6 +224,68 @@ class GridTests(unittest.TestCase):
         self.assertEqual(synthetic.exitCode(), 0, bytes(synthetic.readAllStandardError()).decode())
         self.assertEqual(len(target.clicks), 3)
         self.assertIn('"state": "executed"', bytes(synthetic.readAllStandardOutput()).decode())
+        target.close()
+
+    @unittest.skipUnless(DESKTOP, "requires an isolated KWin Wayland session")
+    def test_real_monitor_selection_and_global_click(self):
+        if len(app.screens()) < 2:
+            self.skipTest("requires at least two outputs")
+
+        class Target(QWidget):
+            def __init__(self):
+                super().__init__()
+                self.clicks = []
+
+            def mousePressEvent(self, event):
+                self.clicks.append(event.globalPosition())
+
+        screens = sorted(app.screens(), key=lambda screen: (
+            screen.geometry().x(), screen.geometry().y(), screen.name()))
+        if os.environ.get("VOICE_GRID_EXPECT_MIXED_SCALE") == "1":
+            self.assertGreater(len({screen.devicePixelRatio() for screen in screens}), 1)
+        index = next(index for index, screen in enumerate(screens)
+                     if screen.geometry().x() != 0 or screen.geometry().y() != 0)
+        screen = screens[index]
+        target = Target()
+        target.setScreen(screen)
+        target.setGeometry(screen.geometry())
+        target.showFullScreen()
+        QTest.qWait(300)
+        self.assertIs(target.windowHandle().screen(), screen)
+        self.assertTrue(target.isActiveWindow())
+        self.grid.execute = True
+        self.grid.timer.setInterval(5000)
+        self.say("click")
+        QTest.qWait(100)
+        self.assertEqual(self.grid.stage, "monitors")
+        self.assertTrue(all(window.isVisible() for window in self.grid.windows))
+        self.assertEqual([window.screen() for window in self.grid.windows], screens)
+        for window, output in zip(self.grid.windows, screens):
+            image = window.grabWindow()
+            self.assertFalse(image.isNull(), f"Monitor {output.name()} did not render its overlay")
+            self.assertAlmostEqual(image.width(), output.geometry().width() * window.devicePixelRatio(), delta=1)
+        if os.environ.get("VOICE_GRID_EXPECT_MIXED_SCALE") == "1":
+            self.assertGreater(len({window.devicePixelRatio() for window in self.grid.windows}), 1)
+        print("Monitor layout:", [(output.name(), output.geometry().getRect(), window.devicePixelRatio())
+                                  for output, window in zip(screens, self.grid.windows)], flush=True)
+        self.assertTrue(target.isActiveWindow(), "Monitor overlays must not take focus")
+        self.say(NUMBERS[index])
+        QTest.qWait(100)
+        self.assertIs(self.grid.screen, screen)
+        self.assertEqual(self.grid.path, [])
+        self.assertEqual([window.isVisible() for window in self.grid.windows],
+                         [number == index for number in range(len(screens))])
+        self.say("three")
+        self.say("seven")
+        region = self.grid.history[-1]
+        expected = (region.center[0] + screen.geometry().x(), region.center[1] + screen.geometry().y())
+        self.say("click")
+        QTest.qWait(300)
+        self.assertEqual(len(target.clicks), 1)
+        self.assertAlmostEqual(target.clicks[0].x(), expected[0], delta=1)
+        self.assertAlmostEqual(target.clicks[0].y(), expected[1], delta=1)
+        self.assertEqual(self.events[-1][0], "executed")
+        self.assertEqual(self.grid.windows, [])
         target.close()
 
 

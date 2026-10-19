@@ -33,7 +33,7 @@ in
         Command-line arguments for the tray and Vosk listener. Each argument is
         a separate list element; wake phrases containing spaces remain one argument.
         Include --execute to invoke actions, --mouse-grid for experimental
-        single-display Plasma Wayland mouse control, or --start-paused to start
+        Plasma Wayland mouse control with monitor selection, or --start-paused to start
         the tray without opening the microphone.
       '';
     };
