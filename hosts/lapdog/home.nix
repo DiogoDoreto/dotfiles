@@ -16,25 +16,27 @@
       #   package = fish;
       #   wrappedBinName = "ai-shell";
       # })
-      # blender
       # clonehero
-      # freecad
       imagemagick
-      # llm-agents.agent-browser
-      kdePackages.kdenlive
       keepassxc
-      krita
       kwtype
       libreoffice
-      obs-studio
       pinentry-emacs
       podman-compose
       pods # podman GUI
-      # pureref
       sshfs
       ungoogled-chromium
       onedrivegui
       wl-clipboard
+
+      ## Media apps to enable when needed
+      # bambu-studio
+      # blender
+      # freecad
+      # kdePackages.kdenlive
+      # krita
+      # obs-studio
+      # pureref
     ];
   };
 
