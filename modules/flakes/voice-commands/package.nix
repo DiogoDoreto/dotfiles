@@ -108,6 +108,7 @@ let
           --set VOICE_TEST_POINTER ${pointer}/bin/voice-commands-pointer \
           --set VOICE_TEST_MODEL ${model} \
           --set VOICE_TEST_STARTUP_PROBE ${./test_startup.py} \
+          --set VOICE_TEST_RENDERING_PROBE ${./test_rendering.py} \
           --set VOICE_TEST_OLD_CRYPTO ${lib.getLib openssl_3_5}/lib/libcrypto.so.3 \
           --add-flags "-B ${./test_grid.py}"
       '';

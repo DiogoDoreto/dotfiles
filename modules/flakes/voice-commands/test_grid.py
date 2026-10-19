@@ -153,7 +153,11 @@ class GridTests(unittest.TestCase):
         tray = str(Path(sys.modules[GridController.__module__].__file__).with_name("tray.py"))
         synthetic.start(sys.executable, [tray, "--listener", "unused", "--pointer",
                                         os.environ["VOICE_TEST_POINTER"], "--grid-stdin", "--execute"])
-        synthetic.write(b"click\n3\n7\nclick\n")
+        synthetic.write(b"click\n")
+        QTest.qWait(300)
+        self.assertEqual(synthetic.state(), QProcess.ProcessState.Running,
+                         bytes(synthetic.readAllStandardError()).decode())
+        synthetic.write(b"3\n7\nclick\n")
         synthetic.closeWriteChannel()
         for unused in range(100):
             QTest.qWait(20)
@@ -167,6 +171,20 @@ class GridTests(unittest.TestCase):
 
 
 class StartupTests(unittest.TestCase):
+    def test_overlay_frame_without_egl(self):
+        environment = dict(os.environ)
+        # Offscreen Qt normally picks software automatically. Request Wayland's
+        # RHI/OpenGL default explicitly so the test catches the desktop failure.
+        environment["QT_QUICK_BACKEND"] = "rhi"
+        environment["QSG_RHI_BACKEND"] = "opengl"
+        environment["QT_QPA_PLATFORM"] = "offscreen"
+        environment["QT_FORCE_STDERR_LOGGING"] = "1"
+        grid = sys.modules[GridController.__module__].__file__
+        result = subprocess.run([sys.executable, "-B", os.environ["VOICE_TEST_RENDERING_PROBE"], grid],
+                                env=environment, capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Overlay frame and crosshair rendered without EGL", result.stdout)
+
     def test_grid_stdin_after_older_desktop_crypto(self):
         tray = str(Path(sys.modules[GridController.__module__].__file__).with_name("tray.py"))
         result = subprocess.run([sys.executable, "-B", os.environ["VOICE_TEST_STARTUP_PROBE"],

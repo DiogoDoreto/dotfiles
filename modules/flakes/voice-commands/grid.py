@@ -7,8 +7,14 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QProcess, QSocketNotifier, QTimer, QUrl, Signal
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuick import QQuickWindow
 
 from vocabulary import GRID_COMMANDS, NUMBERS
+
+
+# This overlay is plain 2D geometry/text. Choose its renderer before any Quick
+# window exists so opening the grid never depends on desktop EGL/OpenGL support.
+QQuickWindow.setSceneGraphBackend("software")
 
 
 @dataclass(frozen=True)
