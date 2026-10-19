@@ -43,8 +43,8 @@
   # enable CUDA per-program that needs it
   # nixpkgs.config.cudaSupport = true;
 
-  # Use latest kernel.
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # Use an LTS kernel while investigating the 7.2.6 XFS parity-write oops.
+  boot.kernelPackages = pkgs.linuxPackages_6_18;
 
   # Early KMS: load i915 in initrd so Intel iGPU output is stable before SDDM starts.
   # Without this, there's a race between driver init and the display manager that
