@@ -1,4 +1,4 @@
-"""Local Vosk wake-phrase recognition and MPRIS media commands."""
+"""Local Vosk wake-phrase recognition, media commands, and mouse-grid events."""
 
 import argparse
 from contextlib import contextmanager
@@ -7,15 +7,18 @@ import math
 import os
 from pathlib import Path
 import re
+import select
 import signal
 import subprocess
 import struct
+import sys
 import time
 import wave
 
+from vocabulary import MEDIA_COMMANDS, phrases_for
+
 RATE = 16000
 CHUNK = 1600  # 100 ms, mono signed 16-bit PCM.
-COMMANDS = ("play", "pause", "next", "previous")
 
 
 def normalize(text):
@@ -32,15 +35,24 @@ class VoskRecognizer:
         import vosk
 
         vosk.SetLogLevel(-1)
-        model = vosk.Model(str(args.model))
-        missing = [word for word in set(" ".join(phrases).split()) if model.vosk_model_find_word(word) < 0]
+        self.model = vosk.Model(str(args.model))
+        self.verbose = args.verbose
+        self.set_phrases(phrases)
+
+    def set_phrases(self, phrases):
+        import vosk
+
+        missing = [word for word in set(" ".join(phrases).split()) if self.model.vosk_model_find_word(word) < 0]
         if missing:
             raise ValueError(f"Words absent from Vosk's vocabulary: {', '.join(sorted(missing))}")
-        self.recognizer = vosk.KaldiRecognizer(model, RATE, json.dumps([*phrases, "[unk]"]))
+        # A fresh decoder discards pending utterances at a mode boundary, but shares the model.
+        self.recognizer = vosk.KaldiRecognizer(self.model, RATE, json.dumps([*phrases, "[unk]"]))
         self.recognizer.SetWords(True)
+        # Prime a fresh decoder so a short digit spoken immediately at mode entry is
+        # not lost to acoustic startup. This padding contains no captured/pending speech.
+        self.recognizer.AcceptWaveform(bytes(RATE))  # 500 ms of mono s16 silence.
         self.phrases = phrases
         self.partial = ""
-        self.verbose = args.verbose
 
     def feed(self, pcm):
         if self.recognizer.AcceptWaveform(pcm):
@@ -73,27 +85,42 @@ def audio(args):
         with wave.open(str(args.wav), "rb") as source:
             if (source.getnchannels(), source.getsampwidth(), source.getframerate(), source.getcomptype()) != (1, 2, RATE, "NONE"):
                 raise ValueError("--wav requires uncompressed mono 16 kHz signed 16-bit PCM")
-            yield lambda: source.readframes(CHUNK)
+            yield (lambda: source.readframes(CHUNK)), (lambda: None)
         return
     command = ["pw-record", "--raw", "--rate=16000", "--channels=1", "--format=s16",
                "--properties={ node.name=voice-commands-listener }"]
     if args.source:
         command += ["--target", args.source]
-    with subprocess.Popen([*command, "-"], stdout=subprocess.PIPE) as capture:
-        try:
-            def read():
-                pcm = capture.stdout.read(CHUNK * 2)
-                if not pcm:
-                    raise RuntimeError(f"PipeWire capture ended (exit {capture.wait()})")
-                return pcm
-            yield read
-        finally:
+    capture = None
+
+    def close():
+        if capture:
             capture.terminate()
             try:
                 capture.wait(timeout=2)
             except subprocess.TimeoutExpired:
                 capture.kill()
                 capture.wait()
+            capture.stdout.close()
+
+    def restart():
+        nonlocal capture
+        # Reset the producer as well as the decoder: old PCM queued in either process must
+        # not be relabelled as a command from the new targeting generation.
+        close()
+        capture = subprocess.Popen([*command, "-"], stdout=subprocess.PIPE)
+
+    def read():
+        pcm = capture.stdout.read(CHUNK * 2)
+        if not pcm:
+            raise RuntimeError(f"PipeWire capture ended (exit {capture.wait()})")
+        return pcm
+
+    try:
+        restart()
+        yield read, restart
+    finally:
+        close()
 
 
 def media(command, preference):
@@ -120,6 +147,8 @@ def main():
     parser.add_argument("--wake", default="hey computer", help="English wake phrase, no training required")
     parser.add_argument("--source", help="PipeWire microphone node.name; otherwise follow the default input")
     parser.add_argument("--execute", action="store_true", help="Actually invoke media actions; otherwise print events")
+    parser.add_argument("--mouse-grid", action="store_true", help="Recognize mouse-grid entry and targeting commands (UI performs clicks)")
+    parser.add_argument("--control-stdin", action="store_true", help="Accept controller mode/generation JSON lines on stdin")
     parser.add_argument("--player", help="Prefer this MPRIS player family/instance, e.g. mpv")
     parser.add_argument("--wav", type=Path, help="Replay a mono 16 kHz PCM WAV instead of opening the microphone")
     parser.add_argument("--duration", type=float, default=0, help="Stop after this many audio seconds; 0 means unlimited")
@@ -135,7 +164,10 @@ def main():
     wake = normalize(args.wake)
     if not wake or args.duration < 0 or args.stats_every < 0:
         parser.error("Wake phrase must contain English words; duration and stats interval must be nonnegative")
-    phrases = {f"{wake} {command}": command for command in COMMANDS}
+    phrases = phrases_for(wake, args.mouse_grid)
+    mode = "normal"
+    generation = 0
+    control_buffer = b""
     started = time.monotonic()
     started_cpu = time.process_time()
     total_audio = decode_seconds = 0.0
@@ -155,8 +187,9 @@ def main():
         nonlocal actions
         for command in commands:
             actions += 1
-            event("command", command=command, phrase=f"{wake} {command}", audio_s=round(total_audio, 2), execute=args.execute)
-            if args.execute:
+            event("command", command=command, mode=mode, generation=generation,
+                  audio_s=round(total_audio, 2), execute=args.execute)
+            if args.execute and command in MEDIA_COMMANDS:
                 try:
                     media(command, args.player)
                 except subprocess.TimeoutExpired:
@@ -164,15 +197,36 @@ def main():
 
     try:
         recognizer = VoskRecognizer(args, phrases)
+        if args.mouse_grid:
+            # Check all targeting words before announcing readiness, not during the first click.
+            recognizer.set_phrases(phrases_for(wake, True, "grid"))
+            recognizer.set_phrases(phrases)
         model_load_seconds = time.monotonic() - started
         # No argument runs playerctld in the foreground. Reuse an existing daemon if it owns the bus.
         if args.execute:
             tracker = subprocess.Popen(["playerctld"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(0.3)
         next_report = args.stats_every
-        with audio(args) as read:
+        with audio(args) as (read, reset_capture):
             announced = False
             while not args.duration or total_audio < args.duration:
+                if args.control_stdin and select.select([sys.stdin], [], [], 0)[0]:
+                    data = os.read(sys.stdin.fileno(), 4096)
+                    if not data:
+                        raise RuntimeError("Controller input closed")
+                    control_buffer += data
+                    while b"\n" in control_buffer:
+                        line, control_buffer = control_buffer.split(b"\n", 1)
+                        control = json.loads(line)
+                        new_mode, new_generation = control.get("mode"), control.get("generation")
+                        if (new_mode not in ("normal", "grid") or type(new_generation) is not int
+                                or new_generation < generation or (new_mode == "grid" and not args.mouse_grid)):
+                            raise ValueError("Invalid controller mode/generation")
+                        if (new_mode, new_generation) != (mode, generation):
+                            mode, generation = new_mode, new_generation
+                            reset_capture()
+                            recognizer.set_phrases(phrases_for(wake, args.mouse_grid, mode))
+                            event("mode-changed", mode=mode, generation=generation)
                 pcm = read()
                 if not pcm:
                     break

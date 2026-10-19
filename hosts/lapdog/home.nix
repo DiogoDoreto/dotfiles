@@ -132,6 +132,7 @@
     enable = true;
     extraArgs = [
       "--execute"
+      "--mouse-grid"
       "--wake"
       "hey computer"
     ];

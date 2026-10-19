@@ -31,9 +31,10 @@ def microphone_icon(color):
 
 
 class TrayController(QObject):
-    def __init__(self, app, listener, arguments):
+    def __init__(self, app, listener, arguments, grid=None):
         super().__init__(app)
         self.app = app
+        self.grid = grid
         self.state = "Paused"
         self.last_error = ""
         self.output = ""
@@ -50,6 +51,8 @@ class TrayController(QObject):
         self.process.readyReadStandardOutput.connect(self.read_output)
         self.process.finished.connect(self.finished)
         self.process.errorOccurred.connect(self.process_error)
+        if grid:
+            grid.mode_changed.connect(self.set_recognition_mode)
 
         self.stop_timer = QTimer(self)
         self.stop_timer.setSingleShot(True)
@@ -107,6 +110,8 @@ class TrayController(QObject):
             self.process.terminate()
 
     def stop(self):
+        if self.grid:
+            self.grid.cancel("listening-stopped")
         if self.process.state() == QProcess.ProcessState.NotRunning:
             return
         self.requested_stop = True
@@ -131,9 +136,19 @@ class TrayController(QObject):
             except json.JSONDecodeError:
                 continue
             if event.get("state") == "listening" and not self.requested_stop:
+                if self.grid:
+                    # A restarted listener begins with generation zero and the normal grammar.
+                    self.set_recognition_mode("normal", self.grid.generation)
                 self.set_state("Listening")
             elif event.get("state") == "error":
                 self.last_error = event.get("error", "Listener error")
+            elif (event.get("state") == "command" and self.grid and not self.requested_stop
+                  and self.state == "Listening" and self.process.state() == QProcess.ProcessState.Running):
+                self.grid.command(event.get("command"), event.get("generation"))
+
+    def set_recognition_mode(self, mode, generation):
+        if self.process.state() == QProcess.ProcessState.Running:
+            self.process.write((json.dumps({"mode": mode, "generation": generation}) + "\n").encode())
 
     def process_error(self, error):
         if error == QProcess.ProcessError.FailedToStart:
@@ -143,6 +158,8 @@ class TrayController(QObject):
                 self.app.quit()
 
     def finished(self, code, status):
+        if self.grid:
+            self.grid.cancel("listener-exited")
         self.read_output()
         self.stop_timer.stop()
         self.kill_group()
@@ -163,6 +180,8 @@ class TrayController(QObject):
             self.stop()
 
     def cleanup(self):
+        if self.grid:
+            self.grid.cleanup()
         if self.process.state() != QProcess.ProcessState.NotRunning:
             self.stop()
             if not self.process.waitForFinished(6000):
@@ -175,15 +194,34 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False,
                                      epilog="Other arguments are forwarded to the Vosk runner, e.g. --execute --wake 'hey computer'.")
     parser.add_argument("--listener", required=True, help=argparse.SUPPRESS)
+    parser.add_argument("--pointer", required=True, help=argparse.SUPPRESS)
     parser.add_argument("--start-paused", action="store_true", help="Show the tray without opening the microphone")
+    parser.add_argument("--mouse-grid", action="store_true", help="Enable experimental single-display Plasma Wayland mouse commands")
+    parser.add_argument("--grid-stdin", action="store_true", help="Read synthetic grid commands from stdin instead of listening (no tray)")
+    parser.add_argument("--grid-timeout", type=float, default=20, help="Cancel targeting after this many inactive seconds (default: 20)")
     args, listener_arguments = parser.parse_known_args()
+    if not 0.1 <= args.grid_timeout <= 3600:
+        parser.error("--grid-timeout must be between 0.1 and 3600 seconds")
+    if args.grid_stdin and args.start_paused:
+        parser.error("--grid-stdin cannot be combined with --start-paused")
     app = QApplication([])
     app.setApplicationName("voice-commands")
     app.setQuitOnLastWindowClosed(False)
-    if not QSystemTrayIcon.isSystemTrayAvailable():
+    grid = None
+    if args.mouse_grid or args.grid_stdin:
+        from grid import GridController, SyntheticController
+        grid = GridController(app, args.pointer, execute="--execute" in listener_arguments, timeout=args.grid_timeout)
+    if not args.grid_stdin and not QSystemTrayIcon.isSystemTrayAvailable():
         print("No system tray is available. Run inside your Plasma desktop session.", file=sys.stderr)
         return 1
-    controller = TrayController(app, args.listener, listener_arguments)
+    if args.grid_stdin:
+        if any(argument != "--execute" for argument in listener_arguments):
+            parser.error("--grid-stdin only accepts --execute as a listener argument")
+        controller = SyntheticController(app, grid)
+    else:
+        if args.mouse_grid:
+            listener_arguments += ["--mouse-grid", "--control-stdin"]
+        controller = TrayController(app, args.listener, listener_arguments, grid)
 
     # Deliver Unix shutdown signals through Qt's event loop without an idle polling timer.
     read_fd, write_fd = os.pipe2(os.O_NONBLOCK | os.O_CLOEXEC)
@@ -197,7 +235,7 @@ def main():
         controller.quit()
 
     notifier.activated.connect(interrupted)
-    if not args.start_paused:
+    if not args.grid_stdin and not args.start_paused:
         controller.start()
     try:
         return app.exec()

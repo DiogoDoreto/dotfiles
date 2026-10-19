@@ -11,11 +11,13 @@
       voiceCommands = pkgs.callPackage ./package.nix { };
     in
     {
+      checks.${system}.grid = voiceCommands.tests;
       packages.${system} = {
         default = voiceCommands;
         voice-commands = voiceCommands;
         listener = voiceCommands.listener;
         model = voiceCommands.model;
+        test-runner = voiceCommands.testRunner;
       };
     };
 }

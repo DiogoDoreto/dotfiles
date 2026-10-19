@@ -1,6 +1,6 @@
 # Local voice commands
 
-An offline Vosk listener with a Qt system tray controller. Say **“hey computer play”**, **“hey computer pause”**, **“hey computer next”**, or **“hey computer previous”**. Each command requires the wake phrase; no deliberate pause between wake phrase and command is needed.
+An offline Vosk listener with a Qt system tray controller. Say **“hey computer play”**, **“hey computer pause”**, **“hey computer next”**, or **“hey computer previous”**. Each media command requires the wake phrase; no deliberate pause between wake phrase and command is needed. The optional experimental mouse grid adds **“hey computer click”** followed by numbered targeting commands.
 
 ## Home Manager
 
@@ -11,6 +11,7 @@ dog.services.voice-commands = {
   enable = true;
   extraArgs = [
     "--execute"
+    "--mouse-grid"
     "--wake"
     "hey computer"
   ];
@@ -25,7 +26,10 @@ Useful flags:
 
 | Flag | Effect |
 | --- | --- |
-| `--execute` | Invoke media actions; omit to print recognized commands only. |
+| `--execute` | Invoke media actions and mouse clicks; omit for media logging and mouse-grid preview only. |
+| `--mouse-grid` | Enable the single-display Plasma Wayland mouse experiment. Enabled on lapdog. |
+| `--grid-timeout 20` | Cancel the grid after this many inactive seconds; default 20. |
+| `--grid-stdin` | Read synthetic grid commands from the terminal, without a tray, microphone, or recognizer. |
 | `--wake "hello computer"` | Change the English wake phrase without retraining. Words must exist in the selected Vosk model's vocabulary. |
 | `--source <node.name>` | Pin a PipeWire microphone; otherwise use the default input. Find names with `wpctl status -n`. |
 | `--player mpv` | Prefer a particular MPRIS player family/instance. |
@@ -67,7 +71,52 @@ The tray forwards listener flags and consumes `--start-paused` itself. The headl
 
 Media dispatch selects one concrete player in playerctld's event-recency order, optionally filtered by `--player`, then sends the requested action to it. Unsupported actions do not fall through to another player. `play` uses MPRIS Play, never a toggle or an application launch; it can resume/start an existing session. Next/previous depend on the player/page's capabilities. A fresh activity tracker has no historical recency, so interact with the intended player after startup if several exist.
 
-Recognition constrains Vosk's vocabulary to the four full phrases plus `[unk]`, then accepts only exact normalized final results. Partial results never execute actions. Constrained decoding still needs ordinary-speech rejection checks; it is not proof that any permitted transcript was genuinely spoken.
+## Mouse-grid experiment
+
+Requires **Plasma Wayland with exactly one enabled display**. With `--mouse-grid`:
+
+1. Say **“hey computer click”** to show a full-screen, row-major 3×3 grid:
+
+   ```text
+   1  2  3
+   4  5  6
+   7  8  9
+   ```
+
+2. Say **“one”** through **“nine”**, one number per utterance, to subdivide that cell recursively. No wake phrase is needed while targeting.
+3. Say **“click”** to left-click the red crosshair at the current region's center and close the grid. Without `--execute`, this logs `grid-would-click` without moving the pointer or clicking.
+
+**“back”** undoes a subdivision, **“reset”** returns to the whole display, and **“cancel”** closes without clicking. The grid also cancels on inactivity, pause/quit, listener exit, overlay dismissal, or display geometry/scale changes. Numbers and bare “click” are ignored outside targeting mode. Media commands still require their wake phrase during targeting.
+
+The overlay is click-through and does not take keyboard focus. It shows the selected region, a breadcrumb, and an enlarged reference keypad when the cells are too small for labels. This keypad is schematic, not a screenshot magnifier. The real pointer stays still until the final click. Subdivision stops before cells become smaller than one logical pixel.
+
+### Try synthetic commands first
+
+From a terminal in the Plasma session:
+
+```sh
+nix run path:./modules/flakes/voice-commands -- --grid-stdin
+```
+
+Type `click`, then `3`, `7`, `5`, and `click`, each followed by Enter. Spoken number words also work. Use `back`, `reset`, `cancel`, or `quit`; Ctrl+C and stdin EOF exit and clean up. This mode never opens the microphone. Add `--execute` to actually click. EOF allows an already committed click to finish (up to four seconds); explicit quit, pause, or display changes cancel any pending input.
+
+For voice-driven preview, pause the managed listener using its tray icon, then run:
+
+```sh
+nix run path:./modules/flakes/voice-commands -- --mouse-grid --verbose
+```
+
+Add `--execute` for real clicks. Quit the standalone instance before resuming the managed listener.
+
+### Plasma input integration
+
+`pointer.c` uses KWin's `org_kde_kwin_fake_input` absolute motion and a left-button press/release, in desktop logical coordinates. This avoids ydotool 1.0.4's acceleration-sensitive relative approximation of absolute positioning. The helper runs as the desktop user; no ydotool group membership is required.
+
+The package installs a hidden `voice-commands-pointer.desktop` entry declaring its KWin interface. **Real clicks require this registration to be installed in the desktop session**, normally by the user's manual Home Manager/NixOS deployment. A standalone `nix run` before deployment can preview the grid but does not install that registration. KWin looks up the helper's exact store executable, so use the deployed `voice-commands` command for real-click trials after switching. Errors are logged as `grid-error` or `action-failed`.
+
+The Qt controller owns the region/history and sends mode changes over the listener's stdin. At mode boundaries, Vosk recreates its decoder while sharing the loaded model, and the PipeWire capture subprocess is restarted to discard upstream buffered audio too. Fresh decoders are primed with silent padding so short digits spoken immediately at mode entry are not lost to acoustic startup. Commands carry a generation number so results buffered before cancellation cannot reopen or act on a later grid. The headless `#listener` can emit grid events with `--mouse-grid`, but only the Qt controller injects mouse input.
+
+Recognition constrains Vosk's vocabulary to the full wake-prefixed phrases plus `[unk]`; targeting mode additionally permits the grid commands. Only exact normalized final results are accepted. Partial results never execute actions. Constrained decoding still needs ordinary-speech rejection checks; it is not proof that any permitted transcript was genuinely spoken.
 
 ## Packaging and verification
 
@@ -82,3 +131,9 @@ For future changes, verify:
 3. Pause/resume/quit and failure cleanup without leftover capture processes.
 4. Generated service arguments, graphical-session lifetime, and desktop launcher targeting the same service.
 5. On lapdog after manual deployment: login startup, speaker-playback recognition, intended media player, microphone sharing with Handy, and logout cleanup.
+
+`nix flake check path:./modules/flakes/voice-commands` also runs `test_grid.py`: real Qt/QML loading, region/history behavior, preview isolation, timeout/cancellation/stale-result handling, pending-click cancellation, display-change cancellation, pixel-depth limits, upstream capture-buffer discard/cleanup, and mode-specific matching with the real Vosk model. The real-desktop input test is skipped in the offscreen sandbox.
+
+For compositor-level verification, build `#test-runner` and run `check-voice-grid GridTests.test_real_absolute_click_and_focus` with `VOICE_GRID_DESKTOP_TEST=1` in an **isolated** KWin Wayland session whose `XDG_DATA_DIRS` includes this package's `share` directory. It creates a fullscreen target and checks focus retention, click-through behavior, and actual absolute click delivery. Use KWin's virtual backend and fresh config/cache directories; repeat with fractional scaling. This test injects real mouse input and is intended for the isolated session.
+
+The initial experiment passed the offscreen checks and the isolated KWin test at 150% scaling, including actual click delivery after a finite synthetic stdin stream reaches EOF. Additional synthesized-speech checks passed all nine digits, four targeting controls, five wake-prefixed actions, and four rejection samples, plus a streamed-WAV listener/control-stdin round trip through normal → targeting → normal. Physical microphone accuracy, perceived speech latency, and visual comfort still need a trial on lapdog after manual deployment.

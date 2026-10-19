@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Voice Commands Pointer
+Comment=Private Plasma input helper for the voice mouse grid
+Exec=@pointer@
+NoDisplay=true
+X-KDE-Wayland-Interfaces=org_kde_kwin_fake_input
