@@ -11,6 +11,10 @@ from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 
+def display_state(state, scrolling):
+    return "Scrolling" if state == "Listening" and scrolling else state
+
+
 def microphone_icon(color):
     image = QPixmap(48, 48)
     image.fill(Qt.GlobalColor.transparent)
@@ -31,10 +35,10 @@ def microphone_icon(color):
 
 
 class TrayController(QObject):
-    def __init__(self, app, listener, arguments, grid=None):
+    def __init__(self, app, listener, arguments, desktop=None):
         super().__init__(app)
         self.app = app
-        self.grid = grid
+        self.desktop = desktop
         self.state = "Paused"
         self.last_error = ""
         self.output = ""
@@ -51,8 +55,8 @@ class TrayController(QObject):
         self.process.readyReadStandardOutput.connect(self.read_output)
         self.process.finished.connect(self.finished)
         self.process.errorOccurred.connect(self.process_error)
-        if grid:
-            grid.mode_changed.connect(self.set_recognition_mode)
+        if desktop:
+            desktop.session.changed.connect(self.set_recognition_mode)
 
         self.stop_timer = QTimer(self)
         self.stop_timer.setSingleShot(True)
@@ -75,14 +79,17 @@ class TrayController(QObject):
     def set_state(self, state):
         self.state = state
         colors = {"Listening": "#239b56", "Paused": "#7f8c8d", "Starting": "#d4ac0d",
-                  "Stopping": "#d4ac0d", "Error": "#c0392b"}
-        self.tray.setIcon(microphone_icon(colors[state]))
+                  "Stopping": "#d4ac0d", "Error": "#c0392b", "Scrolling": "#2980b9"}
+        label = display_state(state, self.desktop and self.desktop.scroll.active)
+        self.tray.setIcon(microphone_icon(colors[label]))
         detail = f"\n{self.last_error}" if state == "Error" else ""
-        self.tray.setToolTip(f"Voice Commands — {state}{detail}\nClick to pause/resume listening")
-        self.status_action.setText(f"Voice Commands — {state}")
+        if label == "Scrolling":
+            detail = "\nSay up, down, or cancel · exits after one inactive minute"
+        self.tray.setToolTip(f"Voice Commands — {label}{detail}\nClick to pause/resume listening")
+        self.status_action.setText(f"Voice Commands — {label}")
         self.toggle_action.setText("Pause listening" if state in ("Listening", "Starting", "Stopping") else "Resume listening")
         self.toggle_action.setEnabled(state != "Stopping" and not self.quitting)
-        print(json.dumps({"tray": state, "error": self.last_error if state == "Error" else ""}), flush=True)
+        print(json.dumps({"tray": label, "error": self.last_error if state == "Error" else ""}), flush=True)
 
     def activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -110,8 +117,8 @@ class TrayController(QObject):
             self.process.terminate()
 
     def stop(self):
-        if self.grid:
-            self.grid.cancel("listening-stopped")
+        if self.desktop:
+            self.desktop.cancel("listening-stopped")
         if self.process.state() == QProcess.ProcessState.NotRunning:
             return
         self.requested_stop = True
@@ -136,19 +143,21 @@ class TrayController(QObject):
             except json.JSONDecodeError:
                 continue
             if event.get("state") == "listening" and not self.requested_stop:
-                if self.grid:
+                if self.desktop:
                     # A restarted listener begins with generation zero and the normal grammar.
-                    self.set_recognition_mode("normal", self.grid.generation)
+                    self.set_recognition_mode("normal", self.desktop.session.generation)
                 self.set_state("Listening")
             elif event.get("state") == "error":
                 self.last_error = event.get("error", "Listener error")
-            elif (event.get("state") == "command" and self.grid and not self.requested_stop
+            elif (event.get("state") == "command" and self.desktop and not self.requested_stop
                   and self.state == "Listening" and self.process.state() == QProcess.ProcessState.Running):
-                self.grid.command(event.get("command"), event.get("generation"))
+                self.desktop.command(event.get("command"), event.get("generation"))
 
     def set_recognition_mode(self, mode, generation):
         if self.process.state() == QProcess.ProcessState.Running:
             self.process.write((json.dumps({"mode": mode, "generation": generation}) + "\n").encode())
+        if self.state == "Listening":
+            self.set_state("Listening")
 
     def process_error(self, error):
         if error == QProcess.ProcessError.FailedToStart:
@@ -158,8 +167,8 @@ class TrayController(QObject):
                 self.app.quit()
 
     def finished(self, code, status):
-        if self.grid:
-            self.grid.cancel("listener-exited")
+        if self.desktop:
+            self.desktop.cancel("listener-exited")
         self.read_output()
         self.stop_timer.stop()
         self.kill_group()
@@ -180,8 +189,8 @@ class TrayController(QObject):
             self.stop()
 
     def cleanup(self):
-        if self.grid:
-            self.grid.cleanup()
+        if self.desktop:
+            self.desktop.cleanup()
         if self.process.state() != QProcess.ProcessState.NotRunning:
             self.stop()
             if not self.process.waitForFinished(6000):
@@ -211,20 +220,22 @@ def main():
     app = QApplication([])
     app.setApplicationName("voice-commands")
     app.setQuitOnLastWindowClosed(False)
-    grid = None
-    if args.mouse_grid or args.grid_stdin:
-        grid = GridController(app, args.pointer, execute="--execute" in listener_arguments, timeout=args.grid_timeout)
     if not args.grid_stdin and not QSystemTrayIcon.isSystemTrayAvailable():
         print("No system tray is available. Run inside your Plasma desktop session.", file=sys.stderr)
         return 1
     if args.grid_stdin:
         if any(argument != "--execute" for argument in listener_arguments):
             parser.error("--grid-stdin only accepts --execute as a listener argument")
+        grid = GridController(app, args.pointer, execute="--execute" in listener_arguments, timeout=args.grid_timeout)
         controller = SyntheticController(app, grid)
     else:
+        from desktop import DesktopCommands
+        desktop = DesktopCommands(app, args.pointer, execute="--execute" in listener_arguments,
+                                  mouse_grid=args.mouse_grid, grid_timeout=args.grid_timeout)
+        listener_arguments += ["--control-stdin"]
         if args.mouse_grid:
-            listener_arguments += ["--mouse-grid", "--control-stdin"]
-        controller = TrayController(app, args.listener, listener_arguments, grid)
+            listener_arguments += ["--mouse-grid"]
+        controller = TrayController(app, args.listener, listener_arguments, desktop)
 
     # Deliver Unix shutdown signals through Qt's event loop without an idle polling timer.
     read_fd, write_fd = os.pipe2(os.O_NONBLOCK | os.O_CLOEXEC)

@@ -34,7 +34,8 @@ in
         a separate list element; wake phrases containing spaces remain one argument.
         Include --execute to invoke actions, --mouse-grid for experimental
         Plasma Wayland mouse control with monitor selection, or --start-paused to start
-        the tray without opening the microphone.
+        the tray without opening the microphone. The scroll command group is
+        available by default and exits after one minute of inactivity or cancel.
       '';
     };
   };

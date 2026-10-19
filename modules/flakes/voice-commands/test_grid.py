@@ -21,6 +21,9 @@ app = QApplication([])
 app.setQuitOnLastWindowClosed(False)
 DESKTOP = os.environ.get("VOICE_GRID_DESKTOP_TEST") == "1"
 
+# Importing keeps the single test-runner entrypoint covering scroll tests too.
+from test_scroll import ScrollDesktopTests, ScrollTests
+
 
 class GridTests(unittest.TestCase):
     def setUp(self):
@@ -352,8 +355,8 @@ class RecognitionTests(unittest.TestCase):
         self.assertIs(recognizer.model, model)
         self.assertEqual(recognizer.result('{"text":"click"}'), [])
 
-    def test_feature_disabled_keeps_media_only_grammar(self):
-        self.assertEqual(set(phrases_for("hey computer").values()), {"play", "pause", "next", "previous"})
+    def test_grid_disabled_keeps_grid_words_out(self):
+        self.assertEqual(set(phrases_for("hey computer").values()), {"play", "pause", "next", "previous", "scroll"})
         region = Region(0, 0, 1920, 1080).cell(3).cell(7)
         self.assertAlmostEqual(region.center[0], 1386.6666667)
         self.assertAlmostEqual(region.center[1], 300)

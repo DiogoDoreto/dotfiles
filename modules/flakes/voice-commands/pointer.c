@@ -1,4 +1,4 @@
-/* Plasma-only absolute pointer input in the same logical coordinates as the overlay. */
+/* Plasma-only absolute pointer input and scrolling at the current pointer position. */
 #include <errno.h>
 #include <linux/input-event-codes.h>
 #include <math.h>
@@ -31,10 +31,21 @@ static void removed(void *data, struct wl_registry *registry, uint32_t name)
 int main(int argc, char **argv)
 {
     int check = argc == 2 && !strcmp(argv[1], "--check");
+    int scroll = argc == 3 && !strcmp(argv[1], "--scroll");
+    double axis = 0;
     double position[2] = {0, 0};
-    if (!check) {
+    if (scroll) {
+        if (!strcmp(argv[2], "up")) {
+            axis = -15;
+        } else if (!strcmp(argv[2], "down")) {
+            axis = 15;
+        } else {
+            fprintf(stderr, "Scroll direction must be up or down\n");
+            return 1;
+        }
+    } else if (!check) {
         if (argc != 3) {
-            fprintf(stderr, "Usage: voice-commands-pointer X Y | --check\n");
+            fprintf(stderr, "Usage: voice-commands-pointer X Y | --scroll up|down | --check\n");
             return 1;
         }
         for (int i = 0; i < 2; i++) {
@@ -64,17 +75,21 @@ int main(int argc, char **argv)
         return 1;
     }
     if (!check) {
-        org_kde_kwin_fake_input_authenticate(input, "Voice Commands", "Voice mouse-grid click");
+        org_kde_kwin_fake_input_authenticate(input, "Voice Commands", "Voice desktop input");
         if (wl_display_roundtrip(display) < 0) {
             wl_display_disconnect(display);
             return 1;
         }
         /* A desktop without a physical mouse must first bind the new seat capability. */
         usleep(100000);
-        org_kde_kwin_fake_input_pointer_motion_absolute(input,
-            wl_fixed_from_double(position[0]), wl_fixed_from_double(position[1]));
-        org_kde_kwin_fake_input_button(input, BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
-        org_kde_kwin_fake_input_button(input, BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
+        if (scroll) {
+            org_kde_kwin_fake_input_axis(input, WL_POINTER_AXIS_VERTICAL_SCROLL, wl_fixed_from_double(axis));
+        } else {
+            org_kde_kwin_fake_input_pointer_motion_absolute(input,
+                wl_fixed_from_double(position[0]), wl_fixed_from_double(position[1]));
+            org_kde_kwin_fake_input_button(input, BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
+            org_kde_kwin_fake_input_button(input, BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
+        }
     }
     int result = wl_display_roundtrip(display);
     if (!check) {

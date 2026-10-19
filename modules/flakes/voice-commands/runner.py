@@ -1,4 +1,4 @@
-"""Local Vosk wake-phrase recognition, media commands, and mouse-grid events."""
+"""Local Vosk wake-phrase recognition, media commands, and desktop command groups."""
 
 import argparse
 from contextlib import contextmanager
@@ -15,7 +15,7 @@ import sys
 import time
 import wave
 
-from vocabulary import MEDIA_COMMANDS, phrases_for
+from vocabulary import MEDIA_COMMANDS, SCROLL_DIRECTIONS, phrases_for
 
 RATE = 16000
 CHUNK = 1600  # 100 ms, mono signed 16-bit PCM.
@@ -45,8 +45,14 @@ class VoskRecognizer:
         missing = [word for word in set(" ".join(phrases).split()) if self.model.vosk_model_find_word(word) < 0]
         if missing:
             raise ValueError(f"Words absent from Vosk's vocabulary: {', '.join(sorted(missing))}")
+        self.scroll_sequences = all(direction in phrases for direction in SCROLL_DIRECTIONS)
+        grammar = list(phrases)
+        if self.scroll_sequences:
+            # Vosk's dynamic language model needs the transitions, including up->up
+            # and down->down, to preserve repeated directions in one final result.
+            grammar += [f"{first} {second}" for first in SCROLL_DIRECTIONS for second in SCROLL_DIRECTIONS]
         # A fresh decoder discards pending utterances at a mode boundary, but shares the model.
-        self.recognizer = vosk.KaldiRecognizer(self.model, RATE, json.dumps([*phrases, "[unk]"]))
+        self.recognizer = vosk.KaldiRecognizer(self.model, RATE, json.dumps([*grammar, "[unk]"]))
         self.recognizer.SetWords(True)
         # Prime a fresh decoder so a short digit spoken immediately at mode entry is
         # not lost to acoustic startup. This padding contains no captured/pending speech.
@@ -70,10 +76,15 @@ class VoskRecognizer:
         text = result.get("text", "")
         if not text:
             return []
-        command = self.phrases.get(normalize(text))
+        normalized = normalize(text)
+        command = self.phrases.get(normalized)
+        commands = [command] if command else []
+        words = normalized.split()
+        if not commands and self.scroll_sequences and words and all(word in SCROLL_DIRECTIONS for word in words):
+            commands = words
         if self.verbose:
-            event("final" if command else "rejected", text=text, words=result.get("result", []))
-        return [command] if command else []
+            event("final" if commands else "rejected", text=text, words=result.get("result", []))
+        return commands
 
     def finish(self):
         return self.result(self.recognizer.FinalResult())
@@ -197,10 +208,11 @@ def main():
 
     try:
         recognizer = VoskRecognizer(args, phrases)
+        recognizer.set_phrases(phrases_for(wake, args.mouse_grid, "scroll"))
         if args.mouse_grid:
             # Check all targeting words before announcing readiness, not during the first click.
             recognizer.set_phrases(phrases_for(wake, True, "grid"))
-            recognizer.set_phrases(phrases)
+        recognizer.set_phrases(phrases)
         model_load_seconds = time.monotonic() - started
         # No argument runs playerctld in the foreground. Reuse an existing daemon if it owns the bus.
         if args.execute:
@@ -219,7 +231,7 @@ def main():
                         line, control_buffer = control_buffer.split(b"\n", 1)
                         control = json.loads(line)
                         new_mode, new_generation = control.get("mode"), control.get("generation")
-                        if (new_mode not in ("normal", "grid") or type(new_generation) is not int
+                        if (new_mode not in ("normal", "grid", "scroll") or type(new_generation) is not int
                                 or new_generation < generation or (new_mode == "grid" and not args.mouse_grid)):
                             raise ValueError("Invalid controller mode/generation")
                         if (new_mode, new_generation) != (mode, generation):

@@ -14,6 +14,7 @@
   wayland,
   wayland-scanner,
   openssl_3_5,
+  espeak-ng,
   runCommand,
 }:
 
@@ -31,14 +32,25 @@ let
     vosk
     ps.pyside6
   ]);
+  testSpeech = espeak-ng.override { mbrolaSupport = false; };
   source = lib.fileset.toSource {
     root = ./.;
     fileset = lib.fileset.unions [
       ./runner.py
       ./tray.py
       ./vocabulary.py
+      ./session.py
+      ./desktop.py
+      ./scroll.py
       ./grid.py
       ./grid.qml
+    ];
+  };
+  testSource = lib.fileset.toSource {
+    root = ./.;
+    fileset = lib.fileset.unions [
+      ./test_grid.py
+      ./test_scroll.py
     ];
   };
 
@@ -107,10 +119,11 @@ let
           --prefix PYTHONPATH : ${source} \
           --set VOICE_TEST_POINTER ${pointer}/bin/voice-commands-pointer \
           --set VOICE_TEST_MODEL ${model} \
+          --set VOICE_TEST_SPEECH ${lib.getExe testSpeech} \
           --set VOICE_TEST_STARTUP_PROBE ${./test_startup.py} \
           --set VOICE_TEST_RENDERING_PROBE ${./test_rendering.py} \
           --set VOICE_TEST_OLD_CRYPTO ${lib.getLib openssl_3_5}/lib/libcrypto.so.3 \
-          --add-flags "-B ${./test_grid.py}"
+          --add-flags "-B ${testSource}/test_grid.py"
       '';
 
   tests = runCommand "voice-commands-tests" { } ''
@@ -134,7 +147,7 @@ runCommand "voice-commands"
         ;
     };
     meta = {
-      description = "Local wake-phrase media commands and experimental mouse grid with tray control";
+      description = "Local voice media commands, scrolling, and experimental mouse grid with tray control";
       mainProgram = "voice-commands";
       platforms = [ "x86_64-linux" ];
     };

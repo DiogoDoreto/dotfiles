@@ -5,11 +5,12 @@ import json
 import os
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QProcess, QSocketNotifier, QTimer, QUrl, Signal
+from PySide6.QtCore import QObject, QProcess, QSocketNotifier, QTimer, QUrl
 from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
 from vocabulary import GRID_COMMANDS, NUMBERS
+from session import CommandSession
 
 
 # This overlay is plain 2D geometry/text. Choose its renderer before any Quick
@@ -37,14 +38,12 @@ class Region:
 
 
 class GridController(QObject):
-    mode_changed = Signal(str, int)
-
-    def __init__(self, app, pointer, execute=False, timeout=20):
+    def __init__(self, app, pointer, execute=False, timeout=20, session=None):
         super().__init__(app)
         self.app = app
         self.pointer = pointer
         self.execute = execute
-        self.generation = 0
+        self.session = session if session is not None else CommandSession(self)
         self.stage = None
         self.screens = []
         self.windows = []
@@ -67,6 +66,14 @@ class GridController(QObject):
         app.screenRemoved.connect(lambda unused: self.cancel("display-removed"))
         for screen in app.screens():
             self.watch_screen(screen)
+
+    @property
+    def generation(self):
+        return self.session.generation
+
+    @property
+    def mode_changed(self):
+        return self.session.changed
 
     @property
     def active(self):
@@ -120,7 +127,7 @@ class GridController(QObject):
         self.screen = self.window = None
         self.history = []
         self.path = []
-        self.generation += 1
+        self.session.enter("grid")
         for window in self.windows:
             window.setProperty("choosingMonitor", True)
             window.show()
@@ -130,7 +137,6 @@ class GridController(QObject):
              "width": screen.geometry().width(), "height": screen.geometry().height()}
             for number, screen in enumerate(self.screens, 1)
         ])
-        self.mode_changed.emit("grid", self.generation)
 
     def select_monitor(self, index):
         self.stage = "grid"
@@ -142,10 +148,9 @@ class GridController(QObject):
         geometry = self.screen.geometry()
         self.history = [Region(0, 0, geometry.width(), geometry.height())]
         self.path = []
-        self.generation += 1
+        self.session.enter("grid")
         self.update()
         self.window.show()
-        self.mode_changed.emit("grid", self.generation)
 
     def visibility_changed(self, window, visible):
         if not visible and (self.stage == "monitors" or (self.stage == "grid" and window is self.window)):
@@ -220,7 +225,7 @@ class GridController(QObject):
             return
         self.update()
 
-    def cancel(self, reason="cancelled", cancel_click=True):
+    def cancel(self, reason="cancelled", cancel_click=True, enter_normal=True):
         if cancel_click and self.pending_click is not None:
             self.pending_click = None
             self.click_process.kill()
@@ -232,9 +237,9 @@ class GridController(QObject):
         self.path = []
         self.timer.stop()
         self.close_windows()
-        self.generation += 1
+        if enter_normal:
+            self.session.enter("normal")
         self.log_event("grid-closed", reason=reason)
-        self.mode_changed.emit("normal", self.generation)
 
     def close_windows(self):
         for window in self.windows:
