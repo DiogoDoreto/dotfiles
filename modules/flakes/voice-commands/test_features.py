@@ -21,6 +21,27 @@ from vocabulary import phrases_for
 
 
 class FeatureTests(unittest.TestCase):
+    def test_typing_only_without_wake_phrase_recognizes_bare_commands(self):
+        features = Features(False, False, False, True)
+        recognizer = runner.VoskRecognizer(
+            SimpleNamespace(model=os.environ["VOICE_TEST_MODEL"], verbose=False), features.phrases(""))
+        for mode in ("normal", "typing"):
+            recognizer.set_phrases(features.phrases("", mode))
+            for text in ("type", "show help"):
+                self.assertEqual(recognizer.result(json.dumps({"text": text})), [text])
+            for text in ("hey computer type", "play", "scroll", "click", "cancel", "ordinary speech"):
+                self.assertEqual(recognizer.result(json.dumps({"text": text})), [])
+        status, events, _, process = self.run_listener(["--wake", "", *features.arguments()])
+        self.assertEqual(status, 0)
+        listening = next(details for state, details in events if state == "listening")
+        self.assertEqual(set(listening["phrases"]), {"type", "show help"})
+        process.assert_not_called()
+        content = "\n".join(body for _, body in features.help_sections("", True, 20))
+        self.assertIn('“type”', content)
+        self.assertIn('“show help”', content)
+        self.assertNotIn('“ ', content)
+        self.assertNotIn("hey computer", content)
+
     def test_resolved_features_round_trip_and_mode_policy(self):
         parser = argparse.ArgumentParser(allow_abbrev=False)
         Features.add_arguments(parser)
@@ -128,14 +149,15 @@ class FeatureTests(unittest.TestCase):
 
     def test_tray_passes_features_but_owns_execution_and_player(self):
         app = QApplication.instance()
-        for media, scroll, grid, execute in itertools.product((False, True), repeat=4):
+        for media, scroll, grid, execute, wake in itertools.product(
+                (False, True), (False, True), (False, True), (False, True), ("Hello, COMPUTER!", "")):
             flags = ["--media" if media else "--no-media",
                      "--scroll" if scroll else "--no-scroll",
                      "--mouse-grid" if grid else "--no-mouse-grid",
                      "--execute" if execute else "--no-execute"]
             with self.subTest(flags=flags), patch.object(sys, "argv", [
                     "tray", "--listener", "listener", "--pointer", "pointer", "--start-paused", "--player", "mpv",
-                    "--wake=Hello, COMPUTER!", *flags]), patch.object(
+                    f"--wake={wake}", *flags]), patch.object(
                     tray, "QApplication", return_value=app), patch.object(
                     app, "exec", return_value=0), patch.object(
                     tray.signal, "signal"), patch.object(
@@ -146,8 +168,9 @@ class FeatureTests(unittest.TestCase):
                 self.assertEqual((kwargs["execute"], kwargs["features"], kwargs["player"]),
                                  (execute, Features(media, scroll, grid), "mpv"))
                 arguments = controller.call_args.args[2]
-                self.assertEqual(kwargs["wake"], "hello computer")
-                self.assertEqual(arguments[arguments.index("--wake") + 1], "hello computer")
+                expected_wake = "hello computer" if wake else ""
+                self.assertEqual(kwargs["wake"], expected_wake)
+                self.assertEqual(arguments[arguments.index("--wake") + 1], expected_wake)
                 for flag in flags[:-1]:
                     self.assertIn(flag, arguments)
                 self.assertNotIn("--execute", arguments)

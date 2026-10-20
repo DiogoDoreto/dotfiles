@@ -31,7 +31,7 @@ Typed options under `dog.services.voice-commands`:
 | Option | Default | Effect |
 | --- | --- | --- |
 | `execute` | `true` | Invoke actions; set `false` for logging/previews. |
-| `wakePhrase` | `"hey computer"` | English wake phrase supported by the selected Vosk model. |
+| `wakePhrase` | `"hey computer"` | English wake phrase supported by the selected Vosk model. Set `""` to speak commands directly, without a prefix. |
 | `features.media.enable` | `true` | Recognize media commands and enable media execution/activity tracking. |
 | `features.scroll.enable` | `true` | Recognize the scroll group and construct its controller. |
 | `features.mouseGrid.enable` | `false` | Recognize mouse-grid commands and construct its controller. |
@@ -41,6 +41,8 @@ Typed options under `dog.services.voice-commands`:
 `extraArgs` defaults to `[]` and supplements these options for diagnostics or unusual settings. Each flag/value occupies its own list element; multiword values occupy **one** element. Arguments are escaped for systemd, including spaces and literal `$`/`%` characters. Execution, wake, and feature flags (including their `--no-*` forms and `--flag=value` spellings) are rejected in `extraArgs`: migrate those to the typed options. `--grid-stdin` and the `--` end-of-options marker are also rejected there. The module accepts a `package` override; overridden packages must support the explicit positive/negative feature and execution flags emitted by the module.
 
 Lapdog enables execution, media, scrolling, mouse grid, typing, and the “hey computer” wake phrase. Home Manager executes by default; standalone commands remain preview-only unless `--execute` is passed. The Handy executable flag is reserved in `extraArgs`, alongside the feature flags; use `features.typing.package`.
+
+Mini enables only typing (`media`, `scroll`, and `mouseGrid` are disabled), with `wakePhrase = ""`. Say **“type”** to dictate or **“show help”** for help. Mini also enables Handy's graphical-session service and installs KWtype for Plasma Wayland typing. Handy still needs its initial model/microphone/output setup and must be idle before each invocation. Existing 10-second initial-speech, 3-second silence, and 20-second maximum-duration limits apply. Standalone use can select the same no-prefix behavior with `--wake ""`; Help examples follow the configured phrase.
 
 Useful flags:
 

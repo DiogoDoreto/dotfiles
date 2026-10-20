@@ -50,7 +50,7 @@ in
     wakePhrase = lib.mkOption {
       type = lib.types.str;
       default = "hey computer";
-      description = "English wake phrase; words must exist in the selected Vosk model.";
+      description = "English wake phrase; words must exist in the selected Vosk model. Set to an empty string to speak commands without a prefix.";
     };
 
     features = {

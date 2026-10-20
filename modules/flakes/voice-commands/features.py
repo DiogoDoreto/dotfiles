@@ -36,16 +36,17 @@ class Features:
                 or (mode == "grid" and self.mouse_grid) or (mode == "typing" and self.typing))
 
     def phrases(self, wake, mode="normal"):
+        prefix = f"{wake} " if wake else ""
         if mode == "typing" and self.typing:
-            return {f"{wake} show help": "show help", f"{wake} type": "type"}
-        phrases = {f"{wake} {command}": command for command in MEDIA_COMMANDS} if self.media else {}
-        phrases[f"{wake} show help"] = "show help"
+            return {f"{prefix}show help": "show help", f"{prefix}type": "type"}
+        phrases = {f"{prefix}{command}": command for command in MEDIA_COMMANDS} if self.media else {}
+        phrases[f"{prefix}show help"] = "show help"
         if self.typing:
-            phrases[f"{wake} type"] = "type"
+            phrases[f"{prefix}type"] = "type"
         if self.scroll:
-            phrases[f"{wake} scroll"] = "scroll"
+            phrases[f"{prefix}scroll"] = "scroll"
         if self.mouse_grid:
-            phrases[f"{wake} click"] = "click"
+            phrases[f"{prefix}click"] = "click"
         if mode == "scroll" and self.scroll:
             phrases.update({command: command for command in SCROLL_COMMANDS})
         if mode == "grid" and self.mouse_grid:
@@ -57,10 +58,11 @@ class Features:
 
     def help_sections(self, wake, execute, grid_timeout):
         """Resolved usage alongside vocabulary/eligibility; presentation has no feature policy."""
+        prefix = f"{wake} " if wake else ""
         sections = [
             ("Operation", "Execution enabled: commands send real media, typing and desktop input actions."
              if execute else "Preview only: commands log intended actions; Handy is not launched and no media or desktop input is sent."),
-            ("Help", f'Say “{wake} show help” in any command group, or choose Help in the tray menu. '
+            ("Help", f'Say “{prefix}show help” in any command group, or choose Help in the tray menu. '
              "Help cancels the current group and queued/pending actions, then returns to normal listening. "
              "Already delivered actions cannot be undone."),
             ("Tray controls", "Click the microphone icon to pause/resume, or right-click and choose "
@@ -68,12 +70,13 @@ class Features:
              "while paused or after an error and does not resume listening. Close this window to keep the tray running."),
         ]
         if self.media:
-            sections.append(("Media", f'Say “{wake} play”, “{wake} pause”, “{wake} next”, or “{wake} previous”. '
-                             "Always include the wake phrase, even in a command group. Acts on one existing MPRIS player, "
+            sections.append(("Media", f'Say “{prefix}play”, “{prefix}pause”, “{prefix}next”, or “{prefix}previous”. '
+                             + ("Always include the wake phrase, even in a command group. " if wake else "No wake phrase is configured. ")
+                             + "Acts on one existing MPRIS player, "
                              "preferring configured player selection and recent activity; no fallback after a failed action. "
                               "Play is not a toggle and does not launch an application."))
         if self.typing:
-            sections.append(("Typing (one recording per invocation)", f'Say “{wake} type”, then dictate. Waits up to 10 seconds for '
+            sections.append(("Typing (one recording per invocation)", f'Say “{prefix}type”, then dictate. Waits up to 10 seconds for '
                              "speech, then finishes after 3 continuous seconds without speech, with a maximum of 20 seconds "
                              "per invocation even if speech continues. Repeated type is ignored; "
                              "media, scroll and grid commands are blocked during dictation. Help/pause/quit/display changes "
@@ -84,12 +87,12 @@ class Features:
                              "or automatic restart. After entry, briefly pause for the waiting-for-speech state; "
                              "a fresh 300 ms quiet VAD gate excludes the command tail. Preview logs would-type/would-stop without launching Handy."))
         if self.scroll:
-            sections.append(("Scrolling", f'Say “{wake} scroll”, then “up” or “down” without the wake phrase; '
+            sections.append(("Scrolling", f'Say “{prefix}scroll”, then “up” or “down” without a wake phrase; '
                              "sequences such as “up up down” work. Scrolls at the current pointer position without "
                              "moving it or focusing a window. Say “cancel” or wait 60 inactive seconds to exit. "
                              "Repeating the entry phrase refreshes the timeout. Real input requires Plasma Wayland."))
         if self.mouse_grid:
-            sections.append(("Mouse grid", f'Say “{wake} click”. Requires Plasma Wayland and one to nine enabled displays. '
+            sections.append(("Mouse grid", f'Say “{prefix}click”. Requires Plasma Wayland and one to nine enabled displays. '
                              "With multiple displays, say the monitor number first (ordered left-to-right, then top-to-bottom); "
                              "one display skips selection. Then say “one” through “nine” to refine a row-major 3×3 grid, "
                              "one number per utterance, without a wake phrase. Say “click” to click the region center and close. "
@@ -98,6 +101,6 @@ class Features:
                              f"Exits after {grid_timeout:g} inactive seconds or display changes. Overlays do not take focus; "
                              "the pointer stays still until the final click."))
         if self.scroll and self.mouse_grid:
-            sections.append(("Switching groups", f'Say “{wake} scroll” from the grid or “{wake} click” while scrolling '
+            sections.append(("Switching groups", f'Say “{prefix}scroll” from the grid or “{prefix}click” while scrolling '
                              "to switch groups, discarding pending input from the previous group."))
         return sections

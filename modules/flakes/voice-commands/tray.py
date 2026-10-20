@@ -153,8 +153,8 @@ def main():
     args, listener_arguments = parser.parse_known_args()
     features = Features.from_args(args)
     wake = normalize(args.wake)
-    if not wake:
-        parser.error("Wake phrase must contain English words")
+    if args.wake.strip() and not wake:
+        parser.error("Nonempty wake phrase must contain English words")
     if not 0.1 <= args.grid_timeout <= 3600:
         parser.error("--grid-timeout must be between 0.1 and 3600 seconds")
     if args.grid_stdin and args.start_paused:

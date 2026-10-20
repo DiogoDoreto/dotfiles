@@ -241,8 +241,10 @@ def main():
 
     signal.signal(signal.SIGTERM, stop)
     wake = normalize(args.wake)
-    if not wake or args.duration < 0 or args.stats_every < 0:
-        parser.error("Wake phrase must contain English words; duration and stats interval must be nonnegative")
+    if args.wake.strip() and not wake:
+        parser.error("Nonempty wake phrase must contain English words")
+    if args.duration < 0 or args.stats_every < 0:
+        parser.error("Duration and stats interval must be nonnegative")
     def vocabulary(mode="normal"):
         return features.phrases(wake, mode)
 

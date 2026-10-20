@@ -6,6 +6,16 @@
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     authentik-nix.url = "github:nix-community/authentik-nix";
     llm-agents.url = "github:numtide/llm-agents.nix";
+    linux-systems.url = "github:nix-systems/x86_64-linux";
+    handy = {
+      url = "github:cjpais/Handy/9e57a0d7929fcc6417ea0d6e54c1b57f62635edd";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.bun2nix.inputs.systems.follows = "linux-systems";
+    };
+    my-kwtype = {
+      url = "../../modules/flakes/kwtype";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     paseo-src = {
       url = "github:getpaseo/paseo/v0.11.4";
       flake = false;
@@ -48,6 +58,7 @@
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
+        inputs.my-kwtype.overlays.default
         (final: prev: {
           # https://github.com/NixOS/nixpkgs/pull/540681
           calibre-web = prev.calibre-web.overridePythonAttrs (old: {
@@ -65,6 +76,7 @@
             })
           ];
           inherit (inputs.home-manager.packages.${system}) home-manager;
+          handy = inputs.handy.packages.${system}.default;
           llm-agents = inputs.llm-agents.packages.${system};
           my = (prev.my or { }) // {
             denon = final.callPackage ./packages/denon.nix { };
@@ -88,6 +100,7 @@
       };
       home-manager-modules = [
         ../../modules/home-manager
+        inputs.handy.homeManagerModules.default
       ];
       nixos-modules = [
         (import ../../nix-config.nix inputs)

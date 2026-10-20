@@ -5,6 +5,7 @@
     packages = with pkgs; [
       calibre
       keepassxc
+      kwtype
       onedrivegui
       pods # podman GUI
       ungoogled-chromium
@@ -67,6 +68,22 @@
   dog.dotfilesPath = /home/dog/projects/dotfiles;
 
   dog.presets.linux.enable = true;
+
+  dog.services.voice-commands = {
+    enable = true;
+    wakePhrase = "";
+    features = {
+      media.enable = false;
+      scroll.enable = false;
+      mouseGrid.enable = false;
+      typing = {
+        enable = true;
+        package = pkgs.handy;
+      };
+    };
+  };
+
+  services.handy.enable = true;
 
   dog.programs = {
     cli-tools.enable = true;
