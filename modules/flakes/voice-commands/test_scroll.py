@@ -89,9 +89,9 @@ class ScrollTests(unittest.TestCase):
             monitor_generation = self.desktop.session.generation
             self.say("two")
             self.say("three", monitor_generation)
-            self.assertEqual(self.desktop.grid.path, [], "A monitor-stage result must not refine the grid")
+            self.assertEqual(self.events[-1][1]["path"], [], "A monitor-stage result must not refine the grid")
             self.say("three")
-            self.assertEqual(self.desktop.grid.path, [3])
+            self.assertEqual(self.events[-1][1]["path"], [3])
             self.say("back")
             self.say("back")
             self.assertEqual(self.events[-1][0], "grid-monitors")
@@ -111,8 +111,10 @@ class ScrollTests(unittest.TestCase):
             self.assertEqual(self.transitions, [("grid", 1), ("grid", 2), ("grid", 3), ("grid", 4),
                                                 ("scroll", 5), ("grid", 6)],
                               "Group switches must not pass through normal mode")
+            count = len(self.events)
             self.say("up", scroll_generation)
-            self.assertEqual(self.desktop.grid.path, [])
+            self.assertEqual(len(self.events), count)
+            self.assertEqual(self.events[-1][0], "grid-monitors")
             self.desktop.cancel("listener-exited")
             self.assertEqual(self.transitions[-1], ("normal", 7))
             self.assertEqual(self.desktop.session.mode, "normal")

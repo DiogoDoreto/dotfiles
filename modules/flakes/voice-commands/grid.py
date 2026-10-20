@@ -1,6 +1,5 @@
-"""Mouse-grid state and Qt presentation; recognition stays in the listener process."""
+"""Qt mouse-grid lifetime/presentation; targeting rules live in navigation."""
 
-from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
@@ -11,30 +10,12 @@ from PySide6.QtQuick import QQuickWindow
 
 from vocabulary import GRID_COMMANDS, NUMBERS
 from session import CommandSession
+from navigation import GridNavigation, Monitor
 
 
 # This overlay is plain 2D geometry/text. Choose its renderer before any Quick
 # window exists so opening the grid never depends on desktop EGL/OpenGL support.
 QQuickWindow.setSceneGraphBackend("software")
-
-
-@dataclass(frozen=True)
-class Region:
-    x: float
-    y: float
-    width: float
-    height: float
-
-    def cell(self, number):
-        if number not in range(1, 10):
-            raise ValueError("Cell must be between 1 and 9")
-        row, column = divmod(number - 1, 3)
-        return Region(self.x + column * self.width / 3, self.y + row * self.height / 3,
-                      self.width / 3, self.height / 3)
-
-    @property
-    def center(self):
-        return (self.x + self.width / 2, self.y + self.height / 2)
 
 
 class GridController(QObject):
@@ -45,11 +26,9 @@ class GridController(QObject):
         self.execute = execute
         self.session = session if session is not None else CommandSession(self)
         self.session.grid = self
-        self.stage = None
+        self.navigation = None
         self.screens = []
         self.windows = []
-        self.history = []
-        self.path = []
         self.screen = None
         self.engine = None
         self.component = None
@@ -75,6 +54,10 @@ class GridController(QObject):
     @property
     def mode_changed(self):
         return self.session.changed
+
+    @property
+    def stage(self):
+        return self.navigation.view.stage if self.navigation else None
 
     @property
     def active(self):
@@ -109,11 +92,23 @@ class GridController(QObject):
         if self.click_process.state() != QProcess.ProcessState.NotRunning:
             self.log_event("grid-error", error="Previous click is still pending")
             return
-        screens = sorted(self.app.screens(), key=lambda screen: (
-            screen.geometry().x(), screen.geometry().y(), screen.name()))
-        if self.app.platformName() != "wayland" or not 1 <= len(screens) <= len(NUMBERS):
+        if self.app.platformName() != "wayland":
             self.log_event("grid-error", error="Mouse grid requires Plasma Wayland with one to nine enabled displays")
             return
+        observations = []
+        for screen in self.app.screens():
+            geometry = screen.geometry()
+            observations.append((Monitor(screen.name(), geometry.x(), geometry.y(),
+                                         geometry.width(), geometry.height()), screen))
+        try:
+            navigation = GridNavigation(monitor for monitor, screen in observations)
+        except ValueError:
+            self.log_event("grid-error", error="Mouse grid requires Plasma Wayland with one to nine enabled displays")
+            return
+        # Navigation reorders the original observations. Match by identity so
+        # distinct screens with equal names/geometry keep their own overlays.
+        screen_by_monitor = {id(monitor): screen for monitor, screen in observations}
+        screens = [screen_by_monitor[id(monitor)] for monitor in navigation.view.monitors]
         if self.engine is None:
             self.engine = QQmlApplicationEngine(self)
             self.component = QQmlComponent(self.engine, QUrl.fromLocalFile(str(Path(__file__).with_name("grid.qml"))))
@@ -132,103 +127,66 @@ class GridController(QObject):
             window.setScreen(screen)
             window.visibleChanged.connect(lambda visible, window=window: self.visibility_changed(window, visible))
             self.windows.append(window)
-        if len(screens) > 1:
-            self.show_monitors()
-        else:
-            self.select_monitor(0)
+        self.navigation = navigation
+        self.present(stage_changed=True)
 
-    def show_monitors(self):
-        self.stage = "monitors"
-        self.screen = self.window = None
-        self.history = []
-        self.path = []
-        self.session._grid_stage_changed()
-        for window in self.windows:
-            window.setProperty("choosingMonitor", True)
-            window.show()
-        self.timer.start()
-        self.log_event("grid-monitors", monitors=[
-            {"number": number, "name": screen.name(), "x": screen.geometry().x(), "y": screen.geometry().y(),
-             "width": screen.geometry().width(), "height": screen.geometry().height()}
-            for number, screen in enumerate(self.screens, 1)
-        ])
-
-    def select_monitor(self, index):
-        self.stage = "grid"
-        self.screen, self.window = self.screens[index], self.windows[index]
+    def present(self, stage_changed=False):
+        view = self.navigation.view
+        if view.stage == "monitors":
+            self.screen = self.window = None
+            if stage_changed:
+                self.session._grid_stage_changed()
+            for window in self.windows:
+                window.setProperty("choosingMonitor", True)
+                window.show()
+            self.timer.start()
+            self.log_event("grid-monitors", monitors=[
+                {"number": number, **monitor.__dict__}
+                for number, monitor in enumerate(view.monitors, 1)
+            ])
+            return
+        # Bind the active window before intentionally hiding other overlays, so
+        # visibility callbacks cannot interpret those hides as dismissal.
+        self.screen, self.window = self.screens[view.monitor - 1], self.windows[view.monitor - 1]
         self.window.setProperty("choosingMonitor", False)
         for window in self.windows:
             if window is not self.window:
                 window.hide()
-        geometry = self.screen.geometry()
-        self.history = [Region(0, 0, geometry.width(), geometry.height())]
-        self.path = []
-        self.session._grid_stage_changed()
-        self.update()
-        self.window.show()
+        if stage_changed:
+            self.session._grid_stage_changed()
+        region = view.region
+        self.window.setProperty("region", dict(x=region.x, y=region.y, width=region.width, height=region.height))
+        self.window.setProperty("breadcrumb", " → ".join(map(str, view.path)) or "Full screen")
+        self.window.setProperty("dryRun", not self.execute)
+        self.timer.start()
+        self.log_event("grid", monitor=view.monitor, screen=self.screen.name(),
+                       path=list(view.path), region=region.__dict__, center=region.center, execute=self.execute)
+        if stage_changed:
+            self.window.show()
 
     def visibility_changed(self, window, visible):
         if not visible and (self.stage == "monitors" or (self.stage == "grid" and window is self.window)):
             self.cancel("overlay-hidden")
 
-    def update(self):
-        region = self.history[-1]
-        self.window.setProperty("region", dict(x=region.x, y=region.y, width=region.width, height=region.height))
-        self.window.setProperty("breadcrumb", " → ".join(map(str, self.path)) or "Full screen")
-        self.window.setProperty("dryRun", not self.execute)
-        self.timer.start()
-        self.log_event("grid", monitor=self.window.property("monitorNumber"), screen=self.screen.name(),
-                       path=list(self.path), region=region.__dict__, center=region.center, execute=self.execute)
-
     def command(self, command, generation):
         self.session.command(command, generation)
 
     def _command(self, command):
-        if self.stage == "monitors":
-            if command in NUMBERS:
-                index = NUMBERS.index(command)
-                if index < len(self.screens):
-                    self.select_monitor(index)
-                else:
-                    self.log_event("grid-rejected", command=command, error="No monitor with that number")
-            elif command == "cancel":
-                self.cancel("command")
-            elif command == "click":
-                self.log_event("grid-select-monitor", error="Say a monitor number before clicking")
-            if self.active:
-                self.timer.start()
-            return
-        if command in NUMBERS:
-            region = self.history[-1]
-            if min(region.width, region.height) / 3 < 1:
-                self.log_event("grid-limit", error="Already at logical-pixel precision; use click or back")
-                self.timer.start()
-                return
-            number = NUMBERS.index(command) + 1
-            self.history.append(region.cell(number))
-            self.path.append(number)
-        elif command == "back":
-            if self.path:
-                self.path.pop()
-                self.history.pop()
-            elif len(self.screens) > 1:
-                self.show_monitors()
-                return
-        elif command == "reset":
-            self.history = self.history[:1]
-            self.path = []
-        elif command == "cancel":
+        result = self.navigation.command(command)
+        if result.state == "cancel":
             self.cancel("command")
-            return
-        elif command == "click":
-            center = self.history[-1].center
-            geometry = self.screen.geometry()
-            position = (center[0] + geometry.x(), center[1] + geometry.y())
-            self.session._commit_click(position)
-            return
+        elif result.state == "click":
+            self.session._commit_click(result.position)
+        elif result.state in ("monitors", "grid"):
+            self.present(stage_changed=result.stage_changed)
         else:
-            return
-        self.update()
+            if result.error:
+                details = {"error": result.error}
+                if result.state == "rejected":
+                    details["command"] = command
+                self.log_event("grid-" + result.state, **details)
+            if result.error or self.stage == "monitors":
+                self.timer.start()
 
     def _click(self, position):
         if self.execute:
@@ -250,9 +208,7 @@ class GridController(QObject):
     def _close(self, reason):
         if not self.active:
             return
-        self.stage = None
-        self.history = []
-        self.path = []
+        self.navigation.close()
         self.timer.stop()
         self.close_windows()
         self.log_event("grid-closed", reason=reason)

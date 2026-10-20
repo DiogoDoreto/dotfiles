@@ -44,6 +44,7 @@ let
       ./desktop.py
       ./scroll.py
       ./grid.py
+      ./navigation.py
       ./grid.qml
     ];
   };
@@ -51,6 +52,7 @@ let
     root = ./.;
     fileset = lib.fileset.unions [
       ./test_grid.py
+      ./test_navigation.py
       ./test_scroll.py
       ./test_listener.py
       ./listener_test_child.py
@@ -130,11 +132,15 @@ let
         makeQtWrapper ${testPython}/bin/python "$out/bin/check-voice-listener" \
           --prefix PYTHONPATH : ${source} \
           --add-flags "-B ${testSource}/test_listener.py"
+        makeWrapper ${python3}/bin/python "$out/bin/check-voice-navigation" \
+          --prefix PYTHONPATH : ${source} \
+          --add-flags "-B ${testSource}/test_navigation.py"
       '';
 
   tests = runCommand "voice-commands-tests" { } ''
     export HOME="$TMPDIR" XDG_CACHE_HOME="$TMPDIR/.cache"
     export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software
+    ${testRunner}/bin/check-voice-navigation
     ${testRunner}/bin/check-voice-listener
     ${testRunner}/bin/check-voice-grid
     touch "$out"

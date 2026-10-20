@@ -7,13 +7,14 @@ import subprocess
 import sys
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from PySide6.QtTest import QTest
 from PySide6.QtCore import QProcess
+from PySide6.QtQuick import QQuickWindow
 from PySide6.QtWidgets import QApplication, QWidget
 
-from grid import GridController, Region
+from grid import GridController
 from runner import VoskRecognizer, audio
 from vocabulary import GRID_COMMANDS, NUMBERS, phrases_for
 
@@ -49,25 +50,24 @@ class GridTests(unittest.TestCase):
     def say(self, command, generation=None):
         self.grid.command(command, self.grid.generation if generation is None else generation)
 
-    def test_narrow_back_reset_and_click_preview(self):
+    def test_qml_region_breadcrumb_and_click_preview(self):
         self.say("one")
         self.assertFalse(self.grid.active)
         self.say("click")
         self.assertTrue(self.grid.active)
-        root = self.grid.history[-1]
+        self.assertEqual(self.grid.window.property("breadcrumb"), "Full screen")
         self.say("three")
         self.say("seven")
-        self.assertEqual(self.grid.history[-1], root.cell(3).cell(7))
-        self.assertEqual(self.grid.path, [3, 7])
-        self.say("back")
-        self.assertEqual(self.grid.history[-1], root.cell(3))
-        self.say("reset")
-        self.assertEqual(self.grid.history, [root])
-        self.say("back")
-        self.assertEqual(self.grid.history, [root])
+        self.assertEqual(self.grid.window.property("breadcrumb"), "3 → 7")
+        region = self.events[-1][1]["region"]
+        self.assertEqual(self.grid.window.property("region"), region)
+        expected = self.events[-1][1]["center"]
         self.say("click")
         self.assertFalse(self.grid.active)
         self.assertEqual(self.events[-1][0], "grid-would-click")
+        geometry = app.screens()[0].geometry()
+        self.assertEqual(self.events[-1][1]["position"],
+                         (expected[0] + geometry.x(), expected[1] + geometry.y()))
         self.assertEqual(self.grid.click_process.processId(), 0)
         self.assertEqual([mode for mode, generation in self.modes], ["grid", "normal"])
 
@@ -84,14 +84,20 @@ class GridTests(unittest.TestCase):
         self.assertEqual(self.grid.windows, [])
         self.assertFalse(any(state == "grid-would-click" for state, details in self.events))
 
-    def test_pixel_limit_and_display_change(self):
+    def test_geometry_and_scale_change_cancel_visible_overlay(self):
         self.say("click")
-        for unused in range(20):
-            self.say("nine")
-        self.assertGreaterEqual(min(self.grid.history[-1].width, self.grid.history[-1].height), 1)
-        self.assertTrue(any(state == "grid-limit" for state, details in self.events))
         self.grid.screen.geometryChanged.emit(self.grid.screen.geometry())
         self.assertFalse(self.grid.active)
+        self.say("click")
+        self.grid.screen.logicalDotsPerInchChanged.emit(self.grid.screen.logicalDotsPerInch())
+        self.assertFalse(self.grid.active)
+        self.assertEqual(self.grid.windows, [])
+
+    def test_dismissal_of_active_overlay_cancels(self):
+        self.say("click")
+        self.grid.window.hide()
+        self.assertFalse(self.grid.active)
+        self.assertEqual(self.events[-1], ("grid-closed", {"reason": "overlay-hidden"}))
 
     def test_pause_cancels_committed_but_pending_input(self):
         self.say("click")
@@ -119,7 +125,6 @@ class GridTests(unittest.TestCase):
             self.assertEqual(len(self.grid.windows), 2)
             self.assertEqual([window.property("monitorNumber") for window in self.grid.windows], [1, 2])
             self.assertTrue(all(window.property("choosingMonitor") for window in self.grid.windows))
-            self.assertEqual(self.grid.history, [])
             selection_generation = self.grid.generation
             self.say("click")
             self.say("nine")
@@ -129,10 +134,11 @@ class GridTests(unittest.TestCase):
             self.say("two")
             self.assertEqual(self.grid.stage, "grid")
             self.assertIs(self.grid.window, second_window)
-            self.assertEqual(self.grid.path, [], "Monitor number must not also narrow the grid")
+            self.assertEqual(self.grid.window.property("breadcrumb"), "Full screen")
             self.assertEqual([window.isVisible() for window in self.grid.windows], [False, True])
             self.say("three", selection_generation)
-            self.assertEqual(self.grid.path, [], "Buffered monitor-stage results must not affect the grid")
+            self.assertEqual(self.grid.window.property("breadcrumb"), "Full screen",
+                             "Buffered monitor-stage results must not affect the grid")
             self.say("three")
             self.say("back")
             self.assertEqual(self.grid.stage, "grid")
@@ -143,11 +149,49 @@ class GridTests(unittest.TestCase):
             self.say("five")
             self.say("reset")
             self.assertEqual(self.grid.stage, "grid")
-            self.assertEqual(self.grid.path, [])
+            self.assertEqual(self.grid.window.property("breadcrumb"), "Full screen")
             self.say("click")
             self.assertFalse(self.grid.active)
             self.assertEqual(self.grid.windows, [])
             self.assertEqual(self.events[-1][0], "grid-would-click")
+
+    def test_equal_monitor_observations_preserve_distinct_overlay_bindings(self):
+        geometry = app.screens()[0].geometry()
+        first = SimpleNamespace(name=lambda: "duplicate", geometry=lambda: geometry)
+        second = SimpleNamespace(name=lambda: "duplicate", geometry=lambda: geometry)
+
+        def create_overlay(properties):
+            # Real Quick windows exercise visibility/cancellation. Only the QML
+            # factory and QScreen-only setter need stand-ins for these displays.
+            window = QQuickWindow()
+            for name, value in properties.items():
+                window.setProperty(name, value)
+            window.setScreen = Mock()
+            return window
+
+        component = SimpleNamespace(createWithInitialProperties=create_overlay)
+        with patch("grid.QQmlComponent", return_value=component):
+            for layout in ([first, second], [second, first]):
+                with self.subTest(first_screen="first" if layout[0] is first else "second"), patch.object(
+                        app, "screens", return_value=layout):
+                    self.say("cancel")
+                    self.say("click")
+                    windows = list(self.grid.windows)
+                    self.assertEqual(len(windows), 2)
+                    for number, (window, screen) in enumerate(zip(windows, layout), 1):
+                        self.assertIs(window.property("targetScreen"), screen)
+                        window.setScreen.assert_called_once_with(screen)
+                        self.assertIs(window.setScreen.call_args.args[0], screen)
+                        self.assertEqual(window.property("monitorNumber"), number)
+                    for index in range(2):
+                        self.say(NUMBERS[index])
+                        self.assertEqual([window.isVisible() for window in windows],
+                                         [number == index for number in range(2)])
+                        self.assertEqual(windows[index].property("breadcrumb"), "Full screen")
+                        self.say("back")
+                        self.assertTrue(all(window.isVisible() for window in windows))
+                    self.say("cancel")
+                    self.assertFalse(any(window.isVisible() for window in windows))
 
     def test_monitor_selection_timeout_and_display_change(self):
         screen = app.screens()[0]
@@ -200,7 +244,7 @@ class GridTests(unittest.TestCase):
         self.assertAlmostEqual(target.clicks[-1].x(), 100, delta=1)
         self.say("three")
         self.say("seven")
-        expected = self.grid.history[-1].center
+        expected = self.events[-1][1]["center"]
         self.say("click")
         QTest.qWait(300)
         self.assertEqual(len(target.clicks), 2)
@@ -275,13 +319,15 @@ class GridTests(unittest.TestCase):
         self.say(NUMBERS[index])
         QTest.qWait(100)
         self.assertIs(self.grid.screen, screen)
-        self.assertEqual(self.grid.path, [])
+        self.assertEqual(self.grid.window.property("breadcrumb"), "Full screen")
         self.assertEqual([window.isVisible() for window in self.grid.windows],
                          [number == index for number in range(len(screens))])
         self.say("three")
         self.say("seven")
-        region = self.grid.history[-1]
-        expected = (region.center[0] + screen.geometry().x(), region.center[1] + screen.geometry().y())
+        # Independent expected cell center for the 3 → 7 trace in logical pixels.
+        geometry = screen.geometry()
+        expected = (geometry.x() + geometry.width() * 13 / 18,
+                    geometry.y() + geometry.height() * 5 / 18)
         self.say("click")
         QTest.qWait(300)
         self.assertEqual(len(target.clicks), 1)
@@ -357,9 +403,6 @@ class RecognitionTests(unittest.TestCase):
 
     def test_grid_disabled_keeps_grid_words_out(self):
         self.assertEqual(set(phrases_for("hey computer").values()), {"play", "pause", "next", "previous", "scroll"})
-        region = Region(0, 0, 1920, 1080).cell(3).cell(7)
-        self.assertAlmostEqual(region.center[0], 1386.6666667)
-        self.assertAlmostEqual(region.center[1], 300)
 
 
 if __name__ == "__main__":
