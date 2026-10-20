@@ -26,6 +26,7 @@ DESKTOP = os.environ.get("VOICE_GRID_DESKTOP_TEST") == "1"
 from test_scroll import ScrollDesktopTests, ScrollTests
 from test_features import FeatureTests
 from test_media import MediaTests
+from test_help import HelpTests
 
 
 class GridTests(unittest.TestCase):
@@ -404,7 +405,7 @@ class RecognitionTests(unittest.TestCase):
         self.assertEqual(recognizer.result('{"text":"click"}'), [])
 
     def test_grid_disabled_keeps_grid_words_out(self):
-        self.assertEqual(set(phrases_for("hey computer").values()), {"play", "pause", "next", "previous", "scroll"})
+        self.assertEqual(set(phrases_for("hey computer").values()), {"play", "pause", "next", "previous", "scroll", "show help"})
 
 
 if __name__ == "__main__":

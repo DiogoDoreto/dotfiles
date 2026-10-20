@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from listener import ListenerLifetime
 from features import Features
+from vocabulary import normalize
 
 
 def display_state(state, scrolling):
@@ -54,6 +55,8 @@ class TrayController(QObject):
         self.status_action = self.menu.addAction("Voice Commands — Paused")
         self.status_action.setEnabled(False)
         self.toggle_action = self.menu.addAction("Resume listening", self.toggle)
+        if desktop:
+            self.menu.addAction("Help", desktop.show_help)
         self.menu.addSeparator()
         self.menu.addAction("Quit", self.quit)
         self.tray = QSystemTrayIcon(self)
@@ -125,10 +128,14 @@ def main():
     parser.add_argument("--execute", action=argparse.BooleanOptionalAction, default=False, help="Invoke actions instead of previewing")
     Features.add_arguments(parser)
     parser.add_argument("--player", help="Prefer this MPRIS player family/instance, e.g. mpv")
+    parser.add_argument("--wake", default="hey computer", help="English wake phrase")
     parser.add_argument("--grid-stdin", action="store_true", help="Read synthetic grid commands from stdin instead of listening (no tray)")
     parser.add_argument("--grid-timeout", type=float, default=20, help="Cancel targeting after this many inactive seconds (default: 20)")
     args, listener_arguments = parser.parse_known_args()
     features = Features.from_args(args)
+    wake = normalize(args.wake)
+    if not wake:
+        parser.error("Wake phrase must contain English words")
     if not 0.1 <= args.grid_timeout <= 3600:
         parser.error("--grid-timeout must be between 0.1 and 3600 seconds")
     if args.grid_stdin and args.start_paused:
@@ -151,8 +158,8 @@ def main():
     else:
         from desktop import DesktopCommands
         desktop = DesktopCommands(app, args.pointer, execute=args.execute, features=features,
-                                  player=args.player, grid_timeout=args.grid_timeout)
-        listener_arguments += ["--control-stdin", *features.arguments()]
+                                  player=args.player, grid_timeout=args.grid_timeout, wake=wake)
+        listener_arguments += ["--control-stdin", "--wake", wake, *features.arguments()]
         controller = TrayController(app, args.listener, listener_arguments, desktop)
 
     # Deliver Unix shutdown signals through Qt's event loop without an idle polling timer.

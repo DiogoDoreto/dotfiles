@@ -41,6 +41,7 @@ let
       ./listener.py
       ./vocabulary.py
       ./features.py
+      ./help.py
       ./media.py
       ./session.py
       ./desktop.py
@@ -57,6 +58,7 @@ let
       ./test_navigation.py
       ./test_scroll.py
       ./test_features.py
+      ./test_help.py
       ./test_media.py
       ./media_test_child.py
       ./test_listener.py

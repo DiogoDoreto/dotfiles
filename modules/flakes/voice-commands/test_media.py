@@ -156,6 +156,38 @@ class MediaTests(unittest.TestCase):
         finally:
             timer.stop()
 
+    def test_help_cancels_inflight_and_queued_media_but_keeps_tracker_alive(self):
+        for stage in ("LIST", "ACTION"):
+            with self.subTest(stage=stage):
+                self.events.clear()
+                os.environ[f"VOICE_MEDIA_{stage}_DELAY"] = "60"
+                self.session.synchronize()
+                baseline = len(self.calls())
+                self.send("play")
+                self.send("next")
+                wanted = ["--list-all"] if stage == "LIST" else ["--player", "mpv.first", "play"]
+                self.wait(lambda: wanted in self.calls()[baseline:])
+                tracker = self.media.tracker
+                generation = self.session.generation
+                presented_states = []
+                def presented():
+                    presented_states.append((bool(self.media.queue), self.media.current,
+                                             self.media.live, self.media.tracker is tracker))
+                self.session.help_requested.connect(presented)
+                self.send("show help")
+                self.session.help_requested.disconnect(presented)
+                self.assertEqual(presented_states, [(False, None, True, True)])
+                self.assertEqual(self.session.generation, generation + 1)
+                os.environ.pop(f"VOICE_MEDIA_{stage}_DELAY")
+                self.send("pause", generation)  # stale recognition cannot enqueue a new action
+                self.assertFalse(self.media.queue)
+                self.send("pause")
+                self.wait(lambda: len(self.events) == 1)
+                self.assertEqual((self.events[0][0], self.events[0][1]["command"]), ("executed", "pause"))
+                self.assertNotIn(["--player", "mpv.first", "next"], self.calls())
+                self.wait(lambda: len(self.media.processes) == 1)
+                self.assertIs(self.media.tracker, tracker)
+
     def test_failed_start_and_lifetime_restart(self):
         self.media.playerctl = str(self.root / "missing")
         self.session.synchronize()

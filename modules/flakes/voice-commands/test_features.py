@@ -55,6 +55,9 @@ class FeatureTests(unittest.TestCase):
                     recognizer.set_phrases(phrases_for("hello computer", grid, mode,
                                                      media=media, scroll=scroll))
                     for text, expected in [
+                        ("hello computer show help", ["show help"]),
+                        ("hey computer show help", []),
+                        ("show help", []),
                         ("hello computer play", ["play"] if media else []),
                         ("hello computer pause", ["pause"] if media else []),
                         ("hello computer scroll", ["scroll"] if scroll else []),
@@ -73,7 +76,7 @@ class FeatureTests(unittest.TestCase):
         # Bypass recognition: dispatch must reject disabled/out-of-mode actions
         # even if a decoder produces an unexpected result.
         recognizer = Mock()
-        recognizer.feed.return_value = ["play", "pause", "next", "previous", "scroll", "click", "up", "one", "unknown"]
+        recognizer.feed.return_value = ["play", "pause", "next", "previous", "scroll", "click", "up", "one", "unknown", "show help"]
         read = Mock(side_effect=[bytes(3200), b""])
         events = []
         with patch.object(sys, "argv", ["listener", "--model", "unused", *flags]), patch.object(
@@ -98,7 +101,7 @@ class FeatureTests(unittest.TestCase):
                 self.assertEqual(status, 0)
                 commands = [details["command"] for state, details in events if state == "command"]
                 self.assertEqual(commands, (["play", "pause", "next", "previous"] if media else [])
-                                 + (["scroll"] if scroll else []) + (["click"] if grid else []))
+                                 + (["scroll"] if scroll else []) + (["click"] if grid else []) + ["show help"])
                 dispatch.assert_not_called()
                 process.assert_not_called()
 
@@ -119,7 +122,7 @@ class FeatureTests(unittest.TestCase):
             with self.subTest(flags=flags):
                 status, events, dispatch, process = self.run_listener(flags)
                 self.assertEqual(status, 0)
-                self.assertEqual([details["command"] for state, details in events if state == "command"], expected)
+                self.assertEqual([details["command"] for state, details in events if state == "command"], expected + ["show help"])
                 dispatch.assert_not_called()
                 process.assert_not_called()
 
@@ -131,7 +134,8 @@ class FeatureTests(unittest.TestCase):
                      "--mouse-grid" if grid else "--no-mouse-grid",
                      "--execute" if execute else "--no-execute"]
             with self.subTest(flags=flags), patch.object(sys, "argv", [
-                    "tray", "--listener", "listener", "--pointer", "pointer", "--start-paused", "--player", "mpv", *flags]), patch.object(
+                    "tray", "--listener", "listener", "--pointer", "pointer", "--start-paused", "--player", "mpv",
+                    "--wake=Hello, COMPUTER!", *flags]), patch.object(
                     tray, "QApplication", return_value=app), patch.object(
                     app, "exec", return_value=0), patch.object(
                     tray.signal, "signal"), patch.object(
@@ -142,6 +146,8 @@ class FeatureTests(unittest.TestCase):
                 self.assertEqual((kwargs["execute"], kwargs["features"], kwargs["player"]),
                                  (execute, Features(media, scroll, grid), "mpv"))
                 arguments = controller.call_args.args[2]
+                self.assertEqual(kwargs["wake"], "hello computer")
+                self.assertEqual(arguments[arguments.index("--wake") + 1], "hello computer")
                 for flag in flags[:-1]:
                     self.assertIn(flag, arguments)
                 self.assertNotIn("--execute", arguments)

@@ -13,6 +13,7 @@ from vocabulary import MEDIA_COMMANDS
 
 class CommandSession(QObject):
     changed = Signal(str, int)
+    help_requested = Signal()
 
     def __init__(self, parent=None, features=None):
         super().__init__(parent)
@@ -34,7 +35,9 @@ class CommandSession(QObject):
         if (type(generation) is not int or generation != self.generation
                 or not self.features.accepts(command, self.mode)):
             return
-        if command in MEDIA_COMMANDS:
+        if command == "show help":
+            self.show_help()
+        elif command in MEDIA_COMMANDS:
             if self.media:
                 self.media.command(command, generation)
         elif command == "scroll" and self.scroll:
@@ -82,6 +85,15 @@ class CommandSession(QObject):
         self._close_groups(reason)
         if self.mode != "normal":
             self._enter("normal")
+
+    def show_help(self):
+        """Cancel input before presentation, keeping the listener/tracker lifetime alive."""
+        generation = self.generation
+        self.cancel("help")
+        if self.generation == generation:
+            # Even in normal mode, invalidate queued recognition and reset capture.
+            self._enter("normal")
+        self.help_requested.emit()
 
     def synchronize(self):
         """Publish one normal-mode snapshot to a newly ready listener.

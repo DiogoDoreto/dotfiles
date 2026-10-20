@@ -6,7 +6,6 @@ import json
 import math
 import os
 from pathlib import Path
-import re
 import select
 import signal
 import subprocess
@@ -16,14 +15,10 @@ import time
 import wave
 
 from features import Features
-from vocabulary import SCROLL_DIRECTIONS
+from vocabulary import SCROLL_DIRECTIONS, normalize
 
 RATE = 16000
 CHUNK = 1600  # 100 ms, mono signed 16-bit PCM.
-
-
-def normalize(text):
-    return " ".join(re.findall(r"[a-z]+", text.lower()))
 
 
 def event(state, **details):

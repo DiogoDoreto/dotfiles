@@ -35,6 +35,7 @@ class Features:
 
     def phrases(self, wake, mode="normal"):
         phrases = {f"{wake} {command}": command for command in MEDIA_COMMANDS} if self.media else {}
+        phrases[f"{wake} show help"] = "show help"
         if self.scroll:
             phrases[f"{wake} scroll"] = "scroll"
         if self.mouse_grid:
@@ -47,3 +48,39 @@ class Features:
 
     def accepts(self, command, mode):
         return self.supports_mode(mode) and command in self.phrases("", mode).values()
+
+    def help_sections(self, wake, execute, grid_timeout):
+        """Resolved usage alongside vocabulary/eligibility; presentation has no feature policy."""
+        sections = [
+            ("Operation", "Execution enabled: commands send real media and desktop input actions."
+             if execute else "Preview only: commands log intended actions; no media or desktop input is sent."),
+            ("Help", f'Say “{wake} show help” in any command group, or choose Help in the tray menu. '
+             "Help cancels the current group and queued/pending actions, then returns to normal listening. "
+             "Already delivered actions cannot be undone."),
+            ("Tray controls", "Click the microphone icon to pause/resume, or right-click and choose "
+             "Pause listening / Resume listening. Pause releases the microphone. Help is available "
+             "while paused or after an error and does not resume listening. Close this window to keep the tray running."),
+        ]
+        if self.media:
+            sections.append(("Media", f'Say “{wake} play”, “{wake} pause”, “{wake} next”, or “{wake} previous”. '
+                             "Always include the wake phrase, even in a command group. Acts on one existing MPRIS player, "
+                             "preferring configured player selection and recent activity; no fallback after a failed action. "
+                             "Play is not a toggle and does not launch an application."))
+        if self.scroll:
+            sections.append(("Scrolling", f'Say “{wake} scroll”, then “up” or “down” without the wake phrase; '
+                             "sequences such as “up up down” work. Scrolls at the current pointer position without "
+                             "moving it or focusing a window. Say “cancel” or wait 60 inactive seconds to exit. "
+                             "Repeating the entry phrase refreshes the timeout. Real input requires Plasma Wayland."))
+        if self.mouse_grid:
+            sections.append(("Mouse grid", f'Say “{wake} click”. Requires Plasma Wayland and one to nine enabled displays. '
+                             "With multiple displays, say the monitor number first (ordered left-to-right, then top-to-bottom); "
+                             "one display skips selection. Then say “one” through “nine” to refine a row-major 3×3 grid, "
+                             "one number per utterance, without a wake phrase. Say “click” to click the region center and close. "
+                             "During monitor selection, click waits for a number. “back” undoes refinement or returns to monitor "
+                             "selection at the root; “reset” restores the selected display; “cancel” exits without clicking. "
+                             f"Exits after {grid_timeout:g} inactive seconds or display changes. Overlays do not take focus; "
+                             "the pointer stays still until the final click."))
+        if self.scroll and self.mouse_grid:
+            sections.append(("Switching groups", f'Say “{wake} scroll” from the grid or “{wake} click” while scrolling '
+                             "to switch groups, discarding pending input from the previous group."))
+        return sections
