@@ -8,13 +8,6 @@ SCROLL_COMMANDS = (*SCROLL_DIRECTIONS, "cancel")
 
 
 def phrases_for(wake, mouse_grid=False, mode="normal", *, media=True, scroll=True):
-    phrases = {f"{wake} {command}": command for command in MEDIA_COMMANDS} if media else {}
-    if scroll:
-        phrases[f"{wake} scroll"] = "scroll"
-    if mouse_grid:
-        phrases[f"{wake} click"] = "click"
-        if mode == "grid":
-            phrases.update({command: command for command in GRID_COMMANDS})
-    if scroll and mode == "scroll":
-        phrases.update({command: command for command in SCROLL_COMMANDS})
-    return phrases
+    # Compatibility for standalone grid callers; policy lives in Features.
+    from features import Features
+    return Features(media, scroll, mouse_grid).phrases(wake, mode)

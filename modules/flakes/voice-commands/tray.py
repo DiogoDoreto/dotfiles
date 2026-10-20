@@ -11,6 +11,7 @@ from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from listener import ListenerLifetime
+from features import Features
 
 
 def display_state(state, scrolling):
@@ -122,17 +123,17 @@ def main():
     parser.add_argument("--pointer", required=True, help=argparse.SUPPRESS)
     parser.add_argument("--start-paused", action="store_true", help="Show the tray without opening the microphone")
     parser.add_argument("--execute", action=argparse.BooleanOptionalAction, default=False, help="Invoke actions instead of previewing")
-    parser.add_argument("--media", action=argparse.BooleanOptionalAction, default=True, help="Enable media commands")
-    parser.add_argument("--scroll", action=argparse.BooleanOptionalAction, default=True, help="Enable scroll commands")
-    parser.add_argument("--mouse-grid", action=argparse.BooleanOptionalAction, default=False, help="Enable experimental Plasma Wayland mouse commands with monitor selection")
+    Features.add_arguments(parser)
+    parser.add_argument("--player", help="Prefer this MPRIS player family/instance, e.g. mpv")
     parser.add_argument("--grid-stdin", action="store_true", help="Read synthetic grid commands from stdin instead of listening (no tray)")
     parser.add_argument("--grid-timeout", type=float, default=20, help="Cancel targeting after this many inactive seconds (default: 20)")
     args, listener_arguments = parser.parse_known_args()
+    features = Features.from_args(args)
     if not 0.1 <= args.grid_timeout <= 3600:
         parser.error("--grid-timeout must be between 0.1 and 3600 seconds")
     if args.grid_stdin and args.start_paused:
         parser.error("--grid-stdin cannot be combined with --start-paused")
-    if args.mouse_grid or args.grid_stdin:
+    if features.mouse_grid or args.grid_stdin:
         # Load the packaged QML/SSL dependency chain before QApplication can load
         # desktop theme plugins linked against an older libcrypto with the same SONAME.
         from grid import GridController, SyntheticController
@@ -149,13 +150,9 @@ def main():
         controller = SyntheticController(app, grid)
     else:
         from desktop import DesktopCommands
-        desktop = DesktopCommands(app, args.pointer, execute=args.execute, scroll=args.scroll,
-                                  mouse_grid=args.mouse_grid, grid_timeout=args.grid_timeout)
-        listener_arguments += ["--control-stdin",
-                               "--execute" if args.execute else "--no-execute",
-                               "--media" if args.media else "--no-media",
-                               "--scroll" if args.scroll else "--no-scroll",
-                               "--mouse-grid" if args.mouse_grid else "--no-mouse-grid"]
+        desktop = DesktopCommands(app, args.pointer, execute=args.execute, features=features,
+                                  player=args.player, grid_timeout=args.grid_timeout)
+        listener_arguments += ["--control-stdin", *features.arguments()]
         controller = TrayController(app, args.listener, listener_arguments, desktop)
 
     # Deliver Unix shutdown signals through Qt's event loop without an idle polling timer.

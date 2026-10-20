@@ -16,6 +16,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QWidget
 
 from desktop import DesktopCommands
+from features import Features
 from runner import VoskRecognizer
 from tray import display_state
 from vocabulary import phrases_for
@@ -27,7 +28,7 @@ app.setQuitOnLastWindowClosed(False)
 
 class ScrollTests(unittest.TestCase):
     def setUp(self):
-        self.desktop = DesktopCommands(app, os.environ["VOICE_TEST_POINTER"], mouse_grid=True)
+        self.desktop = DesktopCommands(app, os.environ["VOICE_TEST_POINTER"], features=Features(mouse_grid=True))
         self.events = []
         self.desktop.scroll.log_event = lambda state, **details: self.events.append((state, details))
         self.desktop.grid.log_event = lambda state, **details: self.events.append((state, details))

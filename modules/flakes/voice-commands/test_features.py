@@ -1,6 +1,8 @@
 """Feature combinations across recognition, CLI assembly, and action boundaries."""
 
 from contextlib import nullcontext
+import argparse
+from dataclasses import FrozenInstanceError
 import itertools
 import json
 import os
@@ -12,12 +14,37 @@ from unittest.mock import Mock, patch
 from PySide6.QtWidgets import QApplication
 
 from desktop import DesktopCommands
+from features import Features
 import runner
 import tray
 from vocabulary import phrases_for
 
 
 class FeatureTests(unittest.TestCase):
+    def test_resolved_features_round_trip_and_mode_policy(self):
+        parser = argparse.ArgumentParser(allow_abbrev=False)
+        Features.add_arguments(parser)
+        self.assertEqual(Features.from_args(parser.parse_args([])), Features())
+        for media, scroll, grid in itertools.product((False, True), repeat=3):
+            features = Features(media, scroll, grid)
+            self.assertEqual(Features.from_args(parser.parse_args(features.arguments())), features)
+            self.assertEqual([features.supports_mode(mode) for mode in ("normal", "scroll", "grid", "unknown")],
+                             [True, scroll, grid, False])
+            for mode in ("normal", "scroll", "grid"):
+                for command in ("play", "scroll", "click", "up", "one", "cancel", "unknown"):
+                    self.assertEqual(features.accepts(command, mode), features.supports_mode(mode)
+                                     and command in features.phrases("wake", mode).values())
+        with self.assertRaises(FrozenInstanceError):
+            features.media = True
+
+    def test_legacy_listener_execution_player_flags_are_nonexecuting(self):
+        status, events, action, process = self.run_listener(["--execute", "--player", "mpv"])
+        self.assertEqual(status, 0)
+        self.assertTrue(any(state == "deprecated-options" for state, _ in events))
+        action.assert_not_called()
+        process.assert_not_called()
+        self.assertTrue(all(type(details["generation"]) is int for state, details in events if state == "command"))
+
     def test_recognition_excludes_disabled_commands_in_every_mode(self):
         recognizer = runner.VoskRecognizer(
             SimpleNamespace(model=os.environ["VOICE_TEST_MODEL"], verbose=False),
@@ -53,7 +80,7 @@ class FeatureTests(unittest.TestCase):
                 runner, "VoskRecognizer", return_value=recognizer), patch.object(
                 runner, "audio", return_value=nullcontext((read, Mock()))), patch.object(
                 runner, "event", side_effect=lambda state, **details: events.append((state, details))), patch.object(
-                runner, "media") as media, patch.object(runner.subprocess, "Popen") as process, patch.object(
+                runner.subprocess, "run") as media, patch.object(runner.subprocess, "Popen") as process, patch.object(
                 runner.time, "sleep"), patch.object(runner.signal, "signal"), patch.object(
                 runner.select, "select", return_value=([sys.stdin], [], [])), patch.object(
                 runner.os, "read", return_value=json.dumps(control).encode() + b"\n"):
@@ -72,8 +99,8 @@ class FeatureTests(unittest.TestCase):
                 commands = [details["command"] for state, details in events if state == "command"]
                 self.assertEqual(commands, (["play", "pause", "next", "previous"] if media else [])
                                  + (["scroll"] if scroll else []) + (["click"] if grid else []))
-                self.assertEqual(dispatch.call_count, 4 if media and execute else 0)
-                self.assertEqual(process.call_count, int(media and execute))
+                dispatch.assert_not_called()
+                process.assert_not_called()
 
     def test_disabled_controller_modes_are_rejected(self):
         for mode, flag in [("scroll", "--no-scroll"), ("grid", "--no-mouse-grid")]:
@@ -96,7 +123,7 @@ class FeatureTests(unittest.TestCase):
                 dispatch.assert_not_called()
                 process.assert_not_called()
 
-    def test_tray_passes_effective_features_and_execution_to_both_processes(self):
+    def test_tray_passes_features_but_owns_execution_and_player(self):
         app = QApplication.instance()
         for media, scroll, grid, execute in itertools.product((False, True), repeat=4):
             flags = ["--media" if media else "--no-media",
@@ -104,7 +131,7 @@ class FeatureTests(unittest.TestCase):
                      "--mouse-grid" if grid else "--no-mouse-grid",
                      "--execute" if execute else "--no-execute"]
             with self.subTest(flags=flags), patch.object(sys, "argv", [
-                    "tray", "--listener", "listener", "--pointer", "pointer", "--start-paused", *flags]), patch.object(
+                    "tray", "--listener", "listener", "--pointer", "pointer", "--start-paused", "--player", "mpv", *flags]), patch.object(
                     tray, "QApplication", return_value=app), patch.object(
                     app, "exec", return_value=0), patch.object(
                     tray.signal, "signal"), patch.object(
@@ -112,17 +139,20 @@ class FeatureTests(unittest.TestCase):
                     tray, "TrayController") as controller, patch("desktop.DesktopCommands") as desktop:
                 self.assertEqual(tray.main(), 0)
                 kwargs = desktop.call_args.kwargs
-                self.assertEqual((kwargs["execute"], kwargs["scroll"], kwargs["mouse_grid"]),
-                                 (execute, scroll, grid))
+                self.assertEqual((kwargs["execute"], kwargs["features"], kwargs["player"]),
+                                 (execute, Features(media, scroll, grid), "mpv"))
                 arguments = controller.call_args.args[2]
-                for flag in flags:
+                for flag in flags[:-1]:
                     self.assertIn(flag, arguments)
+                self.assertNotIn("--execute", arguments)
+                self.assertNotIn("--no-execute", arguments)
+                self.assertNotIn("--player", arguments)
 
     def test_disabled_desktop_controllers_are_absent_and_cannot_dispatch(self):
         app = QApplication.instance()
         for scroll, grid in itertools.product((False, True), repeat=2):
             with self.subTest(scroll=scroll, grid=grid):
-                desktop = DesktopCommands(app, "must-not-run", execute=True, scroll=scroll, mouse_grid=grid)
+                desktop = DesktopCommands(app, "must-not-run", execute=True, features=Features(scroll=scroll, mouse_grid=grid))
                 try:
                     self.assertEqual(desktop.scroll is not None, scroll)
                     self.assertEqual(desktop.grid is not None, grid)

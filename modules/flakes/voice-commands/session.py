@@ -7,26 +7,37 @@ lifecycle cancellation, never coordinate group teardown and recognition resets.
 
 from PySide6.QtCore import QObject, Signal
 
+from features import Features
+from vocabulary import MEDIA_COMMANDS
+
 
 class CommandSession(QObject):
     changed = Signal(str, int)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, features=None):
         super().__init__(parent)
         self.mode = "normal"
         self.generation = 0
         self.grid = None
         self.scroll = None
+        self.media = None
+        self.features = features or Features()
 
     def _enter(self, mode):
+        if self.media:
+            self.media.cancel()
         self.mode = mode
         self.generation += 1
         self.changed.emit(mode, self.generation)
 
     def command(self, command, generation):
-        if generation != self.generation:
+        if (type(generation) is not int or generation != self.generation
+                or not self.features.accepts(command, self.mode)):
             return
-        if command == "scroll" and self.scroll:
+        if command in MEDIA_COMMANDS:
+            if self.media:
+                self.media.command(command, generation)
+        elif command == "scroll" and self.scroll:
             # A click can still be in flight after its overlay has closed.
             if self.grid:
                 self.grid._cancel_click("mode-changed")
@@ -66,6 +77,8 @@ class CommandSession(QObject):
             self.scroll._close(reason)
 
     def cancel(self, reason):
+        if self.media:
+            self.media.cancel()
         self._close_groups(reason)
         if self.mode != "normal":
             self._enter("normal")
@@ -77,6 +90,9 @@ class CommandSession(QObject):
         close any surviving group/input, and publish the snapshot for transport.
         """
         self._close_groups("listener-restarted")
+        if self.media:
+            self.media.stop()
+            self.media.start()
         if self.mode != "normal":
             self._enter("normal")
         else:

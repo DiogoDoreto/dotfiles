@@ -1,4 +1,4 @@
-"""Local Vosk wake-phrase recognition, media commands, and desktop command groups."""
+"""Local Vosk recognition/diagnostics; emits commands but never executes actions."""
 
 import argparse
 from contextlib import contextmanager
@@ -15,7 +15,8 @@ import sys
 import time
 import wave
 
-from vocabulary import MEDIA_COMMANDS, SCROLL_DIRECTIONS, phrases_for
+from features import Features
+from vocabulary import SCROLL_DIRECTIONS
 
 RATE = 16000
 CHUNK = 1600  # 100 ms, mono signed 16-bit PCM.
@@ -134,44 +135,28 @@ def audio(args):
         close()
 
 
-def media(command, preference):
-    # Freeze a concrete instance before dispatch: no per-action fallback to another player.
-    listed = subprocess.run(["playerctl", "--list-all"], capture_output=True, text=True, timeout=2)
-    if listed.returncode:
-        event("action-failed", command=command, error=listed.stderr.strip())
-        return
-    players = [p for p in listed.stdout.splitlines() if p != "playerctld"]
-    if preference:
-        players = [p for p in players if p == preference or p.startswith(preference + ".")]
-    if not players:
-        event("no-player", command=command, preference=preference)
-        return
-    target = players[0]
-    result = subprocess.run(["playerctl", "--player", target, command], capture_output=True, text=True, timeout=2)
-    event("executed" if result.returncode == 0 else "action-failed",
-          command=command, player=target, error=result.stderr.strip())
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--wake", default="hey computer", help="English wake phrase, no training required")
     parser.add_argument("--source", help="PipeWire microphone node.name; otherwise follow the default input")
-    parser.add_argument("--execute", action=argparse.BooleanOptionalAction, default=False, help="Actually invoke media actions; otherwise print events")
-    parser.add_argument("--media", action=argparse.BooleanOptionalAction, default=True, help="Enable media commands")
-    parser.add_argument("--scroll", action=argparse.BooleanOptionalAction, default=True, help="Enable scroll commands")
-    parser.add_argument("--mouse-grid", action=argparse.BooleanOptionalAction, default=False, help="Recognize mouse-grid entry and targeting commands (UI performs clicks)")
+    parser.add_argument("--execute", action=argparse.BooleanOptionalAction, default=False,
+                        help="Deprecated, ignored: the listener never executes actions")
+    Features.add_arguments(parser)
     parser.add_argument("--control-stdin", action="store_true", help="Accept controller mode/generation JSON lines on stdin")
-    parser.add_argument("--player", help="Prefer this MPRIS player family/instance, e.g. mpv")
+    parser.add_argument("--player", help="Deprecated, ignored: configure --player on the tray controller")
     parser.add_argument("--wav", type=Path, help="Replay a mono 16 kHz PCM WAV instead of opening the microphone")
     parser.add_argument("--duration", type=float, default=0, help="Stop after this many audio seconds; 0 means unlimited")
     parser.add_argument("--stats-every", type=float, default=0, help="Resource/signal report interval in audio seconds; 0 disables")
     parser.add_argument("--verbose", action="store_true", help="Print partial/final recognition and rejected phrases")
     args = parser.parse_args()
+    features = Features.from_args(args)
+    if args.execute or args.player:
+        event("deprecated-options", message="Listener --execute/--player are nonexecuting; use the tray controller")
 
     def stop(signum, frame):
-        # Tray stop and terminal Ctrl+C both unwind capture/model/tracker cleanup.
+        # Tray stop and terminal Ctrl+C both unwind capture/model cleanup.
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGTERM, stop)
@@ -179,7 +164,7 @@ def main():
     if not wake or args.duration < 0 or args.stats_every < 0:
         parser.error("Wake phrase must contain English words; duration and stats interval must be nonnegative")
     def vocabulary(mode="normal"):
-        return phrases_for(wake, args.mouse_grid, mode, media=args.media, scroll=args.scroll)
+        return features.phrases(wake, mode)
 
     phrases = vocabulary()
     mode = "normal"
@@ -189,7 +174,6 @@ def main():
     started_cpu = time.process_time()
     total_audio = decode_seconds = 0.0
     actions = 0
-    tracker = None
 
     def report(state):
         # nix run may exec us after evaluation; historical rusage includes that launcher.
@@ -208,26 +192,17 @@ def main():
                 continue
             actions += 1
             event("command", command=command, mode=mode, generation=generation,
-                  audio_s=round(total_audio, 2), execute=args.execute)
-            if args.execute and command in MEDIA_COMMANDS:
-                try:
-                    media(command, args.player)
-                except subprocess.TimeoutExpired:
-                    event("action-failed", command=command, error="Media call timed out")
+                  audio_s=round(total_audio, 2))
 
     try:
         recognizer = VoskRecognizer(args, phrases)
-        if args.scroll:
+        if features.scroll:
             recognizer.set_phrases(vocabulary("scroll"))
-        if args.mouse_grid:
+        if features.mouse_grid:
             # Check all targeting words before announcing readiness, not during the first click.
             recognizer.set_phrases(vocabulary("grid"))
         recognizer.set_phrases(phrases)
         model_load_seconds = time.monotonic() - started
-        # No argument runs playerctld in the foreground. Reuse an existing daemon if it owns the bus.
-        if args.execute and args.media:
-            tracker = subprocess.Popen(["playerctld"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            time.sleep(0.3)
         next_report = args.stats_every
         with audio(args) as (read, reset_capture):
             announced = False
@@ -241,9 +216,8 @@ def main():
                         line, control_buffer = control_buffer.split(b"\n", 1)
                         control = json.loads(line)
                         new_mode, new_generation = control.get("mode"), control.get("generation")
-                        if (new_mode not in ("normal", "grid", "scroll") or type(new_generation) is not int
-                                or new_generation < generation or (new_mode == "grid" and not args.mouse_grid)
-                                or (new_mode == "scroll" and not args.scroll)):
+                        if (not features.supports_mode(new_mode) or type(new_generation) is not int
+                                or new_generation < generation):
                             raise ValueError("Invalid controller mode/generation")
                         if (new_mode, new_generation) != (mode, generation):
                             mode, generation = new_mode, new_generation
@@ -256,7 +230,7 @@ def main():
                     break
                 if not announced:
                     event("listening", engine="vosk", phrases=list(phrases), source=args.source or "default",
-                          input=str(args.wav) if args.wav else "microphone", execute=args.execute,
+                          input=str(args.wav) if args.wav else "microphone",
                           model_load_s=round(model_load_seconds, 3))
                     announced = True
                 total_audio += len(pcm) / (RATE * 2)
@@ -279,9 +253,6 @@ def main():
         event("error", error=str(error))
         return 1
     finally:
-        if tracker and tracker.poll() is None:
-            tracker.terminate()
-            tracker.wait(timeout=2)
         if args.stats_every:
             report("summary")
     return 0

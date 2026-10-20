@@ -10,6 +10,7 @@ from PySide6.QtQuick import QQuickWindow
 
 from vocabulary import GRID_COMMANDS, NUMBERS
 from session import CommandSession
+from features import Features
 from navigation import GridNavigation, Monitor
 
 
@@ -24,7 +25,7 @@ class GridController(QObject):
         self.app = app
         self.pointer = pointer
         self.execute = execute
-        self.session = session if session is not None else CommandSession(self)
+        self.session = session if session is not None else CommandSession(self, Features(mouse_grid=True))
         self.session.grid = self
         self.navigation = None
         self.screens = []

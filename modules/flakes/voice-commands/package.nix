@@ -40,6 +40,8 @@ let
       ./tray.py
       ./listener.py
       ./vocabulary.py
+      ./features.py
+      ./media.py
       ./session.py
       ./desktop.py
       ./scroll.py
@@ -55,6 +57,8 @@ let
       ./test_navigation.py
       ./test_scroll.py
       ./test_features.py
+      ./test_media.py
+      ./media_test_child.py
       ./test_listener.py
       ./listener_test_child.py
     ];
@@ -171,5 +175,6 @@ runCommand "voice-commands"
     mkdir -p "$out/share/applications"
     ln -s ${pointer}/share/applications/voice-commands-pointer.desktop "$out/share/applications/"
     makeQtWrapper ${trayPython}/bin/python "$out/bin/voice-commands" \
+      --prefix PATH : ${lib.makeBinPath [ playerctl ]} \
       --add-flags "-u ${source}/tray.py --listener ${lib.getExe listener} --pointer ${pointer}/bin/voice-commands-pointer"
   ''
