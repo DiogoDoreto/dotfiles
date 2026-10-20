@@ -130,12 +130,13 @@
 
   dog.services.voice-commands = {
     enable = true;
-    extraArgs = [
-      "--execute"
-      "--mouse-grid"
-      "--wake"
-      "hey computer"
-    ];
+    execute = true;
+    wakePhrase = "hey computer";
+    features = {
+      media.enable = true;
+      scroll.enable = true;
+      mouseGrid.enable = true;
+    };
   };
 
   dog.programs = {

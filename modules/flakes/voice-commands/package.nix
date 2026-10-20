@@ -54,6 +54,7 @@ let
       ./test_grid.py
       ./test_navigation.py
       ./test_scroll.py
+      ./test_features.py
       ./test_listener.py
       ./listener_test_child.py
     ];

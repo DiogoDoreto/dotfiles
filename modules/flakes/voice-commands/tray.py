@@ -65,7 +65,7 @@ class TrayController(QObject):
     def set_state(self, state):
         colors = {"Listening": "#239b56", "Paused": "#7f8c8d", "Starting": "#d4ac0d",
                   "Stopping": "#d4ac0d", "Error": "#c0392b", "Scrolling": "#2980b9"}
-        label = display_state(state, self.desktop and self.desktop.scroll.active)
+        label = display_state(state, self.desktop and self.desktop.scroll and self.desktop.scroll.active)
         self.tray.setIcon(microphone_icon(colors[label]))
         detail = f"\n{self.listener.last_error}" if state == "Error" else ""
         if label == "Scrolling":
@@ -121,7 +121,10 @@ def main():
     parser.add_argument("--listener", required=True, help=argparse.SUPPRESS)
     parser.add_argument("--pointer", required=True, help=argparse.SUPPRESS)
     parser.add_argument("--start-paused", action="store_true", help="Show the tray without opening the microphone")
-    parser.add_argument("--mouse-grid", action="store_true", help="Enable experimental Plasma Wayland mouse commands with monitor selection")
+    parser.add_argument("--execute", action=argparse.BooleanOptionalAction, default=False, help="Invoke actions instead of previewing")
+    parser.add_argument("--media", action=argparse.BooleanOptionalAction, default=True, help="Enable media commands")
+    parser.add_argument("--scroll", action=argparse.BooleanOptionalAction, default=True, help="Enable scroll commands")
+    parser.add_argument("--mouse-grid", action=argparse.BooleanOptionalAction, default=False, help="Enable experimental Plasma Wayland mouse commands with monitor selection")
     parser.add_argument("--grid-stdin", action="store_true", help="Read synthetic grid commands from stdin instead of listening (no tray)")
     parser.add_argument("--grid-timeout", type=float, default=20, help="Cancel targeting after this many inactive seconds (default: 20)")
     args, listener_arguments = parser.parse_known_args()
@@ -140,17 +143,19 @@ def main():
         print("No system tray is available. Run inside your Plasma desktop session.", file=sys.stderr)
         return 1
     if args.grid_stdin:
-        if any(argument != "--execute" for argument in listener_arguments):
-            parser.error("--grid-stdin only accepts --execute as a listener argument")
-        grid = GridController(app, args.pointer, execute="--execute" in listener_arguments, timeout=args.grid_timeout)
+        if listener_arguments:
+            parser.error("--grid-stdin does not accept listener arguments")
+        grid = GridController(app, args.pointer, execute=args.execute, timeout=args.grid_timeout)
         controller = SyntheticController(app, grid)
     else:
         from desktop import DesktopCommands
-        desktop = DesktopCommands(app, args.pointer, execute="--execute" in listener_arguments,
+        desktop = DesktopCommands(app, args.pointer, execute=args.execute, scroll=args.scroll,
                                   mouse_grid=args.mouse_grid, grid_timeout=args.grid_timeout)
-        listener_arguments += ["--control-stdin"]
-        if args.mouse_grid:
-            listener_arguments += ["--mouse-grid"]
+        listener_arguments += ["--control-stdin",
+                               "--execute" if args.execute else "--no-execute",
+                               "--media" if args.media else "--no-media",
+                               "--scroll" if args.scroll else "--no-scroll",
+                               "--mouse-grid" if args.mouse_grid else "--no-mouse-grid"]
         controller = TrayController(app, args.listener, listener_arguments, desktop)
 
     # Deliver Unix shutdown signals through Qt's event loop without an idle polling timer.

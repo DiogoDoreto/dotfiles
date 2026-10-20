@@ -24,6 +24,7 @@ DESKTOP = os.environ.get("VOICE_GRID_DESKTOP_TEST") == "1"
 
 # Importing keeps the single test-runner entrypoint covering scroll tests too.
 from test_scroll import ScrollDesktopTests, ScrollTests
+from test_features import FeatureTests
 
 
 class GridTests(unittest.TestCase):

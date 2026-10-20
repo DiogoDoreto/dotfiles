@@ -9,18 +9,32 @@ The shared module is `modules/home-manager/services/voice-commands.nix`. Lapdog 
 ```nix
 dog.services.voice-commands = {
   enable = true;
-  extraArgs = [
-    "--execute"
-    "--mouse-grid"
-    "--wake"
-    "hey computer"
-  ];
+  execute = true;
+  wakePhrase = "hey computer";
+  features = {
+    media.enable = true;
+    scroll.enable = true;
+    mouseGrid.enable = true;
+  };
+  # extraArgs = [ "--start-paused" "--verbose" ];
 };
 ```
 
 The module installs the package, a **Voice Commands** desktop launcher, and `voice-commands.service`. The service starts at graphical login, listens by default, and stops on graphical logout. The launcher starts that same service, so it does not launch another listener when the service is already running.
 
-`extraArgs` is the complete argument list; its default is `[ "--execute" ]`. Each flag/value occupies its own list element. Multiword values such as the wake phrase occupy **one** element. These arguments are escaped for systemd, including spaces and literal `$`/`%` characters. The module also accepts a `package` override.
+Typed options under `dog.services.voice-commands`:
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `execute` | `true` | Invoke actions; set `false` for logging/previews. |
+| `wakePhrase` | `"hey computer"` | English wake phrase supported by the selected Vosk model. |
+| `features.media.enable` | `true` | Recognize media commands and enable media execution/activity tracking. |
+| `features.scroll.enable` | `true` | Recognize the scroll group and construct its controller. |
+| `features.mouseGrid.enable` | `false` | Recognize mouse-grid commands and construct its controller. |
+
+`extraArgs` defaults to `[]` and supplements these options for diagnostics or unusual settings. Each flag/value occupies its own list element; multiword values occupy **one** element. Arguments are escaped for systemd, including spaces and literal `$`/`%` characters. Execution, wake, and feature flags (including their `--no-*` forms and `--flag=value` spellings) are rejected in `extraArgs`: migrate those to the typed options. `--grid-stdin` and the `--` end-of-options marker are also rejected there. The module accepts a `package` override; overridden packages must support the explicit positive/negative feature and execution flags emitted by the module.
+
+Lapdog retains execution, media, scrolling, mouse grid, and the “hey computer” wake phrase. Home Manager still executes by default; standalone commands remain preview-only unless `--execute` is passed.
 
 Useful flags:
 
@@ -28,6 +42,10 @@ Useful flags:
 | --- | --- |
 | `--execute` | Invoke media, scroll, and click actions; omit to log actions and preview the mouse grid only. |
 | `--mouse-grid` | Enable the Plasma Wayland mouse experiment with monitor selection. Enabled on lapdog. |
+| `--no-media` | Disable media vocabulary, dispatch, and the playerctld helper. |
+| `--no-scroll` | Disable scroll vocabulary and its controller/input helper. |
+| `--no-mouse-grid` | Explicitly disable the mouse grid (the standalone default). |
+| `--no-execute` | Explicitly select preview-only operation. |
 | `--grid-timeout 20` | Cancel the grid after this many inactive seconds; default 20. |
 | `--grid-stdin` | Read synthetic grid commands from the terminal, without a tray, microphone, or recognizer. |
 | `--wake "hello computer"` | Change the English wake phrase without retraining. Words must exist in the selected Vosk model's vocabulary. |
@@ -71,7 +89,9 @@ nix run path:./modules/flakes/voice-commands -- --start-paused --execute
 nix run path:./modules/flakes/voice-commands#listener -- --verbose
 ```
 
-The tray forwards listener flags and consumes `--start-paused` itself. The headless listener also accepts `--wav /path/sample.wav` (uncompressed mono 16 kHz signed 16-bit PCM) and `--duration <audio-seconds>` for repeatable diagnostics. Files decode as fast as possible and are padded at EOF to finish recognition; this does not recreate live acoustic conditions.
+The tray forwards listener flags and consumes `--start-paused` itself. Both tray and headless listener support `--media`/`--no-media`, `--scroll`/`--no-scroll`, `--mouse-grid`/`--no-mouse-grid`, and `--execute`/`--no-execute`. Media and scrolling default on, mouse grid and execution default off. Existing `--mouse-grid` invocations continue to work. Flag abbreviations are not supported. Disabled commands are absent from the vocabulary in every mode and rejected at dispatch; disabled desktop controllers and the disabled media activity tracker are not started. All features may be disabled together (the listener then has no accepted commands). This does not change the package's dependency set. Synthetic `--grid-stdin` explicitly selects the standalone grid and does not use voice-feature selection.
+
+The headless listener also accepts `--wav /path/sample.wav` (uncompressed mono 16 kHz signed 16-bit PCM) and `--duration <audio-seconds>` for repeatable diagnostics. Files decode as fast as possible and are padded at EOF to finish recognition; this does not recreate live acoustic conditions.
 
 Media dispatch selects one concrete player in playerctld's event-recency order, optionally filtered by `--player`, then sends the requested action to it. Unsupported actions do not fall through to another player. `play` uses MPRIS Play, never a toggle or an application launch; it can resume/start an existing session. Next/previous depend on the player/page's capabilities. A fresh activity tracker has no historical recency, so interact with the intended player after startup if several exist.
 
@@ -154,6 +174,8 @@ At recognition transitions, Vosk recreates its decoder while sharing the loaded 
 Recognition constrains Vosk's vocabulary to the full wake-prefixed phrases plus `[unk]`; targeting mode additionally permits grid commands, and scroll mode permits up/down/cancel. Only exact normalized final commands (or all-direction scroll sequences) are accepted. Partial results never execute actions. Constrained decoding still needs ordinary-speech rejection checks; it is not proof that any permitted transcript was genuinely spoken.
 
 ## Packaging and verification
+
+`test_features.py` runs with the grid/scroll suite. It covers all eight media/scroll/grid combinations with real Vosk matching in each mode, execution/preview dispatch and helper-start boundaries, tray-to-listener flag propagation, absent disabled controllers, and rejection of disabled group transitions and injected disabled/out-of-mode actions.
 
 `package.nix` is shared by the standalone flake and Home Manager, using the host's package set for the latter. The standalone flake pins Nixpkgs to lapdog's original validated revision. Vosk 0.3.45 uses a content-pinned upstream x86-64 wheel, patched for Nix; the small US English 0.15 model is a content-pinned archive. The tray uses PySide6/Qt with Wayland plugins. The obsolete sherpa backend, KWS models, comparison flags, NumPy/SentencePiece dependencies, and prototype package names have been removed.
 

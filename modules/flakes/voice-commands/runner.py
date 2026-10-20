@@ -153,12 +153,15 @@ def media(command, preference):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--wake", default="hey computer", help="English wake phrase, no training required")
     parser.add_argument("--source", help="PipeWire microphone node.name; otherwise follow the default input")
-    parser.add_argument("--execute", action="store_true", help="Actually invoke media actions; otherwise print events")
-    parser.add_argument("--mouse-grid", action="store_true", help="Recognize mouse-grid entry and targeting commands (UI performs clicks)")
+    parser.add_argument("--execute", action=argparse.BooleanOptionalAction, default=False, help="Actually invoke media actions; otherwise print events")
+    parser.add_argument("--media", action=argparse.BooleanOptionalAction, default=True, help="Enable media commands")
+    parser.add_argument("--scroll", action=argparse.BooleanOptionalAction, default=True, help="Enable scroll commands")
+    parser.add_argument("--mouse-grid", action=argparse.BooleanOptionalAction, default=False, help="Recognize mouse-grid entry and targeting commands (UI performs clicks)")
     parser.add_argument("--control-stdin", action="store_true", help="Accept controller mode/generation JSON lines on stdin")
     parser.add_argument("--player", help="Prefer this MPRIS player family/instance, e.g. mpv")
     parser.add_argument("--wav", type=Path, help="Replay a mono 16 kHz PCM WAV instead of opening the microphone")
@@ -175,7 +178,10 @@ def main():
     wake = normalize(args.wake)
     if not wake or args.duration < 0 or args.stats_every < 0:
         parser.error("Wake phrase must contain English words; duration and stats interval must be nonnegative")
-    phrases = phrases_for(wake, args.mouse_grid)
+    def vocabulary(mode="normal"):
+        return phrases_for(wake, args.mouse_grid, mode, media=args.media, scroll=args.scroll)
+
+    phrases = vocabulary()
     mode = "normal"
     generation = 0
     control_buffer = b""
@@ -197,6 +203,9 @@ def main():
     def dispatch(commands):
         nonlocal actions
         for command in commands:
+            if command not in phrases.values():
+                event("rejected", command=command, mode=mode, reason="disabled-or-out-of-mode")
+                continue
             actions += 1
             event("command", command=command, mode=mode, generation=generation,
                   audio_s=round(total_audio, 2), execute=args.execute)
@@ -208,14 +217,15 @@ def main():
 
     try:
         recognizer = VoskRecognizer(args, phrases)
-        recognizer.set_phrases(phrases_for(wake, args.mouse_grid, "scroll"))
+        if args.scroll:
+            recognizer.set_phrases(vocabulary("scroll"))
         if args.mouse_grid:
             # Check all targeting words before announcing readiness, not during the first click.
-            recognizer.set_phrases(phrases_for(wake, True, "grid"))
+            recognizer.set_phrases(vocabulary("grid"))
         recognizer.set_phrases(phrases)
         model_load_seconds = time.monotonic() - started
         # No argument runs playerctld in the foreground. Reuse an existing daemon if it owns the bus.
-        if args.execute:
+        if args.execute and args.media:
             tracker = subprocess.Popen(["playerctld"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(0.3)
         next_report = args.stats_every
@@ -232,12 +242,14 @@ def main():
                         control = json.loads(line)
                         new_mode, new_generation = control.get("mode"), control.get("generation")
                         if (new_mode not in ("normal", "grid", "scroll") or type(new_generation) is not int
-                                or new_generation < generation or (new_mode == "grid" and not args.mouse_grid)):
+                                or new_generation < generation or (new_mode == "grid" and not args.mouse_grid)
+                                or (new_mode == "scroll" and not args.scroll)):
                             raise ValueError("Invalid controller mode/generation")
                         if (new_mode, new_generation) != (mode, generation):
                             mode, generation = new_mode, new_generation
                             reset_capture()
-                            recognizer.set_phrases(phrases_for(wake, args.mouse_grid, mode))
+                            phrases = vocabulary(mode)
+                            recognizer.set_phrases(phrases)
                             event("mode-changed", mode=mode, generation=generation)
                 pcm = read()
                 if not pcm:

@@ -7,10 +7,57 @@
 
 let
   cfg = config.dog.services.voice-commands;
+  structuredArgs = [
+    (if cfg.execute then "--execute" else "--no-execute")
+    "--wake"
+    cfg.wakePhrase
+    (if cfg.features.media.enable then "--media" else "--no-media")
+    (if cfg.features.scroll.enable then "--scroll" else "--no-scroll")
+    (if cfg.features.mouseGrid.enable then "--mouse-grid" else "--no-mouse-grid")
+  ];
+  reservedArgs = [
+    "--execute"
+    "--no-execute"
+    "--wake"
+    "--media"
+    "--no-media"
+    "--scroll"
+    "--no-scroll"
+    "--mouse-grid"
+    "--no-mouse-grid"
+    "--grid-stdin"
+    "--"
+  ];
 in
 {
   options.dog.services.voice-commands = {
     enable = lib.mkEnableOption "local Vosk voice commands with a system tray controller";
+
+    execute = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Invoke actions rather than logging previews only.";
+    };
+
+    wakePhrase = lib.mkOption {
+      type = lib.types.str;
+      default = "hey computer";
+      description = "English wake phrase; words must exist in the selected Vosk model.";
+    };
+
+    features = {
+      media.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Recognize and dispatch MPRIS media commands.";
+      };
+      scroll.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable the repeated up/down scroll command group.";
+      };
+      mouseGrid.enable = lib.mkEnableOption "experimental Plasma Wayland mouse-grid commands";
+    };
 
     package = lib.mkOption {
       type = lib.types.package;
@@ -21,26 +68,30 @@ in
 
     extraArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ "--execute" ];
+      default = [ ];
       example = [
-        "--execute"
-        "--wake"
-        "hey computer"
         "--player"
         "mpv"
       ];
       description = ''
         Command-line arguments for the tray and Vosk listener. Each argument is
         a separate list element; wake phrases containing spaces remain one argument.
-        Include --execute to invoke actions, --mouse-grid for experimental
-        Plasma Wayland mouse control with monitor selection, or --start-paused to start
-        the tray without opening the microphone. The scroll command group is
-        available by default and exits after one minute of inactivity or cancel.
+        Use these for diagnostics or unusual settings, such as --start-paused,
+        --player, or --verbose. Execution, wake phrase, and feature flags are
+        reserved for the structured options; --grid-stdin is standalone-only.
       '';
     };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = lib.all (
+          arg: !(lib.elem (builtins.head (lib.splitString "=" arg)) reservedArgs)
+        ) cfg.extraArgs;
+        message = "voice-commands.extraArgs cannot contain execution, wake, feature flags, --grid-stdin, or --; use the structured options.";
+      }
+    ];
     home.packages = [ cfg.package ];
 
     systemd.user.services.voice-commands = {
@@ -60,7 +111,9 @@ in
       };
       Service = {
         Type = "simple";
-        ExecStart = lib.hm.strings.escapeSystemdExecArgs ([ (lib.getExe cfg.package) ] ++ cfg.extraArgs);
+        ExecStart = lib.hm.strings.escapeSystemdExecArgs (
+          [ (lib.getExe cfg.package) ] ++ cfg.extraArgs ++ structuredArgs
+        );
         Restart = "on-failure";
         RestartSec = "3s";
         TimeoutStopSec = "10s";
