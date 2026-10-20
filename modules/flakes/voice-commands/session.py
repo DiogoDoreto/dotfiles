@@ -22,9 +22,12 @@ class CommandSession(QObject):
         self.grid = None
         self.scroll = None
         self.media = None
+        self.typing = None
         self.features = features or Features()
 
     def _enter(self, mode):
+        if mode != "typing" and self.typing:
+            self.typing.finish("mode-changed")
         if self.media:
             self.media.cancel()
         self.mode = mode
@@ -37,6 +40,8 @@ class CommandSession(QObject):
             return
         if command == "show help":
             self.show_help()
+        elif command == "type" and self.typing:
+            self.typing.enter()
         elif command in MEDIA_COMMANDS:
             if self.media:
                 self.media.command(command, generation)
@@ -73,6 +78,8 @@ class CommandSession(QObject):
         self.grid._click(position)
 
     def _close_groups(self, reason):
+        if self.typing:
+            self.typing.finish(reason)
         if self.grid:
             self.grid._cancel_click(reason)
             self.grid._close(reason)

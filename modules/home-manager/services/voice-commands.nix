@@ -14,6 +14,11 @@ let
     (if cfg.features.media.enable then "--media" else "--no-media")
     (if cfg.features.scroll.enable then "--scroll" else "--no-scroll")
     (if cfg.features.mouseGrid.enable then "--mouse-grid" else "--no-mouse-grid")
+    (if cfg.features.typing.enable then "--typing" else "--no-typing")
+  ]
+  ++ lib.optionals (cfg.features.typing.enable && cfg.features.typing.package != null) [
+    "--handy"
+    (lib.getExe cfg.features.typing.package)
   ];
   reservedArgs = [
     "--execute"
@@ -25,6 +30,9 @@ let
     "--no-scroll"
     "--mouse-grid"
     "--no-mouse-grid"
+    "--typing"
+    "--no-typing"
+    "--handy"
     "--grid-stdin"
     "--"
   ];
@@ -57,6 +65,14 @@ in
         description = "Enable the repeated up/down scroll command group.";
       };
       mouseGrid.enable = lib.mkEnableOption "experimental Plasma Wayland mouse-grid commands";
+      typing = {
+        enable = lib.mkEnableOption "voice typing through an already-running, idle Handy, one recording per invocation";
+        package = lib.mkOption {
+          type = lib.types.nullOr lib.types.package;
+          default = null;
+          description = "Handy package used for toggle dispatch. Required when typing is enabled; does not start the Handy service.";
+        };
+      };
     };
 
     package = lib.mkOption {
@@ -85,6 +101,10 @@ in
 
   config = lib.mkIf cfg.enable {
     assertions = [
+      {
+        assertion = !cfg.features.typing.enable || cfg.features.typing.package != null;
+        message = "voice-commands.features.typing.package must select the already-running Handy package.";
+      }
       {
         assertion = lib.all (
           arg: !(lib.elem (builtins.head (lib.splitString "=" arg)) reservedArgs)

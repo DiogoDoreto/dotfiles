@@ -16,6 +16,7 @@ class ListenerLifetime(QObject):
     state_changed = Signal(str)
     ready = Signal()
     command = Signal(object, object)
+    typing_activity = Signal(object, object, object)
     shutdown_complete = Signal()
 
     def __init__(self, program, arguments, parent=None, *, stop_timeout_ms=5000):
@@ -117,6 +118,8 @@ class ListenerLifetime(QObject):
                     self.ready.emit()
             elif event.get("state") == "command" and self.state == "Listening":
                 self.command.emit(event.get("command"), event.get("generation"))
+            elif event.get("state") == "typing-activity" and self.state == "Listening":
+                self.typing_activity.emit(event.get("speaking"), event.get("generation"), event.get("monotonic_s"))
 
     def _kill_group(self):
         self._escalated = True

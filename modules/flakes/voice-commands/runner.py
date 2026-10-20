@@ -6,11 +6,13 @@ import json
 import math
 import os
 from pathlib import Path
+import queue
 import select
 import signal
 import subprocess
 import struct
 import sys
+import threading
 import time
 import wave
 
@@ -19,11 +21,13 @@ from vocabulary import SCROLL_DIRECTIONS, normalize
 
 RATE = 16000
 CHUNK = 1600  # 100 ms, mono signed 16-bit PCM.
+_output_lock = threading.Lock()
 
 
 def event(state, **details):
-    print(json.dumps({"time": time.strftime("%H:%M:%S"), "monotonic_s": round(time.monotonic(), 3),
-                      "state": state, **details}), flush=True)
+    with _output_lock:
+        print(json.dumps({"time": time.strftime("%H:%M:%S"), "monotonic_s": round(time.monotonic(), 3),
+                          "state": state, **details}), flush=True)
 
 
 class VoskRecognizer:
@@ -92,36 +96,117 @@ def audio(args):
         with wave.open(str(args.wav), "rb") as source:
             if (source.getnchannels(), source.getsampwidth(), source.getframerate(), source.getcomptype()) != (1, 2, RATE, "NONE"):
                 raise ValueError("--wav requires uncompressed mono 16 kHz signed 16-bit PCM")
-            yield (lambda: source.readframes(CHUNK)), (lambda: None)
+            yield (lambda: source.readframes(CHUNK)), (lambda *unused: None)
         return
     command = ["pw-record", "--raw", "--rate=16000", "--channels=1", "--format=s16",
                "--properties={ node.name=voice-commands-listener }"]
     if args.source:
         command += ["--target", args.source]
     capture = None
+    worker = None
+    stopping = threading.Event()
+    pending = queue.Queue(maxsize=5)  # At most 500 ms awaiting Vosk; overrun fails closed.
 
     def close():
         if capture:
+            stopping.set()
             capture.terminate()
             try:
                 capture.wait(timeout=2)
             except subprocess.TimeoutExpired:
                 capture.kill()
                 capture.wait()
+            worker.join(timeout=1)
+            if worker.is_alive():
+                raise RuntimeError("PipeWire capture reader did not stop")
             capture.stdout.close()
 
-    def restart():
-        nonlocal capture
+    def restart(mode="normal", generation=0):
+        nonlocal capture, worker
         # Reset the producer as well as the decoder: old PCM queued in either process must
         # not be relabelled as a command from the new targeting generation.
         close()
+        stopping.clear()
+        while True:
+            try:
+                pending.get_nowait()
+            except queue.Empty:
+                break
+        detector = None
+        if mode == "typing":
+            from speech import SpeechDetector
+            detector = SpeechDetector()
         capture = subprocess.Popen([*command, "-"], stdout=subprocess.PIPE)
+        os.set_blocking(capture.stdout.fileno(), False)
+        worker = threading.Thread(target=pump, args=(capture, detector, generation), daemon=True)
+        worker.start()
+
+    def pump(process, detector, generation):
+        failed = False
+        previous = time.monotonic()
+        def fail(error):
+            nonlocal failed
+            failed = True
+            while True:
+                try:
+                    pending.get_nowait()
+                except queue.Empty:
+                    break
+            pending.put_nowait(error)
+        try:
+            while not stopping.is_set():
+                pcm = bytearray()
+                deadline = previous + .25
+                # One absolute deadline covers the entire chunk, including
+                # partial writes. Never wait indefinitely on an open pipe or
+                # let a trickle of bytes renew the acquisition deadline.
+                while len(pcm) < CHUNK * 2:
+                    if stopping.is_set():
+                        return
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise RuntimeError("PipeWire capture reader stalled; buffered audio discarded")
+                    if not select.select([process.stdout.fileno()], [], [], min(.05, remaining))[0]:
+                        continue
+                    try:
+                        fragment = os.read(process.stdout.fileno(), CHUNK * 2 - len(pcm))
+                    except BlockingIOError:
+                        continue
+                    if stopping.is_set():
+                        return
+                    if not fragment:
+                        # EOF need not mean the process exited: stdout may be
+                        # closed while it remains alive. Cleanup owns reaping.
+                        raise RuntimeError(f"PipeWire capture ended (exit {process.poll()})")
+                    pcm.extend(fragment)
+                captured_at = time.monotonic()
+                if stopping.is_set():
+                    return
+                # If this reader itself stalls, the pipe can contain aged audio.
+                # Do not classify or timestamp that backlog as fresh speech.
+                if captured_at - previous > .25:
+                    raise RuntimeError("PipeWire capture reader stalled; buffered audio discarded")
+                previous = captured_at
+                pcm = bytes(pcm)
+                if detector is not None:
+                    event("typing-activity", speaking=detector.feed(pcm), generation=generation,
+                          monotonic_s=round(captured_at, 3))
+                if not failed:
+                    try:
+                        pending.put_nowait(pcm)
+                    except queue.Full:
+                        fail(RuntimeError("Vosk capture backlog exceeded 500 ms; listener stopped"))
+                # Even after decoder overrun, keep VAD live until the main thread
+                # observes the failure and unwinds capture. Never backpressure it.
+        except (RuntimeError, OSError, ValueError) as error:
+            if not stopping.is_set():
+                fail(error)
 
     def read():
-        pcm = capture.stdout.read(CHUNK * 2)
-        if not pcm:
-            raise RuntimeError(f"PipeWire capture ended (exit {capture.wait()})")
-        return pcm
+        result = pending.get()
+        if isinstance(result, Exception):
+            raise result
+        return result
 
     try:
         restart()
@@ -163,6 +248,7 @@ def main():
 
     phrases = vocabulary()
     mode = "normal"
+    detector = None
     generation = 0
     control_buffer = b""
     started = time.monotonic()
@@ -196,6 +282,8 @@ def main():
         if features.mouse_grid:
             # Check all targeting words before announcing readiness, not during the first click.
             recognizer.set_phrases(vocabulary("grid"))
+        if features.typing:
+            recognizer.set_phrases(vocabulary("typing"))
         recognizer.set_phrases(phrases)
         model_load_seconds = time.monotonic() - started
         next_report = args.stats_every
@@ -216,7 +304,12 @@ def main():
                             raise ValueError("Invalid controller mode/generation")
                         if (new_mode, new_generation) != (mode, generation):
                             mode, generation = new_mode, new_generation
-                            reset_capture()
+                            reset_capture(mode, generation)
+                            if args.wav and mode == "typing":
+                                from speech import SpeechDetector
+                                detector = SpeechDetector()
+                            else:
+                                detector = None
                             phrases = vocabulary(mode)
                             recognizer.set_phrases(phrases)
                             event("mode-changed", mode=mode, generation=generation)
@@ -229,6 +322,8 @@ def main():
                           model_load_s=round(model_load_seconds, 3))
                     announced = True
                 total_audio += len(pcm) / (RATE * 2)
+                if detector is not None:
+                    event("typing-activity", speaking=detector.feed(pcm), generation=generation)
                 begin = time.monotonic()
                 commands = recognizer.feed(pcm)
                 decode_seconds += time.monotonic() - begin

@@ -13,7 +13,7 @@ def normalize(text):
     return " ".join(re.findall(r"[a-z]+", text.lower()))
 
 
-def phrases_for(wake, mouse_grid=False, mode="normal", *, media=True, scroll=True):
+def phrases_for(wake, mouse_grid=False, mode="normal", *, media=True, scroll=True, typing=False):
     # Compatibility for standalone grid callers; policy lives in Features.
     from features import Features
-    return Features(media, scroll, mouse_grid).phrases(wake, mode)
+    return Features(media, scroll, mouse_grid, typing).phrases(wake, mode)

@@ -14,6 +14,7 @@ class Features:
     media: bool = True
     scroll: bool = True
     mouse_grid: bool = False
+    typing: bool = False
 
     @classmethod
     def add_arguments(cls, parser):
@@ -31,11 +32,16 @@ class Features:
                 for field in fields(self)]
 
     def supports_mode(self, mode):
-        return mode == "normal" or (mode == "scroll" and self.scroll) or (mode == "grid" and self.mouse_grid)
+        return (mode == "normal" or (mode == "scroll" and self.scroll)
+                or (mode == "grid" and self.mouse_grid) or (mode == "typing" and self.typing))
 
     def phrases(self, wake, mode="normal"):
+        if mode == "typing" and self.typing:
+            return {f"{wake} show help": "show help", f"{wake} type": "type"}
         phrases = {f"{wake} {command}": command for command in MEDIA_COMMANDS} if self.media else {}
         phrases[f"{wake} show help"] = "show help"
+        if self.typing:
+            phrases[f"{wake} type"] = "type"
         if self.scroll:
             phrases[f"{wake} scroll"] = "scroll"
         if self.mouse_grid:
@@ -52,8 +58,8 @@ class Features:
     def help_sections(self, wake, execute, grid_timeout):
         """Resolved usage alongside vocabulary/eligibility; presentation has no feature policy."""
         sections = [
-            ("Operation", "Execution enabled: commands send real media and desktop input actions."
-             if execute else "Preview only: commands log intended actions; no media or desktop input is sent."),
+            ("Operation", "Execution enabled: commands send real media, typing and desktop input actions."
+             if execute else "Preview only: commands log intended actions; Handy is not launched and no media or desktop input is sent."),
             ("Help", f'Say “{wake} show help” in any command group, or choose Help in the tray menu. '
              "Help cancels the current group and queued/pending actions, then returns to normal listening. "
              "Already delivered actions cannot be undone."),
@@ -65,7 +71,17 @@ class Features:
             sections.append(("Media", f'Say “{wake} play”, “{wake} pause”, “{wake} next”, or “{wake} previous”. '
                              "Always include the wake phrase, even in a command group. Acts on one existing MPRIS player, "
                              "preferring configured player selection and recent activity; no fallback after a failed action. "
-                             "Play is not a toggle and does not launch an application."))
+                              "Play is not a toggle and does not launch an application."))
+        if self.typing:
+            sections.append(("Typing (one recording per invocation)", f'Say “{wake} type”, then dictate. Waits up to 10 seconds for '
+                             "speech, then finishes after 3 continuous seconds without speech. Repeated type is ignored; "
+                             "media, scroll and grid commands are blocked during dictation. Help/pause/quit/display changes "
+                             "finish recording and may type the captured text. Handy must already be running, idle, onboarded "
+                             "and exclusively controlled by this workflow. CLI success is dispatch only, not acknowledgement. "
+                             "After dispatches settle, normal commands resume and another explicit type is allowed. "
+                             "Wait for Handy to finish and become idle before invoking type again; there is no processing-status protocol "
+                             "or automatic restart. After entry, briefly pause for the waiting-for-speech state; "
+                             "a fresh 300 ms quiet VAD gate excludes the command tail. Preview logs would-type/would-stop without launching Handy."))
         if self.scroll:
             sections.append(("Scrolling", f'Say “{wake} scroll”, then “up” or “down” without the wake phrase; '
                              "sequences such as “up up down” work. Scrolls at the current pointer position without "

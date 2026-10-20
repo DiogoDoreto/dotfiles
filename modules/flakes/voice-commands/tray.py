@@ -45,11 +45,15 @@ class TrayController(QObject):
         self.desktop = desktop
         self.listener = ListenerLifetime(listener, arguments, self)
         self.listener.state_changed.connect(self.listener_state_changed)
-        self.listener.shutdown_complete.connect(app.quit)
+        self.listener.shutdown_complete.connect(self._maybe_quit)
         if desktop:
             self.listener.ready.connect(desktop.session.synchronize)
             self.listener.command.connect(desktop.command)
             desktop.session.changed.connect(self.recognition_changed)
+            if desktop.typing:
+                self.listener.typing_activity.connect(desktop.typing.activity)
+                desktop.typing.changed.connect(lambda: self.set_state(self.listener.state))
+                desktop.typing.settled.connect(self._maybe_quit)
 
         self.menu = QMenu()
         self.status_action = self.menu.addAction("Voice Commands — Paused")
@@ -70,10 +74,17 @@ class TrayController(QObject):
         colors = {"Listening": "#239b56", "Paused": "#7f8c8d", "Starting": "#d4ac0d",
                   "Stopping": "#d4ac0d", "Error": "#c0392b", "Scrolling": "#2980b9"}
         label = display_state(state, self.desktop and self.desktop.scroll and self.desktop.scroll.active)
+        typing = self.desktop.typing if self.desktop else None
+        if state == "Listening" and typing and typing.busy:
+            label = {"starting": "Typing — dispatching", "waiting": "Typing — waiting for speech (10s)",
+                     "speech": "Typing — speech (3s quiet finishes)", "stopping": "Typing — finishing"}[typing.state]
+            colors[label] = "#8e44ad"
         self.tray.setIcon(microphone_icon(colors[label]))
         detail = f"\n{self.listener.last_error}" if state == "Error" else ""
         if label == "Scrolling":
             detail = "\nSay up, down, or cancel · exits after one inactive minute"
+        if typing and typing.busy:
+            detail = "\nHandy must be running and idle; Help/pause finishes recording"
         self.tray.setToolTip(f"Voice Commands — {label}{detail}\nClick to pause/resume listening")
         self.status_action.setText(f"Voice Commands — {label}")
         self.toggle_action.setText("Pause listening" if state in ("Listening", "Starting", "Stopping") else "Resume listening")
@@ -109,7 +120,14 @@ class TrayController(QObject):
             self.set_state("Listening")
 
     def quit(self):
+        if self.desktop:
+            self.desktop.cancel("quit")
         self.listener.shutdown()
+
+    def _maybe_quit(self):
+        if (self.listener.closing and self.listener.state in ("Paused", "Error")
+                and not (self.desktop and self.desktop.typing and self.desktop.typing.busy)):
+            self.app.quit()
 
     def cleanup(self):
         self.listener.shutdown()
@@ -128,6 +146,7 @@ def main():
     parser.add_argument("--execute", action=argparse.BooleanOptionalAction, default=False, help="Invoke actions instead of previewing")
     Features.add_arguments(parser)
     parser.add_argument("--player", help="Prefer this MPRIS player family/instance, e.g. mpv")
+    parser.add_argument("--handy", default="handy", help="Handy executable; must already be running and idle")
     parser.add_argument("--wake", default="hey computer", help="English wake phrase")
     parser.add_argument("--grid-stdin", action="store_true", help="Read synthetic grid commands from stdin instead of listening (no tray)")
     parser.add_argument("--grid-timeout", type=float, default=20, help="Cancel targeting after this many inactive seconds (default: 20)")
@@ -158,7 +177,7 @@ def main():
     else:
         from desktop import DesktopCommands
         desktop = DesktopCommands(app, args.pointer, execute=args.execute, features=features,
-                                  player=args.player, grid_timeout=args.grid_timeout, wake=wake)
+                                  player=args.player, grid_timeout=args.grid_timeout, wake=wake, handy=args.handy)
         listener_arguments += ["--control-stdin", "--wake", wake, *features.arguments()]
         controller = TrayController(app, args.listener, listener_arguments, desktop)
 

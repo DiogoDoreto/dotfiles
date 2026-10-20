@@ -1,7 +1,12 @@
 """Help through public desktop/tray interfaces, with real widgets and pending input."""
 
 import itertools
+import json
+import os
+from pathlib import Path
 import sys
+import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -26,6 +31,70 @@ class HelpTests(unittest.TestCase):
 
     def say(self, command):
         self.desktop.command(command, self.desktop.session.generation)
+
+    def test_typing_tray_help_pause_crash_quit_and_display_teardown(self):
+        def wait(predicate):
+            deadline = time.monotonic() + 3
+            while not predicate() and time.monotonic() < deadline:
+                QTest.qWait(5)
+            self.assertTrue(predicate())
+
+        for cause in ("help", "pause", "crash", "quit-start", "quit-stop", "display", "group"):
+            with self.subTest(cause=cause), tempfile.TemporaryDirectory() as temp, patch.dict(
+                    os.environ, {"VOICE_HANDY_TEST_CONFIG": str(Path(temp) / "config.json")}):
+                desktop = DesktopCommands(self.app, "unused", execute=True,
+                                          features=Features(False, False, False, True), wake="hello computer",
+                                          handy=os.environ["VOICE_TEST_HANDY"])
+                typing = desktop.typing
+                log = Path(temp) / "calls"
+                Path(os.environ["VOICE_HANDY_TEST_CONFIG"]).write_text(json.dumps({"log": str(log), "mode": "slow"}))
+                script = 'import time; print(\'{"state":"listening"}\',flush=True); time.sleep(60)'
+                controller = TrayController(self.app, sys.executable, ["-u", "-c", script], desktop)
+                try:
+                    with patch.object(self.app, "quit") as quit_app:
+                        controller.start()
+                        wait(lambda: controller.listener.state == "Listening")
+                        desktop.command("type", desktop.session.generation)
+                        if cause != "quit-start":
+                            wait(lambda: typing.state == "waiting")
+                            self.assertIn("waiting for speech (10s)", controller.status_action.text())
+                        if cause == "help":
+                            action = next(a for a in controller.menu.actions() if a.text() == "Help")
+                            action.trigger()
+                            text = desktop.help.window.findChild(QTextBrowser).toPlainText()
+                            for phrase in ("hello computer type", "10 seconds", "3 continuous seconds", "already be running",
+                                           "Wait for Handy to finish", "300 ms"):
+                                self.assertIn(phrase, text)
+                            self.assertEqual(desktop.session.mode, "normal")
+                        elif cause == "pause":
+                            controller.stop()
+                        elif cause == "crash":
+                            controller.listener._process.kill()
+                            wait(lambda: controller.listener.state == "Error")
+                        elif cause.startswith("quit"):
+                            if cause == "quit-stop":
+                                desktop.cancel("test-stop")
+                            controller.quit()
+                            quit_app.assert_not_called()
+                        elif cause == "display":
+                            screen = self.app.screens()[0]
+                            screen.geometryChanged.emit(screen.geometry())
+                        else:
+                            desktop.session._enter("normal")
+                        wait(lambda: not typing.busy)
+                        self.assertEqual(len(log.read_text().splitlines()), 2)
+                        self.assertEqual(desktop.session.mode, "normal")
+                        if cause.startswith("quit"):
+                            wait(lambda: quit_app.called)
+                        else:
+                            quit_app.assert_not_called()
+                finally:
+                    controller.cleanup()
+                    desktop.cleanup()
+                    controller.menu.deleteLater()
+                    controller.deleteLater()
+                    desktop.deleteLater()
+                    QTest.qWait(1)
 
     def test_content_only_enabled_features_and_resolved_operation(self):
         for media, scroll, grid, execute in itertools.product((False, True), repeat=4):

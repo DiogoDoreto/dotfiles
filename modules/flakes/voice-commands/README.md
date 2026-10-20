@@ -15,6 +15,10 @@ dog.services.voice-commands = {
     media.enable = true;
     scroll.enable = true;
     mouseGrid.enable = true;
+    typing = {
+      enable = true;
+      package = pkgs.handy;
+    };
   };
   # extraArgs = [ "--start-paused" "--verbose" ];
 };
@@ -31,17 +35,21 @@ Typed options under `dog.services.voice-commands`:
 | `features.media.enable` | `true` | Recognize media commands and enable media execution/activity tracking. |
 | `features.scroll.enable` | `true` | Recognize the scroll group and construct its controller. |
 | `features.mouseGrid.enable` | `false` | Recognize mouse-grid commands and construct its controller. |
+| `features.typing.enable` | `false` | Enable Handy typing, one recording per explicit invocation. Enabled on lapdog. |
+| `features.typing.package` | `null` | Required when enabled; select the same Handy package as the independent Handy service. Adds no Handy dependency when disabled. |
 
 `extraArgs` defaults to `[]` and supplements these options for diagnostics or unusual settings. Each flag/value occupies its own list element; multiword values occupy **one** element. Arguments are escaped for systemd, including spaces and literal `$`/`%` characters. Execution, wake, and feature flags (including their `--no-*` forms and `--flag=value` spellings) are rejected in `extraArgs`: migrate those to the typed options. `--grid-stdin` and the `--` end-of-options marker are also rejected there. The module accepts a `package` override; overridden packages must support the explicit positive/negative feature and execution flags emitted by the module.
 
-Lapdog retains execution, media, scrolling, mouse grid, and the “hey computer” wake phrase. Home Manager still executes by default; standalone commands remain preview-only unless `--execute` is passed.
+Lapdog enables execution, media, scrolling, mouse grid, typing, and the “hey computer” wake phrase. Home Manager executes by default; standalone commands remain preview-only unless `--execute` is passed. The Handy executable flag is reserved in `extraArgs`, alongside the feature flags; use `features.typing.package`.
 
 Useful flags:
 
 | Flag | Effect |
 | --- | --- |
-| `--execute` | Invoke media, scroll, and click actions; omit to log actions and preview the mouse grid only. |
+| `--execute` | Invoke enabled media, scroll, click and Handy actions; omit for logs/previews without action execution. |
 | `--mouse-grid` | Enable the Plasma Wayland mouse experiment with monitor selection. Enabled on lapdog. |
+| `--typing` / `--no-typing` | Enable/disable voice typing; disabled by default standalone. |
+| `--handy /path/to/handy` | Executable for the already-running Handy; consumed by the tray only. Default: `handy` from PATH. |
 | `--no-media` | Disable media vocabulary, dispatch, and the playerctld helper. |
 | `--no-scroll` | Disable scroll vocabulary and its controller/input helper. |
 | `--no-mouse-grid` | Explicitly disable the mouse grid (the standalone default). |
@@ -69,11 +77,13 @@ Quit the old manually launched prototype before starting the managed service. Pa
 
 - **Click the microphone icon:** stop/resume listening.
 - **Right-click:** Pause/Resume, Help, and Quit.
-- **Green:** listening. **Blue:** scroll group active; the tooltip lists its commands. **Grey:** paused. **Yellow:** starting/stopping. **Red:** listener failed; hover for the error and click to retry.
+- **Green:** listening. **Blue:** scroll group active; the tooltip lists its commands. **Purple:** typing dispatch, waiting for speech (10s), speech (3s quiet finishes), or finishing. **Grey:** paused. **Yellow:** starting/stopping. **Red:** listener failed; hover for the error and click to retry.
 
 Pause gracefully exits the listener, closes PipeWire capture, and releases model memory. Resume starts a fresh recognizer, discarding pending audio. The Qt controller stays responsive because recognition runs in a separate process. It reacts to events rather than polling while idle.
 
 ### Command help
+
+Help also works in typing mode. There it requests an orderly finish (which may type captured audio), rather than discarding the recording; see the typing workflow below.
 
 Say **“hey computer show help”** (using your configured wake phrase), or choose **Help** from the tray menu. Help is always enabled, including when all optional features are disabled, and the wake-prefixed phrase works in normal, scroll, and grid modes. It opens one reusable window showing only enabled features, actual wake-phrase examples, group controls/timeouts, tray pause/resume instructions, and whether execution or preview mode is active. Repeated requests restore and raise that window; closing it keeps the tray running.
 
@@ -95,15 +105,35 @@ nix run path:./modules/flakes/voice-commands -- --start-paused --execute
 nix run path:./modules/flakes/voice-commands#listener -- --verbose
 ```
 
-The tray forwards recognition/diagnostic flags and consumes `--start-paused`, `--execute`/`--no-execute`, and `--player` itself. It resolves `--wake` for both help examples and listener recognition. Both tray and headless listener support `--media`/`--no-media`, `--scroll`/`--no-scroll`, and `--mouse-grid`/`--no-mouse-grid`. Media and scrolling default on, mouse grid and execution default off. Existing `--mouse-grid` invocations continue to work. Flag abbreviations are not supported. Disabled commands are absent from the vocabulary in every mode and rejected at dispatch; disabled controllers and the disabled media activity tracker are not started. All optional features may be disabled together; wake-prefixed help remains available. This does not change the package's dependency set. Synthetic `--grid-stdin` explicitly selects the standalone grid and does not use voice-feature selection.
+The tray forwards recognition/diagnostic flags and consumes `--start-paused`, `--execute`/`--no-execute`, `--handy`, and `--player` itself. It resolves `--wake` for both help examples and listener recognition. Both tray and headless listener support `--media`/`--no-media`, `--scroll`/`--no-scroll`, `--typing`/`--no-typing`, and `--mouse-grid`/`--no-mouse-grid`. Media and scrolling default on; typing, mouse grid and execution default off. Existing `--mouse-grid` invocations continue to work. Flag abbreviations are not supported. Disabled commands are absent from the vocabulary in every mode and rejected at dispatch; disabled controllers and the disabled media activity tracker are not started. All optional features may be disabled together; wake-prefixed help remains available. WebRTC VAD is packaged with the listener but imported/used only during typing; Handy is not a default dependency. Synthetic `--grid-stdin` explicitly selects the standalone grid and does not use voice-feature selection.
 
-**Headless compatibility:** `#listener` is a recognition/diagnostic interface, never an action executor. Its old `--execute`/`--no-execute` and `--player` flags remain accepted as deprecated, ignored options; requesting execution or a player emits a `deprecated-options` diagnostic. Use the tray command with `--execute --player mpv` for media execution. The listener emits generation-tagged command events only, regardless of these legacy flags; it never starts playerctl/playerctld. This intentionally replaces the old headless media-execution behavior.
+**Headless compatibility:** `#listener` is a recognition/diagnostic interface, never an action executor. Its old `--execute`/`--no-execute` and `--player` flags remain accepted as deprecated, ignored options; requesting execution or a player emits a `deprecated-options` diagnostic. Use the tray command with `--execute --player mpv` for media execution. The listener emits generation-tagged commands and typing activity, regardless of these legacy flags; it never starts Handy or playerctl/playerctld. This intentionally replaces the old headless media-execution behavior.
 
 The headless listener also accepts `--wav /path/sample.wav` (uncompressed mono 16 kHz signed 16-bit PCM) and `--duration <audio-seconds>` for repeatable diagnostics. Files decode as fast as possible and are padded at EOF to finish recognition; this does not recreate live acoustic conditions.
 
 Media dispatch selects one concrete player in playerctld's event-recency order, optionally filtered by `--player`, then sends the requested action to it. Unsupported actions do not fall through to another player. `play` uses MPRIS Play, never a toggle or an application launch; it can resume/start an existing session. Next/previous depend on the player/page's capabilities. A fresh activity tracker has no historical recency, so interact with the intended player after startup if several exist.
 
 `media.py` owns execution and the foreground playerctld helper in the controller process. It starts tracking only when an executing, media-enabled listener becomes ready, reusing an existing daemon if that daemon already owns the bus. Preview and disabled media start no media processes. A nonblocking 300 ms startup grace precedes queued requests. Listing and execution run sequentially through asynchronous QProcess calls, each with a two-second timeout; failed listing, no match, failed start, timeout, or failed action never selects a fallback player. Queue entries carry their recognition generation. Recognition transitions cancel queued/in-flight requests while keeping tracking alive. Pause, Quit, or listener exit also stops the owned tracker; resuming starts a fresh lifetime. Cancellation closes delivery before killing children, and late completions cannot consume newer requests. Runtime cancellation never waits for media subprocesses; final cleanup after the Qt event loop exits kills/reaps remaining children. An externally owned playerctld daemon is left running.
+
+## Typing command group (one recording per invocation)
+
+With `--typing`, say **“hey computer type”** using the configured wake phrase. Handy must already be running, idle, onboarded with a model, and exclusively controlled by this workflow. The runner sends `handy --toggle-transcription` once, asynchronously. CLI success means dispatch only: it does not acknowledge recording, transcription, or output. The runner never retries a toggle or launches Handy in preview. If Handy is absent, the CLI may launch it without recording; that violates the operational assumption.
+
+After dispatch, the tray shows **Typing — waiting for speech (10s)**. Briefly pause after the entry phrase, then dictate. An offline WebRTC VAD (`python3Packages.webrtcvad` 2.0.10 in both pinned package sets) examines the listener's existing 16 kHz mono s16 PCM, in 20 ms frames; it opens no additional mic stream. Capture, decoder and VAD reset at typing entry and again after the start dispatch settles. A fresh detector requires 300 ms of quiet before accepting speech, excluding the entry-command tail; speech spoken over this gate may be missed for timeout purposes. The initial 10-second wall-clock deadline starts independently of this gate: even continuous voiced input with no quiet interval cannot defer it or leave recording waiting indefinitely. Handy still owns its independent recording → transcription → typing pipeline, and may capture the entry tail or spoken help.
+
+If speech does not begin within **10 wall-clock seconds**, the runner requests finish. Once speech starts, **3 continuous seconds without speech** requests finish. Arbitrary dictated speech drives this timer even when Vosk recognizes no configured words. VAD hangover can slightly extend apparent quiet time. Silence, stalled capture and capture failures do not depend on decoded-word timing: Qt owns the deadlines, and listener exit also finishes the interaction.
+
+Live capture and VAD run in a dedicated reader thread inside the same listener, independently of synchronous Vosk decoding. Activity carries the PCM receive timestamp taken before VAD/decoding, not the time Vosk eventually consumes a buffered chunk. A bounded queue holds at most five 100 ms chunks awaiting the decoder. Queue overrun fails closed with a listener error; VAD keeps observing live capture until the decoder unwinds and capture is closed. If the reader itself takes over 250 ms between reads (including initial acquisition), it rejects buffered audio and exits rather than labeling potentially aged speech as fresh. These are conservative overload/stall limits, not hardware sample timestamps: excessive scheduling/capture delay may finish dictation early instead of extending it with stale speech. Generation changes stop/join the old reader, discard its queue and capture process, and start a fresh generation-owned VAD. WAV diagnostics retain synchronous, non-real-time replay.
+
+Acquisition uses nonblocking `os.read` and stop-aware `select` waits capped at 50 ms. One absolute 250 ms deadline covers each complete PCM chunk; partial writes do not renew it. No bytes, an incomplete chunk, or a trickle that never completes a chunk publishes a capture error to unblock the decoder's queue read, so pending controls cannot leave the listener stuck waiting for audio. EOF reports immediately using process polling, even if the capture process remains alive with stdout closed; bounded process termination/reaping remains part of capture cleanup.
+
+Finish sends exactly one second toggle, **only after successful start-client dispatch**, and returns to normal command recognition. Repeated type never sends another toggle. The typing grammar permits only wake-prefixed type (ignored) and **show help**; dictated media/scroll/grid commands cannot act. Activity travels as separate `typing-activity` JSON with `speaking`, `generation`, and `monotonic_s`, through widget-free `ListenerLifetime.typing_activity`, using its existing readiness/stop/exit delivery gate. The typing controller rejects stale generations and pre-dispatch timestamps; activity never enters command transport.
+
+Help is always available, including in typing. Help/pause/quit/listener exit/display or group transitions **orderly finish** recording rather than discard it; Handy may transcribe/type captured audio. Help presentation remains immediate. A teardown during start remembers the finish intent, waits for the successful client exit, then dispatches the paired stop. A teardown during stop does not duplicate it. Quit waits asynchronously for both the listener and owned CLI dispatches to settle. Clients have a two-second timeout; failure/timeout is logged honestly as uncertain Handy state, with no blind retry or parity-restoring toggle. An ambiguous failed start cannot safely be paired.
+
+**One recording per explicit invocation:** repeated type is ignored while the current interaction or its start/stop dispatches are settling. Once dispatches settle and recognition is normal, another explicit type can start a new recording, without restarting the runner. **Wait for Handy to finish processing and become idle before invoking type again.** The runner does not observe processing/delivery completion and never automatically starts another recording. Invoking while Handy is busy violates the operational assumption and could queue an unwanted recording. After a CLI failure, confirm Handy is idle before another explicit attempt; there is no automatic retry. No Handy patch, status IPC or `--cancel` is used. A crash/forced kill cannot guarantee release; this best-effort toggle workflow cannot fence Handy's later output.
+
+Preview uses identical activity/timers and logs `typing-would-type`, `typing-finish`, and `typing-would-stop` without spawning Handy. Try `nix run path:./modules/flakes/voice-commands -- --typing --verbose` for a microphone-driven preview after pausing the managed runner. Microphone sharing, physical VAD accuracy and real Handy/Plasma output still require a manual lapdog trial after deployment.
 
 ## Scroll command group
 
@@ -184,6 +214,14 @@ At recognition transitions, Vosk recreates its decoder while sharing the loaded 
 Recognition constrains Vosk's vocabulary to the full wake-prefixed phrases plus `[unk]`; targeting mode additionally permits grid commands, and scroll mode permits up/down/cancel. Only exact normalized final commands (or all-direction scroll sequences) are accepted. Partial results never execute actions. Constrained decoding still needs ordinary-speech rejection checks; it is not proof that any permitted transcript was genuinely spoken.
 
 ## Packaging and verification
+
+`test_typing.py` runs separately with a widget-free Qt event loop. Real QProcess fixtures never record/type: they verify paired dispatches, initial wall-clock timeout with absent audio, resettable quiet timeout, repeated entry/media blocking, stale activity, teardown while starting/recording/stopping, failed launch/exit/timeout, responsive event-loop shutdown, and preview/disabled behavior. A real listener child checks separate activity transport; injected capture checks generation resets. Offline synthesized noncommand speech is detected by real WebRTC VAD while real constrained Vosk emits no command; silence is rejected. Run `check-voice-typing -v` from `#test-runner` to focus on these checks. Handy is never executed by tests.
+
+The widget suite additionally crosses actual DesktopCommands/TrayController assembly with typing enabled: Help content/presentation, pause, listener crash, Quit during start/stop (waiting for the paired dispatch before app quit), display changes with the mouse grid disabled, and direct group transitions all finish exactly once using the same CLI fixture.
+
+The Handy fixture is an executable supplied through the production `handy` constructor argument. It requires exactly `--toggle-transcription`; environment/file configuration selects logging, delay and failure behavior, without replacing the controller's owned QProcess program/arguments. Timing regression checks use a real paced PCM pipe and a blocked decoder: VAD must report speech ending while decoding is still blocked. Separate checks cover bounded decoder backlog, rejecting buffered speech after a reader stall, and joining/resetting capture plus VAD across recognition generations.
+
+The starvation regression runs the real runner/control loop with capture children that keep running after one full chunk, an incomplete chunk, a slow byte trickle, or closing stdout. A queued typing control must not leave the listener stuck: the runner reports capture failure and exits within the test's one-second bound. Another check verifies that valid fragmented writes complete normally within the same acquisition deadline.
 
 `test_help.py` runs with the grid/scroll suite. It exercises feature-filtered content and execution/preview status, custom wake examples, voice help from every mode, stale-command rejection, tray Help while paused/error without listener startup, window reuse after close/minimize, active/queued scroll cancellation, and committed-click cancellation after overlay closure. Media checks also exercise help during listing/action with queued requests, preserving the tracker and successfully executing a new request afterward. `features.py` owns resolved help content next to recognition/eligibility policy; `help.py` owns only window presentation and cleanup.
 

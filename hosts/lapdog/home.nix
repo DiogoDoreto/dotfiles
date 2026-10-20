@@ -136,6 +136,10 @@
       media.enable = true;
       scroll.enable = true;
       mouseGrid.enable = true;
+      typing = {
+        enable = true;
+        package = pkgs.handy;
+      };
     };
   };
 

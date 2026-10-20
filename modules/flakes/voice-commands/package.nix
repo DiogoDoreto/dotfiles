@@ -20,7 +20,10 @@
 
 let
   vosk = python3.pkgs.callPackage ./vosk-package.nix { };
-  listenerPython = python3.withPackages (_: [ vosk ]);
+  listenerPython = python3.withPackages (ps: [
+    vosk
+    ps.webrtcvad
+  ]);
   trayPython = python3.withPackages (ps: [ ps.pyside6 ]);
   qtInputs = [
     qt6.qtbase
@@ -31,6 +34,7 @@ let
   testPython = python3.withPackages (ps: [
     vosk
     ps.pyside6
+    ps.webrtcvad
   ]);
   testSpeech = espeak-ng.override { mbrolaSupport = false; };
   source = lib.fileset.toSource {
@@ -46,6 +50,8 @@ let
       ./session.py
       ./desktop.py
       ./scroll.py
+      ./dictation.py
+      ./speech.py
       ./grid.py
       ./navigation.py
       ./grid.qml
@@ -57,6 +63,8 @@ let
       ./test_grid.py
       ./test_navigation.py
       ./test_scroll.py
+      ./test_typing.py
+      ./handy_test_child.py
       ./test_features.py
       ./test_help.py
       ./test_media.py
@@ -127,11 +135,14 @@ let
       }
       ''
         mkdir -p "$out/bin"
+        makeWrapper ${testPython}/bin/python "$out/bin/handy-test-fixture" \
+          --add-flags "-B ${testSource}/handy_test_child.py"
         makeQtWrapper ${testPython}/bin/python "$out/bin/check-voice-grid" \
           --prefix PYTHONPATH : ${source} \
           --set VOICE_TEST_POINTER ${pointer}/bin/voice-commands-pointer \
           --set VOICE_TEST_MODEL ${model} \
           --set VOICE_TEST_SPEECH ${lib.getExe testSpeech} \
+          --set VOICE_TEST_HANDY "$out/bin/handy-test-fixture" \
           --set VOICE_TEST_STARTUP_PROBE ${./test_startup.py} \
           --set VOICE_TEST_RENDERING_PROBE ${./test_rendering.py} \
           --set VOICE_TEST_OLD_CRYPTO ${lib.getLib openssl_3_5}/lib/libcrypto.so.3 \
@@ -139,6 +150,12 @@ let
         makeQtWrapper ${testPython}/bin/python "$out/bin/check-voice-listener" \
           --prefix PYTHONPATH : ${source} \
           --add-flags "-B ${testSource}/test_listener.py"
+        makeQtWrapper ${testPython}/bin/python "$out/bin/check-voice-typing" \
+          --prefix PYTHONPATH : ${source} \
+          --set VOICE_TEST_MODEL ${model} \
+          --set VOICE_TEST_SPEECH ${lib.getExe testSpeech} \
+          --set VOICE_TEST_HANDY "$out/bin/handy-test-fixture" \
+          --add-flags "-B ${testSource}/test_typing.py"
         makeWrapper ${python3}/bin/python "$out/bin/check-voice-navigation" \
           --prefix PYTHONPATH : ${source} \
           --add-flags "-B ${testSource}/test_navigation.py"
@@ -149,6 +166,7 @@ let
     export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software
     ${testRunner}/bin/check-voice-navigation
     ${testRunner}/bin/check-voice-listener
+    ${testRunner}/bin/check-voice-typing
     ${testRunner}/bin/check-voice-grid
     touch "$out"
   '';
