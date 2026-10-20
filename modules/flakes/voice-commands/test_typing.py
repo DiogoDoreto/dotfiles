@@ -144,6 +144,22 @@ class TypingTests(unittest.TestCase):
         self.assertEqual(len(self.calls()), 2)
         self.assertIn(("typing-finish", {"reason": "typing-initial-timeout"}), self.events)
 
+    def test_continuous_speech_cannot_extend_maximum_and_next_invocation_gets_fresh_limit(self):
+        self.typing.max_ms = 300
+        for invocation in range(2):
+            self.events.clear()
+            started = time.monotonic()
+            self.start()
+            while self.typing.state in ("waiting", "speech") and time.monotonic() - started < 1:
+                self.activity()
+                QTest.qWait(20)
+            self.wait(lambda: not self.typing.busy)
+            self.assertIn(("typing-finish", {"reason": "typing-max-duration"}), self.events)
+            self.assertGreaterEqual(time.monotonic() - started, .3)
+            self.assertLess(time.monotonic() - started, 1)
+            self.assertEqual(self.calls(), [["--toggle-transcription"]] * (2 * (invocation + 1)))
+            self.assertEqual(self.session.mode, "normal")
+
     def test_continuously_voiced_entry_tail_cannot_hold_quiet_gate_past_initial_deadline(self):
         detector = SpeechDetector()
         # Controlled voiced frames: no 300 ms quiet interval is ever available.

@@ -74,7 +74,8 @@ class Features:
                               "Play is not a toggle and does not launch an application."))
         if self.typing:
             sections.append(("Typing (one recording per invocation)", f'Say “{wake} type”, then dictate. Waits up to 10 seconds for '
-                             "speech, then finishes after 3 continuous seconds without speech. Repeated type is ignored; "
+                             "speech, then finishes after 3 continuous seconds without speech, with a maximum of 20 seconds "
+                             "per invocation even if speech continues. Repeated type is ignored; "
                              "media, scroll and grid commands are blocked during dictation. Help/pause/quit/display changes "
                              "finish recording and may type the captured text. Handy must already be running, idle, onboarded "
                              "and exclusively controlled by this workflow. CLI success is dispatch only, not acknowledgement. "

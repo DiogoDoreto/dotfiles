@@ -17,13 +17,15 @@ class TypingController(QObject):
     settled = Signal()
 
     def __init__(self, parent, session, handy, execute=False, *, first_ms=10000, silence_ms=3000,
-                 client_ms=2000):
+                 client_ms=2000, max_ms=20000):
         super().__init__(parent)
         self.session = session
         session.typing = self
         self.handy = handy
         self.execute = execute
         self.first_ms, self.silence_ms = first_ms, silence_ms
+        self.max_ms = max_ms
+        self.maximum_deadline = 0
         self.state = "idle"
         self.finish_requested = False
         self.owner = None
@@ -59,6 +61,7 @@ class TypingController(QObject):
             self.log_event("typing-unavailable", reason="current interaction or dispatch still settling")
             return
         self.finish_requested = False
+        self.maximum_deadline = time.monotonic() + self.max_ms / 1000
         self.session._close_groups("mode-changed")
         self.session._enter("typing")
         self.owner = self.session.generation
@@ -86,8 +89,8 @@ class TypingController(QObject):
         self._deadline(self.armed_at + self.first_ms / 1000)
 
     def _deadline(self, deadline):
-        self.deadline = deadline
-        self.timer.start(max(1, math.ceil((deadline - time.monotonic()) * 1000)))
+        self.deadline = min(deadline, self.maximum_deadline)
+        self.timer.start(max(1, math.ceil((self.deadline - time.monotonic()) * 1000)))
 
     def activity(self, speaking, generation, captured_at):
         if (self.state not in ("waiting", "speech") or type(speaking) is not bool
@@ -108,7 +111,11 @@ class TypingController(QObject):
         if time.monotonic() < self.deadline:
             self._deadline(self.deadline)
             return
-        self.session.cancel("typing-initial-timeout" if self.state == "waiting" else "typing-silence")
+        if time.monotonic() >= self.maximum_deadline:
+            reason = "typing-max-duration"
+        else:
+            reason = "typing-initial-timeout" if self.state == "waiting" else "typing-silence"
+        self.session.cancel(reason)
 
     def finish(self, reason):
         self.timer.stop()
