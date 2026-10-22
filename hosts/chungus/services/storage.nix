@@ -74,13 +74,15 @@ in
 
   services.snapraid = {
     enable = true;
+    # Working set verified against snapshot 50 after the BIOS/memory fix.
+    # Keep the independently verified snapshot-49-f18 set untouched as fallback.
     parityFiles = [
-      "/mnt/snapraid-parity1/snapraid.parity"
+      "/mnt/snapraid-parity1/snapraid-baseline-50-f18.parity"
     ];
     contentFiles = [
-      "/var/.snapraid-content"
-      "/mnt/snapraid-parity1/.snapraid-content"
-      "/mnt/data-snapraid-content/.snapraid-content"
+      "/var/.snapraid-baseline-50-f18-content"
+      "/mnt/snapraid-parity1/.snapraid-baseline-50-f18-content"
+      "/mnt/data-snapraid-content/.snapraid-baseline-50-f18-content"
     ];
     dataDisks = {
       d1 = "/data";
@@ -92,6 +94,9 @@ in
       "*.!sync"
       "/.snapshots/"
     ];
+    extraConfig = ''
+      autosave 50
+    '';
   };
 
   # The upstream SnapRAID module schedules its own sync and scrub services.

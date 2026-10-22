@@ -1,0 +1,26 @@
+--- a/snapraid-btrfs-runner.py
++++ b/snapraid-btrfs-runner.py
+@@ -333,14 +333,12 @@
+-    if (diff_results["remove"] + diff_results["add"] + diff_results["move"] +
+-            diff_results["update"] == 0):
+-        logging.info("No changes detected, no sync required")
+-    else:
+-        logging.info("Running sync...")
+-        try:
+-            snapraid_btrfs_command("sync", snapraid_btrfs_args = snapraid_btrfs_args_extend)
+-        except subprocess.CalledProcessError as e:
+-            logging.error(e)
+-            finish(False)
+-        logging.info("*" * 60)
++    # An empty file diff does not mean parity from an interrupted sync is complete.
++    # Require a successful sync before pool, cleanup, or scrub, even with no changes.
++    logging.info("Running sync...")
++    try:
++        snapraid_btrfs_command("sync", snapraid_btrfs_args = snapraid_btrfs_args_extend)
++    except subprocess.CalledProcessError as e:
++        logging.error(e)
++        finish(False)
++    logging.info("*" * 60)
+ 
+     # pool
+     if config["snapraid-btrfs"]["pool"]:

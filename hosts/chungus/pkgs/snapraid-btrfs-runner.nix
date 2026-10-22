@@ -1,6 +1,7 @@
 # Based on https://discourse.nixos.org/t/setting-up-snapraid-btrfs-on-nixos/46476/8
 {
   symlinkJoin,
+  applyPatches,
   fetchFromGitHub,
   writeScriptBin,
   writeTextFile,
@@ -20,11 +21,19 @@ let
     snapraid-btrfs
     snapper
   ];
-  src = fetchFromGitHub {
-    owner = "fmoledina";
-    repo = "snapraid-btrfs-runner";
-    rev = "afb83c67c61fdf3769aab95dba6385184066e119";
-    sha256 = "M8LXxsc7jEn5GsiXAKykmFUgsij2aOIenw1Dx+/5Rww=";
+  src = applyPatches {
+    name = "snapraid-btrfs-runner-source";
+    src = fetchFromGitHub {
+      owner = "fmoledina";
+      repo = "snapraid-btrfs-runner";
+      rev = "afb83c67c61fdf3769aab95dba6385184066e119";
+      sha256 = "M8LXxsc7jEn5GsiXAKykmFUgsij2aOIenw1Dx+/5Rww=";
+    };
+    patches = [ ./snapraid-btrfs-runner-sync.patch ];
+    # Exercise the actual upstream CLI with fake commands, never real disks.
+    postPatch = ''
+      ${python311}/bin/python ${./tests/test_snapraid_btrfs_runner.py} snapraid-btrfs-runner.py
+    '';
   };
   config = writeTextFile {
     name = "snapraid-btrfs-runner.conf";
@@ -40,7 +49,8 @@ let
       pool = false
       pool-dir =
       ; specify whether snapraid-btrfs-runner should automatically clean up all but the last snapraid-btrfs sync snapshot after a successful sync
-      cleanup = true
+      ; recovery hold: retain snapshots until baseline migration is verified
+      cleanup = false
 
       [snapper]
       ; path to snapper executable (e.g. /usr/bin/snapper)

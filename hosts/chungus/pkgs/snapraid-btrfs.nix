@@ -40,5 +40,10 @@ symlinkJoin {
   inherit name;
   paths = [ script ] ++ deps;
   buildInputs = [ makeWrapper ];
-  postBuild = "wrapProgram $out/bin/${name} --set PATH $out/bin";
+  # Isolate the verified post-recovery working set from old snapshot labels.
+  postBuild = ''
+    wrapProgram $out/bin/${name} \
+      --set PATH $out/bin \
+      --set SNAPRAID_USERDATA_KEY snapraid-btrfs-f18
+  '';
 }
