@@ -95,7 +95,7 @@ let
 
       [scrub]
       ; set to true to run scrub after sync
-      enabled = false
+      enabled = true
       ; plan can be 0-100 percent, new, bad, or full
       plan = 12
       ; only used for percent scrub plan

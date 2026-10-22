@@ -8,6 +8,7 @@
 #   GpuActivity        — GPU utilisation > 5 % (nvidia-smi)
 #   AiPortConnections  — active TCP connections on ports 8080 / 9090
 #   RemoteSSH          — remote SSH sessions (pts/* from a numeric host)
+#   SnapRAID           — nightly sync/scrub service is running
 #   ScreenSaverInactive — KDE screensaver not active, i.e. a user is at the desk
 #
 # Manual setup required:
@@ -38,6 +39,10 @@ let
     ];
   chungusActivityCheck = pkgs.writeShellScript "chungus-activity-check" ''
     # Exit 0 = ACTIVE (block suspend), exit 1 = idle (allow suspend)
+    # Type=oneshot stays "activating" throughout the sync and scrub.
+    case $(systemctl show --property=ActiveState --value snapraid-btrfs-sync.service) in
+      activating|active|reloading) exit 0 ;;
+    esac
     if nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits \
         2>/dev/null | awk '{if ($1+0 > 5) exit 0} END {exit 1}'; then
       exit 0

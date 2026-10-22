@@ -119,9 +119,7 @@ in
   systemd.services.snapraid-btrfs-sync = {
     description = "Run the snapraid-btrfs sync with the runner";
     startAt = [
-      # Keep the service available for manual use, but do not schedule it until
-      # a new baseline is verified and interrupted-sync cleanup is safe.
-      # "03:00"
+      "03:00"
     ];
     serviceConfig = {
       Type = "oneshot";
