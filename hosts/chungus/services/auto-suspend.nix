@@ -97,6 +97,12 @@ in
 
   services.autosuspend = {
     enable = true;
+    package = pkgs.autosuspend.overrideAttrs {
+      # Work around sphinx-hook reading only the first builder from a structured array.
+      # Remove once nixpkgs handles array-valued sphinxBuilders correctly.
+      # Upstream fix: https://github.com/NixOS/nixpkgs/pull/573479
+      sphinxBuilders = "html man";
+    };
     settings = {
       interval = 60;
       idle_time = 600;

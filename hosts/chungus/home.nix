@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   imports = [
@@ -24,7 +24,7 @@
     };
 
     starship = {
-      enableBashIntegration = false;
+      enableBashIntegration = lib.mkForce false;
     };
 
     neovim = {
