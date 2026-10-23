@@ -76,3 +76,7 @@ nix-store-repair:
 .PHONY: format-nix
 format-nix:
 	git ls-files -z '*.nix' | xargs -0 -r nixfmt
+
+.PHONY: chungus-gc
+chungus-gc:
+	sudo systemctl start chungus-nix-cache-maintenance

@@ -1,6 +1,10 @@
 # Trusted Nix builds through Forgejo Actions
 
-Status: implemented locally, **disabled pending manual security audit and rollout**.
+Status: user-deployed and live-tested; implementation remains disabled by default.
+The operator accepted the security audit for the private, trusted-only instance.
+Test the fork-approval gate before admitting untrusted users. Manual reconciliation
+and on-demand maintenance are implemented locally; production cleanup has not
+been performed.
 Replaces the former `nix-host-updater` standalone orchestrator (removed).
 Harmonia and its signing/client configuration are unchanged; see [nix-cache.md](nix-cache.md).
 
@@ -183,9 +187,170 @@ serializes builds; future multi-runner automation needs a fresh concurrency
 design. Crashes/cancellation can leave abandoned registered staging links,
 including an old success after pointer replacement. These are conservatively
 retained; there is **no recovery engine or automatic abandoned-root cleanup**.
-Do not move staging links or sweep that directory. Deleted-branch reconciliation,
-cleanup tooling and lock-update/PR creation are deferred. Closing/merging/deleting
-a PR or branch does not remove roots in this slice. No timer or GC policy changes.
+Do not move staging links or sweep that directory. Use only the manual procedure
+below. Lock-update/PR creation remains deferred. Closing/merging/deleting a PR or
+branch does not itself remove roots. No timer or GC policy changes.
+
+## On-demand maintenance on Chungus
+
+Deploy the new configuration manually **while the old runner is idle**: its
+already-running process may still use the previous immediate-cancellation
+settings. After deployment and provisioning the read credential below, the
+normal entry point is:
+
+```sh
+sudo systemctl start chungus-nix-cache-maintenance.service
+journalctl -u chungus-nix-cache-maintenance -u forgejo-runner-chungus --since today
+```
+
+There is **no timer or boot activation**. One explicit start:
+
+1. Stops the runner from fetching new jobs and waits for its current jobs to
+   finish using the native runner's graceful shutdown.
+2. Runs `nix-cache-roots reconcile --apply` as `chungus-nix`, without extra groups
+   or capabilities. Query or validation failures skip generation cleanup and GC.
+3. Starts the **existing** `nixos-generation-cleanup.service` and waits for it.
+   Its policy is unchanged: retain the newest five system generations plus the
+   selected/booted generations; prune eligible system generations older than 40
+   days and age-prune other conventional profiles; update boot entries; run store
+   GC and optimisation. This step is intentionally privileged, not a runner job.
+4. Restores the runner if it was running before maintenance, including on normal
+   error paths. A previously stopped runner stays stopped. Restart failures make
+   maintenance fail too.
+
+Use this wrapper rather than directly starting `nixos-generation-cleanup` on
+Chungus; the shared service alone does not drain/reconcile. Do not manually start
+the runner, modify branches, run independent builds/retention commands, or start
+another GC operation during maintenance. The helper's promotion lock does not
+cover independent builders or prevent privileged operator interference.
+
+The daemon receives SIGTERM **without signalling its job children**
+(`KillMode=mixed`). Its native `shutdown_timeout` is 25 hours, and systemd's stop
+timeout is infinite. Maintenance waits at most **24 hours** for the stop request;
+it aborts before the native timeout could cancel jobs and be mistaken for a clean
+drain. It also requires a successful unit result. On a stop error/timeout it runs
+neither reconciliation nor GC, and queues restoration without waiting on the
+unfinished stop. This means an exceptionally stuck job may eventually be canceled
+at the native 25-hour limit; inspect the runner and job state before retrying.
+These graceful settings apply to ordinary runner stops/restarts as well.
+
+### Maintenance credential
+
+Manually provision a **separate repository-read token** on Chungus at:
+
+```text
+/etc/secrets/forgejo/chungus-nix-reconcile-token  root:root 0600
+```
+
+Use the narrowest available access to `diogo/dotfiles` (prefer a dedicated
+read-only identity); never the runner authentication secret, an updater write
+token, or the Harmonia signing key. Token creation/provisioning is manual; no
+agent reads or provisions it. The maintenance unit loads it as the systemd
+credential `repository-token`. The root-owned credential is not added to the
+runner service. Only the unprivileged reconciliation subprocess receives the
+value as `NIX_CACHE_JOB_TOKEN`; it is not placed in argv, the Nix store or logs,
+and is not forwarded to the GC service. Missing/empty credentials fail before
+stopping the runner. Restart maintenance normally after a rotation to load the
+new value.
+
+The wrapper's shell trap handles ordinary failures and termination signals, not
+SIGKILL or a machine crash. After abnormal termination, inspect both units and
+restore the runner manually if needed. A separately started generation-cleanup
+job can continue if the maintenance client is interrupted. No persistent recovery
+engine or job database is added. Before the first destructive run, use the
+standalone preview procedure below to inspect the planned root removals.
+
+## Manual deleted-branch and staging cleanup
+
+The same helper exposes only one additional command:
+
+```sh
+nix-cache-roots reconcile          # JSON preview, no root removals
+nix-cache-roots reconcile --apply  # recompute and remove, never run GC
+```
+
+Both modes require the existing runner unit to be loaded, inactive/dead and have
+MainPID 0. **Drain all jobs before stopping the runner**, and keep it stopped for
+the entire preview/apply window. Do not run manual builds, `stage`, `promote` or
+another maintenance operation concurrently. Stopping a busy runner is not a
+drain: its Nix daemon build may still be finishing. The promotion lock protects
+promotion, not the lifetime of a build; age thresholds would not fix that race.
+The helper checks unit state but cannot prove there are no detached/manual builds
+or prevent an operator from restarting it after the last check.
+
+Run as `chungus-nix`, never root. Use either the deployed helper (locate its store
+path in the runner unit's PATH) or `python3 /readable/checkout/scripts/nix-cache-roots/roots.py`.
+The latter permits running a reviewed cleanup implementation without a system
+deployment. Ensure Git, Nix and systemctl are on the invoking user's PATH.
+
+1. Coordinate a maintenance window with no new jobs. Wait for running builds to
+   finish, then manually stop the runner:
+
+   ```sh
+   sudo systemctl stop forgejo-runner-chungus
+   ```
+
+2. Supply an operator-held, short-lived **repository-read** token through the
+   existing `NIX_CACHE_JOB_TOKEN` environment input. The Actions job token is not
+   available after stopping the runner. Do not use the runner UUID authentication
+   secret, an updater write token, or a signing key. No credential is installed
+   or persisted by cleanup. For example, in Bash from a readable checkout:
+
+   ```bash
+   python_bin=$(command -v python3)
+   read -rsp 'Repository-read token: ' NIX_CACHE_JOB_TOKEN
+   printf '\n'
+   export NIX_CACHE_JOB_TOKEN
+   export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+   sudo -u chungus-nix --preserve-env=NIX_CACHE_JOB_TOKEN,SSL_CERT_FILE \
+     "$python_bin" "$PWD/scripts/nix-cache-roots/roots.py" reconcile
+   ```
+
+3. Review the JSON actions. Existing branches retain their last successful roots
+   even if their tips advanced. Only branches absent from a successful, complete
+   listing of the fixed authoritative repository are removed. Every staging
+   directory not selected by a remaining live branch is eligible: canceled or
+   failed builds, superseded roots, metadata-only and empty allocations. There is
+   no age-based preservation once the operator has established the drained window.
+
+4. If appropriate, apply in the same stopped window:
+
+   ```bash
+   sudo -u chungus-nix --preserve-env=NIX_CACHE_JOB_TOKEN,SSL_CERT_FILE \
+     "$python_bin" "$PWD/scripts/nix-cache-roots/roots.py" reconcile --apply
+   ```
+
+   Apply recomputes the plan; it does not replay a saved preview. It holds the
+   shared `promotion.lock`, validates the entire inventory before deleting,
+   requires two identical successful remote snapshots, rechecks unit state and
+   revalidates the local plan. Authentication/network errors, empty/malformed
+   listings, changed refs, corrupt selected roots/provenance or unexpected files
+   abort before removals. Unexpected interrupted `.host-*` branch pointers also
+   abort for operator inspection rather than guessing whether they are safe.
+   Do not bypass these checks by recursively deleting directories.
+
+5. Remove the token from the shell environment, then restart manually when ready:
+
+   ```bash
+   unset NIX_CACHE_JOB_TOKEN
+   sudo systemctl start forgejo-runner-chungus
+   ```
+
+Deleted branch pointers are unlinked and their directories fsynced **before**
+registered staging links are released. Only exact managed files are unlinked;
+there is no recursive deletion or following of store symlink targets. Errors
+after removals begin can leave partial cleanup and extra retained roots; rerun a
+preview after resolving the error. No cleanup journal is needed. Nix's dangling
+indirect auto-root entries are left to its normal handling. Releasing these roots
+does not delete store contents, profiles, booted/current systems, or other users'
+roots. A future normal GC may collect outputs no longer reachable from any root.
+
+Remote observation and local deletion cannot be atomic. A branch recreated just
+after the final query can lose its old retained output; its next successful build
+will retain a fresh root. Coordinate branch changes during maintenance as well.
+Standalone reconciliation never runs GC or builds/activates a system. The
+on-demand maintenance unit above deliberately follows it with the existing GC
+policy; neither interface adds a scheduler or timer.
 
 ## Verification and primary references
 

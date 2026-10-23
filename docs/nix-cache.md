@@ -95,7 +95,15 @@ starting; an unconfigured public key prevents clients from trusting its outputs.
 
 Harmonia serves the existing store, not an archive. The stage-2
 [Actions workflow and small retention helper](nix-actions.md) retain the latest
-successful output per trusted remote branch and host. The dedicated runner is
-disabled pending manual security audit/registration/deployment. Until rollout,
-keep any test output rooted (for example through a retained `nix build --out-link
-...` result) if it must survive garbage collection.
+successful output per trusted remote branch and host. The operator reports the
+runner deployed and cross-host cache downloads successful; the module remains
+disabled by default. Manual deleted-branch and abandoned-staging reconciliation
+is documented in [nix-actions.md](nix-actions.md#manual-deleted-branch-and-staging-cleanup).
+Standalone reconciliation releases roots only, never runs GC, and requires a
+drained/stopped runner. Chungus also has the explicitly started
+`chungus-nix-cache-maintenance.service`: it gracefully drains the runner,
+reconciles as the runner user, then invokes the existing generation-cleanup/GC
+policy and restores the previous runner state. It has no timer; see the
+[maintenance instructions](nix-actions.md#on-demand-maintenance-on-chungus) and
+separate read-token provisioning requirement before using it.
+Keep outputs outside this workflow explicitly rooted if they must survive GC.

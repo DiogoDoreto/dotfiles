@@ -1,4 +1,4 @@
-"""Promote existing Nix roots. Actions owns checkout, builds, logs and retries."""
+"""Retain and manually reconcile Nix roots; never build, activate or run GC."""
 
 import argparse
 import base64
@@ -16,6 +16,7 @@ REMOTE = "https://git.local.doreto.com.br/diogo/dotfiles.git"
 BASE = Path("/var/lib/chungus-nix-roots")
 STORE = Path("/nix/store")
 HOSTS = ("lapdog", "mini", "chungus")
+RUNNER_UNIT = "forgejo-runner-chungus.service"
 
 
 def command(*args):
@@ -177,6 +178,128 @@ class Roots:
                 pending.unlink(missing_ok=True)
             return output
 
+    def stopped_runner(self):
+        state = self.run("systemctl", "show", RUNNER_UNIT, "--property=LoadState",
+                         "--property=ActiveState", "--property=SubState", "--property=MainPID")
+        if dict(line.split("=", 1) for line in state.splitlines()) != {
+                "LoadState": "loaded", "ActiveState": "inactive", "SubState": "dead", "MainPID": "0"}:
+            raise ValueError("drain and stop the runner before reconciliation; keep it stopped")
+
+    def remote_heads(self):
+        # No --exit-code: absence is inferred only from a successful full listing,
+        # never from a failed per-ref lookup. Empty listings additionally fail closed.
+        listing = self.run("git", "ls-remote", "--refs", REMOTE, "refs/heads/*")
+        heads = {}
+        for line in listing.splitlines():
+            fields = line.split("\t")
+            if (len(fields) != 2 or not re.fullmatch(r"[0-9a-f]{40}", fields[0])
+                    or not fields[1].startswith("refs/heads/") or fields[1] in heads):
+                raise ValueError("invalid authoritative branch listing")
+            self.run("git", "check-ref-format", fields[1])
+            heads[fields[1]] = fields[0]
+        if not heads:
+            raise ValueError("empty authoritative branch listing; refusing cleanup")
+        return heads
+
+    def cleanup_plan(self, heads):
+        # Validate the whole inventory before allowing any deletion. Only these
+        # exact filenames are removed, never recursive trees or external targets.
+        stages = {}
+        for stage in sorted((self.base / "staging").iterdir()):
+            if not re.fullmatch(r"[0-9a-f]{32}", stage.name):
+                raise ValueError(f"unexpected staging entry: {stage}")
+            directory(stage)
+            if {p.name for p in stage.iterdir()} - {"result", "provenance.json"}:
+                raise ValueError(f"unexpected staging contents: {stage}")
+            result, provenance = stage / "result", stage / "provenance.json"
+            output = None
+            if os.path.lexists(result):
+                if not result.is_symlink():
+                    raise ValueError(f"not a result symlink: {result}")
+                output = os.readlink(result)
+                if (Path(output).parent != STORE
+                        or not re.fullmatch(r"[0-9a-z]{32}-.+", Path(output).name)):
+                    raise ValueError(f"invalid result target: {result}")
+            data = None
+            if os.path.lexists(provenance):
+                if provenance.is_symlink() or not provenance.is_file():
+                    raise ValueError(f"invalid provenance file: {provenance}")
+                data = json.loads(provenance.read_text())
+                if (not isinstance(data, dict)
+                        or set(data) != {"repository", "branch", "host", "commit", "output"}
+                        or data["repository"] != REMOTE or data["host"] not in HOSTS
+                        or not isinstance(data["branch"], str)
+                        or not isinstance(data["commit"], str)
+                        or not re.fullmatch(r"[0-9a-f]{40}", data["commit"])
+                        or not isinstance(data["output"], str)
+                        or Path(data["output"]).parent != STORE
+                        or not re.fullmatch(r"[0-9a-z]{32}-.+", Path(data["output"]).name)
+                        or (output is not None and data["output"] != output)):
+                    raise ValueError(f"invalid staging provenance: {provenance}")
+                self.run("git", "check-ref-format", f"refs/heads/{data['branch']}")
+            stages[stage] = data
+
+        plan, retained = [], set()
+        for parent in sorted((self.base / "branches").iterdir()):
+            if not re.fullmatch(r"[0-9a-f]{64}", parent.name):
+                raise ValueError(f"unexpected branch directory: {parent}")
+            directory(parent)
+            keep_directory = False
+            for pointer in sorted(parent.iterdir()):
+                if pointer.name not in HOSTS or not pointer.is_symlink():
+                    raise ValueError(f"unexpected branch pointer: {pointer}")
+                stage = Path(os.readlink(pointer))
+                data = stages.get(stage)
+                if data is None:
+                    raise ValueError(f"missing selected staging provenance: {pointer}")
+                ref = f"refs/heads/{data['branch']}"
+                if hashlib.sha256(ref.encode()).hexdigest() != parent.name:
+                    raise ValueError(f"branch identity mismatch: {pointer}")
+                self.selected(pointer, data["branch"], pointer.name, data)
+                if ref in heads:
+                    # Advancing/rebasing a live branch never discards its last success.
+                    retained.add(stage)
+                    keep_directory = True
+                else:
+                    plan.append(dict(action="remove-branch", path=str(pointer), branch=data["branch"]))
+            if not keep_directory:
+                plan.append(dict(action="remove-branch-directory", path=str(parent)))
+        for stage in stages.keys() - retained:
+            plan.append(dict(action="remove-staging", path=str(stage)))
+        return sorted(plan, key=lambda item: (item["action"], item["path"]))
+
+    def reconcile(self, apply=False):
+        """Plan (default) or apply cleanup during an operator-owned maintenance window."""
+        self.stopped_runner()
+        with (self.base / "promotion.lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            self.stopped_runner()
+            heads = self.remote_heads()
+            plan = self.cleanup_plan(heads)
+            if not apply:
+                return plan
+            if self.remote_heads() != heads:
+                raise ValueError("authoritative branches changed; rerun reconciliation")
+            self.stopped_runner()
+            if self.cleanup_plan(heads) != plan:
+                raise ValueError("root inventory changed; rerun reconciliation")
+            # Sorted actions remove and fsync pointers before releasing any roots.
+            # An interruption may leave extra roots, never an intentionally kept
+            # selection without its registered result link. Retry inventories anew.
+            for item in plan:
+                path = Path(item["path"])
+                if item["action"] == "remove-branch":
+                    path.unlink()
+                elif item["action"] == "remove-branch-directory":
+                    path.rmdir()
+                else:
+                    (path / "result").unlink(missing_ok=True)
+                    (path / "provenance.json").unlink(missing_ok=True)
+                    sync_directory(path)
+                    path.rmdir()
+                sync_directory(path.parent)
+            return plan
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -187,13 +310,17 @@ def main():
     promote.add_argument("--host", choices=HOSTS, required=True)
     promote.add_argument("--commit", required=True)
     promote.add_argument("--staging-root", required=True)
+    reconcile = commands.add_parser("reconcile", help="preview manual cleanup; requires drained/stopped runner")
+    reconcile.add_argument("--apply", action="store_true", help="remove planned roots, without running GC")
     args = parser.parse_args()
     try:
         roots = Roots()
         if args.command == "stage":
             print(roots.stage())
-        else:
+        elif args.command == "promote":
             print(roots.promote(args.branch, args.host, args.commit, args.staging_root))
+        else:
+            print(json.dumps(dict(apply=args.apply, actions=roots.reconcile(args.apply)), indent=2))
     except (ValueError, OSError, subprocess.SubprocessError) as error:
         parser.exit(1, f"nix-cache-roots: {error}\n")
 
