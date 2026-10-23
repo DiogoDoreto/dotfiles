@@ -72,7 +72,7 @@ in
     environment.SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${gitPagesPackage}/bin/git-pages -config ${gitPagesConfig} -site-expire";
+      ExecStart = "${gitPagesPackage}/bin/git-pages -config ${gitPagesConfig} -expire-sites";
       User = "git-pages";
       Group = "git-pages";
       StateDirectory = "git-pages";
