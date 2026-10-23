@@ -43,7 +43,7 @@ in
       settings = {
         server.connections.default = {
           url = "https://git.local.doreto.com.br";
-          uuid = "3cec0ee6-b681-46ae-bb8d-eba9b6eec76c";
+          uuid = "8e6aeca1-88bd-4333-9d8c-f382648ca963";
         };
         runner = {
           capacity = 1;

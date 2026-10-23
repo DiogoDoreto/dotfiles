@@ -39,7 +39,7 @@ Before setting `dog.services.nix-build-runner.enable = true` on Chungus:
    write permissions. Check instance administrators and organization teams too.
 2. Verify the **existing UI-created runner is repository-scoped**, from
    `https://git.local.doreto.com.br/diogo/dotfiles/settings/actions/runners`.
-   UUID: `3cec0ee6-b681-46ae-bb8d-eba9b6eec76c`. The user created it and saved
+   UUID: `8e6aeca1-88bd-4333-9d8c-f382648ca963`. The user created it and saved
    its authentication secret on Chungus; scope still needs operator verification.
    Do not create a second runner, run legacy registration, use Mini's instance
    registration token, or use user/org/instance scope. Only this runner may
