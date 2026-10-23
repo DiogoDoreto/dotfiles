@@ -60,6 +60,7 @@
         inputs.nur.overlays.default
         inputs.my-kwtype.overlays.default
         (final: prev: {
+          calibre = prev.calibre.override { speechSupport = false; };
           # https://github.com/NixOS/nixpkgs/pull/540681
           calibre-web = prev.calibre-web.overridePythonAttrs (old: {
             pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [
