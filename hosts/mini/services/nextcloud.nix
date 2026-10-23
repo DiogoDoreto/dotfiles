@@ -68,10 +68,6 @@ in
     #   chmod 600 /etc/secrets/nextcloud/oidc.json
     secretFile = "/etc/secrets/nextcloud/oidc.json";
     config = {
-      # Admin password file location. Contains the initial admin password in plain text.
-      # Created on host with: echo "your-admin-password" > /etc/secrets/nextcloud/admin-pass.txt
-      # Permissions: 600 (readable only by nextcloud service)
-      adminpassFile = "/etc/secrets/nextcloud/admin-pass.txt";
       dbtype = "sqlite";
     };
     extraApps = {
