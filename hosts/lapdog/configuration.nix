@@ -307,6 +307,21 @@
     };
   };
 
+  fileSystems."/mnt/chungus-data" = {
+    device = "192.168.0.3:/data";
+    fsType = "nfs";
+    options = [
+      "nfsvers=4"
+      "rw"
+      "hard"
+      "_netdev"
+      "nofail"
+      "x-systemd.automount"
+      "x-systemd.idle-timeout=5min"
+      "x-systemd.mount-timeout=10s"
+    ];
+  };
+
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It‘s perfectly fine and recommended to leave
