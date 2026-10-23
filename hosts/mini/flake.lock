@@ -459,14 +459,17 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1792749140,
-        "narHash": "sha256-AO+2ZNWdQ1k81rUFztNi+E+A3YrikEl0Qv6LOzOqtyg=",
-        "path": "/home/dog/projects/nextcloud-org-notes",
-        "type": "path"
+        "lastModified": 1792749132,
+        "narHash": "sha256-T6BYD15/fdEnHOK1dQWkAkUgSZfcEXI7ZcfEqkN/vCk=",
+        "owner": "DiogoDoreto",
+        "repo": "nextcloud-org-notes",
+        "rev": "ce705a56c6f62b14f906547ddbf2625c3a91dcfd",
+        "type": "github"
       },
       "original": {
-        "path": "/home/dog/projects/nextcloud-org-notes",
-        "type": "path"
+        "owner": "DiogoDoreto",
+        "repo": "nextcloud-org-notes",
+        "type": "github"
       }
     },
     "nextcloud-vue": {

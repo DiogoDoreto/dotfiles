@@ -37,7 +37,7 @@
       flake = false;
     };
     nextcloud-org-notes = {
-      url = "path:/home/dog/projects/nextcloud-org-notes";
+      url = "github:DiogoDoreto/nextcloud-org-notes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     microvm = {
