@@ -13,6 +13,8 @@
     ./services/llama-swap.nix
   ];
 
+  dog.nix-cache.enable = true;
+
   nix.settings = {
     substituters = [
       "https://cache.numtide.com"

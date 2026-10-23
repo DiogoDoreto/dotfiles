@@ -2,6 +2,7 @@
 
 let
   vars = import ./_variables.nix;
+  chungusVars = import ../chungus/_variables.nix;
   p = builtins.mapAttrs (_: toString) vars.ports;
 in
 
@@ -93,6 +94,16 @@ in
       "git.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy 127.0.0.1:${p.forgejo}
+        '';
+      };
+      "nix-cache.local.doreto.com.br" = {
+        extraConfig = ''
+          tls internal
+
+          @untrusted not remote_ip 127.0.0.1 ::1 192.168.0.0/24 100.64.0.0/10
+          respond @untrusted "Forbidden" 403
+
+          reverse_proxy http://192.168.0.3:${toString chungusVars.ports.harmonia}
         '';
       };
       "*.pages.local.doreto.com.br" = {

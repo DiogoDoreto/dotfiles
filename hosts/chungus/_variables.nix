@@ -1,5 +1,6 @@
 {
   ports = {
+    harmonia = 5000;
     immich = 2283;
     invokeai = 9090;
     llama = 8080;

@@ -17,6 +17,7 @@
     ./services/auto-suspend.nix
     ./services/storage.nix
     ./services/monitoring.nix
+    ./services/harmonia.nix
   ];
 
   nix.settings = {
