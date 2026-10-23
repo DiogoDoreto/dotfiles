@@ -273,6 +273,7 @@
   virtualisation.podman.enable = true;
 
   dog.services.nixos-generation-cleanup.enable = true;
+  dog.services.nix-build-runner.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
