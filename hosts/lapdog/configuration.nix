@@ -27,7 +27,18 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   # Use latest kernel.
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_latest.extend (
+    _: prev: {
+      # Remove once nixpkgs includes https://github.com/NixOS/nixpkgs/pull/575861.
+      v4l2loopback = prev.v4l2loopback.overrideAttrs (old: {
+        preBuild = "";
+        installFlags = (old.installFlags or [ ]) ++ [
+          "DEPMOD=true"
+          "INSTALL_MOD_PATH=${placeholder "out"}"
+        ];
+      });
+    }
+  );
 
   # Needed for podman. See https://github.com/containers/podman/discussions/23193#discussioncomment-9958326
   boot.tmp.useTmpfs = true;
