@@ -1,4 +1,9 @@
-{ pkgs, lib, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
 {
   imports = [
@@ -31,6 +36,11 @@
       enable = true;
       withPython3 = false;
       withRuby = false;
+    };
+
+    nh = {
+      enable = true;
+      flake = config.dog.dotfilesPath + "/hosts/chungus";
     };
 
     mpv = {
