@@ -69,6 +69,16 @@
           });
           pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
             (python-final: python-prev: {
+              pyopenjtalk-plus = python-prev.pyopenjtalk-plus.overridePythonAttrs (old: {
+                # Fixed upstream: https://github.com/NixOS/nixpkgs/pull/576063
+                # Remove once the pinned nixpkgs includes that fix.
+                # Cython can reject non-str inputs before the explicit validation,
+                # using "Expected str" rather than "must be str". Keep the tests.
+                postPatch = (old.postPatch or "") + ''
+                  substituteInPlace tests/test_frontend.py \
+                    --replace-fail 'match="must be str"' 'match="must be str|Expected str"'
+                '';
+              });
               pip-chill = python-prev.pip-chill.overridePythonAttrs (old: {
                 doCheck = false;
                 pythonImportsCheck = [ ];
