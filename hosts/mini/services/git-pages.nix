@@ -10,7 +10,7 @@ let
 
     [server]
     pages = "tcp/127.0.0.1:${p.gitPages}"
-    caddy = "tcp/127.0.0.1:${p.gitPagesCaddy}"
+    proxy = "tcp/127.0.0.1:${p.gitPagesCaddy}"
     metrics = "tcp/127.0.0.1:${p.gitPagesMetrics}"
 
     [[wildcard]]
