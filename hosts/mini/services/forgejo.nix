@@ -45,36 +45,13 @@ let
     zstd
   ];
   localCaBundle = "/etc/ssl/certs/ca-bundle-with-local-ca.crt";
-  # v15.0.4 is incompatible with the patch below, so let's stay at v15.0.3 until
-  # v16 arrives and then the patch is not needed anymore
-  # https://github.com/NixOS/nixpkgs/pull/542602
-  forgejoPinned = pkgs.callPackage (import (pkgs.path + "/pkgs/by-name/fo/forgejo/generic.nix") {
-    version = "15.0.3";
-    hash = "sha256-tGZ83TEG6iyZd5mfSuSvVkmUJINWLN661YpOk1+dgbM=";
-    npmDepsHash = "sha256-BZSYjEsjUqMYWu3EUP+K35hqSOniv8Y6ek5bEC2vTPg=";
-    vendorHash = "sha256-z3YTjt+SM9yPCsJdfSQbTpy3vRiXaFV2QMz1y6J6k/Q=";
-    lts = true;
-  }) { };
-  forgejoWithGitPagesPreviewAuth = forgejoPinned.overrideAttrs (oldAttrs: {
-    pname = "${oldAttrs.pname}-pr-12727";
-    patches = (oldAttrs.patches or [ ]) ++ [
-      (pkgs.fetchpatch {
-        name = "forgejo-pr-12727-actions-run-api.patch";
-        url = "https://codeberg.org/forgejo/forgejo/pulls/12727.patch";
-        excludes = [ "tests/integration/actions_token_metadata_test.go" ];
-        hash = "sha256-04JxQDnfpXUErpdAfTedjn6QmEIxztMmz9ScimwL+TA=";
-      })
-    ];
-    passthru = (oldAttrs.passthru or { }) // {
-      gitPagesPreviewAuthorizationPatch = "forgejo-pr-12727";
-    };
-  });
 in
 
 {
   services.forgejo = {
     enable = true;
-    package = forgejoWithGitPagesPreviewAuth;
+    # The NixOS module defaults to forgejo-lts (15.x), so select this explicitly.
+    package = pkgs.forgejo;
     settings = {
       server = {
         HTTP_ADDR = "127.0.0.1"; # localhost only — Caddy proxies
