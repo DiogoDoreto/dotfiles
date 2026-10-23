@@ -93,7 +93,8 @@ starting; an unconfigured public key prevents clients from trusting its outputs.
 
 ## Retention
 
-Harmonia serves the existing store, not an archive. Persistent per-host main and
-update-branch GC roots are part of stage 2, not yet implemented. Until then,
-keep any test output rooted (for example through a retained `nix build
+Harmonia serves the existing store, not an archive. The stage-2
+[build/root helper](nix-host-updater.md) implements latest-success roots per
+trusted remote branch and host, but is not yet packaged/deployed or connected to
+Actions. Until rollout, keep any test output rooted (for example through a retained `nix build
 --out-link ...` result) if it must survive garbage collection.
