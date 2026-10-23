@@ -1,0 +1,60 @@
+name: Nix systems
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Nix ${{ matrix.host }}
+    runs-on: chungus-nix
+    # Defense in depth only. Server-side trust policy is mandatory; see docs.
+    if: >-
+      github.repository == 'diogo/dotfiles' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == 'diogo/dotfiles')
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [lapdog, mini, chungus]
+    env:
+      HOST: ${{ matrix.host }}
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      SOURCE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+    steps:
+      # Local mirror of Forgejo actions/checkout v4.4.0 (node20), pinned.
+      - uses: https://git.local.doreto.com.br/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: diogo/dotfiles
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact checkout
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          git check-ref-format "refs/heads/$SOURCE_BRANCH"
+      - name: Check immutable host flake
+        run: nix flake check "./hosts/$HOST/" --no-update-lock-file --no-write-lock-file
+      - name: Build and retain system
+        id: system
+        run: |
+          set -euo pipefail
+          case "$HOST" in
+            mini) output=dogdot ;;
+            lapdog|chungus) output="$HOST" ;;
+            *) exit 1 ;;
+          esac
+          staging_root="$(nix-cache-roots stage)"
+          nix build "./hosts/$HOST#nixosConfigurations.$output.config.system.build.toplevel" \
+            --no-update-lock-file --no-write-lock-file --out-link "$staging_root"
+          nix path-info --recursive --closure-size "$staging_root"
+          echo "staging-root=$staging_root" >> "$GITHUB_OUTPUT"
+      - name: Promote current branch root
+        env:
+          STAGING_ROOT: ${{ steps.system.outputs.staging-root }}
+          NIX_CACHE_JOB_TOKEN: ${{ github.token }}
+        run: |
+          nix-cache-roots promote --branch "$SOURCE_BRANCH" --host "$HOST" \
+            --commit "$SOURCE_SHA" --staging-root "$STAGING_ROOT"

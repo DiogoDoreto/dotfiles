@@ -18,6 +18,7 @@
     ./services/storage.nix
     ./services/monitoring.nix
     ./services/harmonia.nix
+    ./services/forgejo-runner.nix
   ];
 
   nix.settings = {

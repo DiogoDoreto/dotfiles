@@ -94,7 +94,8 @@ starting; an unconfigured public key prevents clients from trusting its outputs.
 ## Retention
 
 Harmonia serves the existing store, not an archive. The stage-2
-[build/root helper](nix-host-updater.md) implements latest-success roots per
-trusted remote branch and host, but is not yet packaged/deployed or connected to
-Actions. Until rollout, keep any test output rooted (for example through a retained `nix build
---out-link ...` result) if it must survive garbage collection.
+[Actions workflow and small retention helper](nix-actions.md) retain the latest
+successful output per trusted remote branch and host. The dedicated runner is
+disabled pending manual security audit/registration/deployment. Until rollout,
+keep any test output rooted (for example through a retained `nix build --out-link
+...` result) if it must survive garbage collection.
