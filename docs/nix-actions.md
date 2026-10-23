@@ -17,8 +17,9 @@ Checkout uses the PR source `head.sha`, otherwise the event SHA (pushed main
 commit or selected dispatch revision), never a synthetic merge. The local
 checkout action mirror is pinned to v4.4.0's commit, uses node20, retains the
 whole repository and history, and does not persist checkout credentials.
-Expressions use Forgejo's documented `github` context alias, since the pinned
-Gitea-compatible runner implements `github`, not the native `forgejo` alias.
+Expressions retain Forgejo's documented `github` context alias. The pinned native
+runner supports `github`, `forgejo` and `forge` as aliases of the same context;
+checkout and `$GITHUB_OUTPUT` remain compatible, so YAML needs no migration.
 Branch/commit inputs travel through environment variables, not shell source
 interpolation. Both check and build forbid lock updates/writes. A merge can
 produce a different store path than its PR head; wait for main's actual build
@@ -36,11 +37,14 @@ Before setting `dog.services.nix-build-runner.enable = true` on Chungus:
 1. Audit `/diogo/dotfiles` access: only trusted users may push branches, dispatch
    workflows, administer Actions, approve workflows, or hold repository/Actions
    write permissions. Check instance administrators and organization teams too.
-2. Register **repository-scoped**, from
+2. Verify the **existing UI-created runner is repository-scoped**, from
    `https://git.local.doreto.com.br/diogo/dotfiles/settings/actions/runners`.
-   Do not use Mini's instance registration token or register at user/org/instance
-   scope. Only this runner may advertise `chungus-nix`; Mini advertises `nix` and
-   Ubuntu labels, so cannot accept these jobs.
+   UUID: `3cec0ee6-b681-46ae-bb8d-eba9b6eec76c`. The user created it and saved
+   its authentication secret on Chungus; scope still needs operator verification.
+   Do not create a second runner, run legacy registration, use Mini's instance
+   registration token, or use user/org/instance scope. Only this runner may
+   advertise `chungus-nix`; Mini advertises `nix` and Ubuntu labels, so cannot
+   accept these jobs.
 3. Verify Forgejo's server-side PR trust gate on the deployed version. In 16.0.6,
    read-only fork/AGit authors need approval. Remove any permanent approvals for
    untrusted authors; **never approve fork/untrusted workflows on this runner**,
@@ -74,12 +78,21 @@ updater credential is provisioned; authenticated ref access remains a pilot chec
 ## Runner identity and manual rollout
 
 `hosts/chungus/services/forgejo-runner.nix` uses the pinned nixpkgs
-`services.gitea-actions-runner` module and Gitea-compatible runner 3.1.0, like
-Mini's integration. Instance key `chungus` yields unit `gitea-runner-chungus` and
-state/HOME `/var/lib/gitea-runner/chungus`. The upstream module defaults to
-`DynamicUser=true`, shared user `gitea-runner`; this integration explicitly
+`services.forgejo-runner` module and native Forgejo Runner **13.2.0** (not Mini's
+unchanged legacy integration). Instance key `chungus` yields unit
+`forgejo-runner-chungus` and state/HOME `/var/lib/forgejo-runner/chungus`.
+The upstream module defaults to `DynamicUser=true`; this integration explicitly
 overrides **both** user and group to static system account `chungus-nix` and
-disables DynamicUser. It disallows other Gitea runner instances on Chungus.
+disables DynamicUser. It disallows other native or legacy runner instances on Chungus.
+
+`settings.server.connections.default` contains the server URL and the existing
+UI UUID. `secrets.server.connections.default.token_url` points to the existing
+secret file. The module emits `LoadCredential` and a non-secret
+`file:$CREDENTIALS_DIRECTORY/server__connections__default__token_url` reference
+in store-resident YAML. The runner resolves that reference itself; neither the
+token nor a rendered secret config enters the Nix store, logs or argv. There is
+no registration/re-registration hook or generated `.runner` credential file.
+The UI owns the runner name; the local settings own labels and capacity.
 
 The account has no login, supplementary groups, sudo/activation access, or Nix
 trusted-user entry. The host label does not request Podman/Docker groups or a
@@ -92,15 +105,17 @@ Caddy CA; TLS verification is never disabled.
 After the security audit, the operator manually:
 
 1. Adds `dog.services.nix-build-runner.enable = true` to Chungus's configuration.
-2. Provisions `/etc/secrets/forgejo/chungus-nix-token` as root, mode 0600, with the
-   **raw repository registration token**, not `TOKEN=...`. It is loaded via
-   systemd credentials, not the store. Starting the unit registers the runner;
-   token/label changes trigger re-registration in the pinned module. The
-   registration credential and `.runner` are readable by host jobs under the
-   same identity: trust every job, protect repository scope, and rotate/revoke
-   registration if that identity is compromised. This is not an updater token.
+2. Verifies `/etc/secrets/forgejo/chungus-nix-token` is root-owned, mode 0600,
+   containing the **existing UI runner's raw authentication secret**, not
+   `TOKEN=...` or a legacy registration token. It is already provisioned per the
+   user; do not print it or provision a replacement for rollout. Starting the
+   daemon authenticates the existing UUID; it does not register another runner.
+   Host jobs share the runner identity and can read its systemd credential:
+   trust every job and rotate/revoke this runner's authentication if compromised.
+   This is not an updater token. Secret rotation requires a service restart to
+   reload systemd credentials; label changes require no registration.
 3. Formats/checks and manually deploys Chungus; the agent does not activate it.
-4. Inspects `systemctl cat gitea-runner-chungus`, `id chungus-nix`, actual Nix
+4. Inspects `systemctl cat forgejo-runner-chungus`, `id chungus-nix`, actual Nix
    trusted users and socket/secret permissions. Confirms only the repository's
    runner list shows it, with the unique label and capacity 1. Repeat the
    server-side approval test before allowing real jobs.
@@ -108,11 +123,12 @@ After the security audit, the operator manually:
    persistent roots, and a cache download on another host. Opens a trusted PR
    which fails one host: the other two must still run/promote. Tests cancellation
    and retry through Forgejo. Inspect runner startup with
-   `journalctl -u gitea-runner-chungus`; build logs live in Actions.
+   `journalctl -u forgejo-runner-chungus`; build logs live in Actions.
 
-No registration, token provisioning, server settings mutation, full host build,
-or deployment was performed during implementation. Live runner/server
-compatibility, status association, independent matrix failures, and namespace
+No agent registration, secret read/provisioning, server settings mutation, full
+host build, or deployment was performed. The user supplied the existing UUID and
+reported saving its secret; neither implies authorization to enable the service.
+Live runner/server compatibility, status association, independent matrix failures, and namespace
 permissions remain rollout checks, not claimed results.
 
 ## Small retention interface
@@ -197,8 +213,22 @@ Verified against the deployed server's read-only `/api/v1/version` (16.0.6),
 and the local `actions/checkout` mirror's `action.yml` / `src/ref-helper.ts` at
 `11d5960a326750d5838078e36cf38b85af677262` (explicit SHA fetch/checkout, node20,
 fetch-depth, persist-credentials). The actual Chungus-pinned nixpkgs module
-`nixos/modules/services/continuous-integration/gitea-actions-runner.nix` and
-runner `internal/pkg/config/config.example.yaml` confirm unit naming, identities,
-state directories, token handling, host-label group behavior and capacity.
+`nixos/modules/services/continuous-integration/forgejo-runner.nix`, package
+`pkgs/by-name/fo/forgejo-runner/package.nix` (13.2.0), and runner
+`internal/pkg/config/config.example.yaml` / `config.go` confirm unit naming,
+identities, state directories, credential URL expansion, host-label group
+behavior and capacity. See also [Forgejo 16 UI UUID/token registration](https://forgejo.org/docs/v16.0/admin/actions/registration/).
 Its `act/model/workflow.go` implements matrix `fail-fast: false`, and
-`act/exprparser/interpreter.go` confirms the `github` context name.
+`act/exprparser/interpreter.go` confirms all three context aliases.
+
+Native-runner correction verification: all three flake checks passed (Chungus
+`--no-build`), formatting passed, and all 24 isolated-store helper tests passed.
+Enabled-module evaluation has no failed assertions, root-only Nix trusted users,
+static user/group and no container supplementary groups. Only the runner package
+and generated YAML/unit were realized, not a system. Runner `generate-config`,
+`validate --workflow --path .forgejo/workflows/nix-build.yml` and `exec --list`
+passed offline. The exact generated config also loaded with a dummy credential
+in a network-isolated bubblewrap namespace: daemon startup reached its connection
+attempt, which failed as expected with network unreachable. No real secret or
+network registration was used. Live TLS/checkout/token permissions, repository
+scope and independent matrix status/cancellation remain manual pilot checks.

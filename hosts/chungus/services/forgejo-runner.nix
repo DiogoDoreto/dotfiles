@@ -19,7 +19,9 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = builtins.attrNames config.services.gitea-actions-runner.instances == [ "chungus" ];
+        assertion =
+          builtins.attrNames config.services.forgejo-runner.instances == [ "chungus" ]
+          && config.services.gitea-actions-runner.instances == { };
         message = "The Chungus host runner must not share its service state with other runners.";
       }
     ];
@@ -28,21 +30,25 @@ in
     users.users.chungus-nix = {
       isSystemUser = true;
       group = "chungus-nix";
-      home = "/var/lib/gitea-runner/chungus";
+      home = "/var/lib/forgejo-runner/chungus";
     };
     systemd.tmpfiles.rules = [
       "d /var/lib/chungus-nix-roots 0700 chungus-nix chungus-nix -"
     ];
 
-    services.gitea-actions-runner.instances.chungus = {
+    services.forgejo-runner.instances.chungus = {
       enable = true;
-      url = "https://git.local.doreto.com.br";
-      name = "chungus-nix";
-      # Repository registration token, NOT Mini's instance token; raw content.
-      tokenFile = "/etc/secrets/forgejo/chungus-nix-token";
-      labels = [ "chungus-nix:host" ];
+      # Existing UI-created runner's authentication secret, NOT a registration token.
+      secrets.server.connections.default.token_url = "/etc/secrets/forgejo/chungus-nix-token";
       settings = {
-        runner.capacity = 1;
+        server.connections.default = {
+          url = "https://git.local.doreto.com.br";
+          uuid = "3cec0ee6-b681-46ae-bb8d-eba9b6eec76c";
+        };
+        runner = {
+          capacity = 1;
+          labels = [ "chungus-nix:host" ];
+        };
         cache.enabled = false;
       };
       hostPackages = with pkgs; [
@@ -55,9 +61,9 @@ in
       ];
     };
 
-    # The pinned module defaults to shared DynamicUser=gitea-runner. Override
+    # The pinned module defaults to DynamicUser. Override
     # the identity explicitly; do not accidentally create an unused account.
-    systemd.services.gitea-runner-chungus = {
+    systemd.services.forgejo-runner-chungus = {
       environment = {
         SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
         NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-certificates.crt";
