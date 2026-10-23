@@ -87,6 +87,18 @@
             in
             base.overrideAttrs (old: {
               pname = "llama-cpp-sycl";
+              # Upstream selects both languages' warning flags using the C++
+              # compiler, but we use GCC for C and IntelLLVM for C++.
+              postPatch = (old.postPatch or "") + ''
+                for file in ggml/src/CMakeLists.txt cmake/common.cmake; do
+                  substituteInPlace "$file" --replace-fail \
+                    'ggml_get_flags(''${CMAKE_CXX_COMPILER_ID} ''${CMAKE_CXX_COMPILER_VERSION})' \
+                    'ggml_get_flags(''${CMAKE_C_COMPILER_ID} ''${CMAKE_C_COMPILER_VERSION})
+                    set(GF_C_FLAGS_SAVED ''${GF_C_FLAGS})
+                    ggml_get_flags(''${CMAKE_CXX_COMPILER_ID} ''${CMAKE_CXX_COMPILER_VERSION})
+                    set(GF_C_FLAGS ''${GF_C_FLAGS_SAVED})'
+                done
+              '';
               # Fortify lowers memcpy calls to glibc's host-only __memcpy_chk,
               # which cannot be resolved when the same code is compiled for
               # an Intel GPU.
