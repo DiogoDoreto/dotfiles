@@ -21,7 +21,7 @@
       flake = false;
     };
     git-pages = {
-      url = "git+https://codeberg.org/git-pages/git-pages";
+      url = "../../modules/flakes/git-pages";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nur = {

@@ -275,35 +275,31 @@
     },
     "git-pages": {
       "inputs": {
-        "flake-utils": "flake-utils_2",
-        "gomod2nix": "gomod2nix",
-        "nix-filter": "nix-filter",
         "nixpkgs": [
           "nixpkgs"
-        ]
+        ],
+        "upstream": "upstream"
       },
       "locked": {
-        "lastModified": 1792728480,
-        "narHash": "sha256-z8ykgN8lmhRJwhXxStrImZobsTV13efV9nU+DKsJDlY=",
-        "ref": "refs/heads/main",
-        "rev": "f311f0291a98b620691574a5952653c64a4f1c8a",
-        "revCount": 605,
-        "type": "git",
-        "url": "https://codeberg.org/git-pages/git-pages"
+        "path": "../../modules/flakes/git-pages",
+        "type": "path"
       },
       "original": {
-        "type": "git",
-        "url": "https://codeberg.org/git-pages/git-pages"
-      }
+        "path": "../../modules/flakes/git-pages",
+        "type": "path"
+      },
+      "parent": []
     },
     "gomod2nix": {
       "inputs": {
         "flake-utils": [
           "git-pages",
+          "upstream",
           "flake-utils"
         ],
         "nixpkgs": [
           "git-pages",
+          "upstream",
           "nixpkgs"
         ]
       },
@@ -858,6 +854,30 @@
         "owner": "numtide",
         "repo": "treefmt-nix",
         "type": "github"
+      }
+    },
+    "upstream": {
+      "inputs": {
+        "flake-utils": "flake-utils_2",
+        "gomod2nix": "gomod2nix",
+        "nix-filter": "nix-filter",
+        "nixpkgs": [
+          "git-pages",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792728480,
+        "narHash": "sha256-z8ykgN8lmhRJwhXxStrImZobsTV13efV9nU+DKsJDlY=",
+        "ref": "refs/heads/main",
+        "rev": "f311f0291a98b620691574a5952653c64a4f1c8a",
+        "revCount": 605,
+        "type": "git",
+        "url": "https://codeberg.org/git-pages/git-pages"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://codeberg.org/git-pages/git-pages"
       }
     },
     "utils": {
