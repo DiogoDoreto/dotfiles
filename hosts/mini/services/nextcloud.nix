@@ -2,7 +2,7 @@
 
 let
   vars = import ../_variables.nix;
-  nextcloudPkg = pkgs.nextcloud33;
+  nextcloudPkg = pkgs.nextcloud34;
 in
 
 {
@@ -71,7 +71,14 @@ in
       dbtype = "sqlite";
     };
     extraApps = {
-      inherit (pkgs) orgnotes;
+      # Org Notes still declares Nextcloud 33 as its maximum supported version.
+      # Keep it enabled on 34 until the upstream compatibility metadata catches up.
+      orgnotes = pkgs.orgnotes.overrideAttrs (old: {
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace appinfo/info.xml \
+            --replace-fail 'max-version="33"' 'max-version="34"'
+        '';
+      });
       inherit (nextcloudPkg.packages.apps)
         calendar
         oidc_login
