@@ -8,6 +8,7 @@
 
   dog.services.agent-vm = (import ./settings.nix) // {
     pi.enable = true;
+    t3code.enable = true;
     workingDirectory = "/home/agent/projects";
   };
 }

@@ -184,7 +184,8 @@ in
           with pkgs;
           optional cfg.opencode.enable llm-agents.opencode
           ++ optional cfg.paseo.enable paseo
-          ++ optional cfg.pi.enable llm-agents.pi;
+          ++ optional cfg.pi.enable llm-agents.pi
+          ++ optional cfg.t3code.enable llm-agents.t3code;
       };
       targets.genericLinux.enable = true;
       dog.programs = {

@@ -56,6 +56,7 @@ expect those common ingredients, plus `inputs` and `self` in `specialArgs`.
 | OpenCode | Disabled | Enabled |
 | Paseo | Enabled | Enabled |
 | Pi | Enabled | Disabled |
+| t3code CLI | Enabled | Enabled |
 | Public frontends | None | Caddy with Authentik for OpenCode and Paseo |
 | Guest Tailscale | Disabled | Enabled |
 | Guest Nix GC | No automatic policy | Daily space check; collect below 15 GiB free |
@@ -195,6 +196,11 @@ Pi is optional (`pi.enable`, default `false`). Enabling it installs
 `llm-agents.pi` in the guest user's Home Manager profile without starting a
 service or opening ports. Lapdog enables it in its guest deployment; run it with
 `agent-vm-ssh -t pi`.
+
+t3code is optional (`t3code.enable`, default `false`). Both deployments install
+`llm-agents.t3code` in the guest user's Home Manager profile. Run its CLI with
+`agent-vm-ssh -t t3`; use `agent-vm-ssh -t 't3 --help'` for available options.
+It is launched on demand, without a managed service or host proxy.
 
 The dotfiles checkout is expected at `/home/agent/projects/dotfiles`. Agent skills
 are linked from that checkout into `~/.agents/skills`. Edits to linked skills
