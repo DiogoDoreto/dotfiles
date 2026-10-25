@@ -16,10 +16,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    # TOML literal strings preserve the escaped dollar for Starship's format parser.
     xdg.configFile."starship/bash.toml".text = ''
       [character]
-      success_symbol = "[$](bold green)"
-      error_symbol = "[$](bold red)"
+      success_symbol = '[\$](bold green)'
+      error_symbol = '[\$](bold red)'
     '';
 
     home.packages = with pkgs; [
