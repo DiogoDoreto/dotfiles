@@ -459,11 +459,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1792749132,
-        "narHash": "sha256-T6BYD15/fdEnHOK1dQWkAkUgSZfcEXI7ZcfEqkN/vCk=",
+        "lastModified": 1792947008,
+        "narHash": "sha256-dhuy2RxNWSo71F4VM0XW8jnzBdrcMIUnJSOcI7gQ2DA=",
         "owner": "DiogoDoreto",
         "repo": "nextcloud-org-notes",
-        "rev": "ce705a56c6f62b14f906547ddbf2625c3a91dcfd",
+        "rev": "c1982d87246a197de830d479ee13ed2e8e145c75",
         "type": "github"
       },
       "original": {

@@ -71,14 +71,7 @@ in
       dbtype = "sqlite";
     };
     extraApps = {
-      # Org Notes still declares Nextcloud 33 as its maximum supported version.
-      # Keep it enabled on 35 until the upstream compatibility metadata catches up.
-      orgnotes = pkgs.orgnotes.overrideAttrs (old: {
-        postPatch = (old.postPatch or "") + ''
-          substituteInPlace appinfo/info.xml \
-            --replace-fail 'max-version="33"' 'max-version="35"'
-        '';
-      });
+      orgnotes = pkgs.orgnotes;
       inherit (nextcloudPkg.packages.apps)
         calendar
         oidc_login
