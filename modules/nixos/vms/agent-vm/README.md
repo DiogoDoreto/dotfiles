@@ -57,7 +57,7 @@ expect those common ingredients, plus `inputs` and `self` in `specialArgs`.
 | Paseo | Enabled | Enabled |
 | Pi | Enabled | Disabled |
 | t3code service and CLI | Enabled | Enabled |
-| Public frontends | None | Caddy with Authentik for OpenCode, Paseo, and t3code |
+| Public frontends | None | Caddy with Authentik for OpenCode and Paseo; native token auth for t3code |
 | Guest Tailscale | Disabled | Enabled |
 | Guest Nix GC | No automatic policy | Daily space check; collect below 15 GiB free |
 
@@ -178,13 +178,12 @@ t3code is optional (`t3code.enable`, default `false`) and enabled on both hosts.
 The `agent-vm-t3code.service` guest unit runs `t3 serve --no-browser` as `agent`,
 starts with the VM, and restarts on failure. It listens on `10.0.101.2:3773`;
 the host proxy exposes `http://127.0.0.1:32862`. Mini additionally exposes
-`https://t3code.local.doreto.com.br` through Caddy with Authentik forward
-authentication. Add that hostname to the Authentik proxy provider/application
-and embedded outpost, as for the other protected frontends.
+`https://t3code.local.doreto.com.br` through Caddy, using t3code's native token
+authentication.
 
 t3code keeps its state and native browser pairing in `/home/agent/.t3`, on the
-persistent guest home. Authentik does not replace t3code's own pairing. After
-deployment, generate a browser pairing link using the reachable frontend URL:
+persistent guest home. After deployment, generate a browser pairing link using
+the reachable frontend URL:
 
 ```sh
 # On lapdog (also works for mini's host-local frontend):

@@ -329,16 +329,6 @@ in
     extraConfig = ''
       request_header X-Forwarded-Host {http.request.host}
 
-      @outpost path /outpost.goauthentik.io/*
-      reverse_proxy @outpost ${cfg.caddy.authentikUrl}
-
-      @protected not path /outpost.goauthentik.io/*
-      forward_auth @protected ${cfg.caddy.authentikUrl} {
-        uri /outpost.goauthentik.io/auth/caddy
-        copy_headers X-Authentik-Username
-        trusted_proxies private_ranges
-      }
-
       reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.t3code.hostLocalPort}
     '';
   };
