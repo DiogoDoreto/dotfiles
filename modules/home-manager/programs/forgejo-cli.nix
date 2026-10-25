@@ -18,7 +18,19 @@ let
         nativeBuildInputs = [ pkgs.makeWrapper ];
         postBuild = ''
           wrapProgram "$out/bin/fj" \
-            --add-flags "--host ${escapeShellArg cfg.host}"
+            --run ${escapeShellArg ''
+              # Callers such as t3code select a host explicitly.
+              explicit_host=false
+              for arg in "$@"; do
+                case "$arg" in
+                  --) break ;;
+                  -H| -H?*| --host| --host=*) explicit_host=true; break ;;
+                esac
+              done
+              if ! "$explicit_host"; then
+                set -- --host ${escapeShellArg cfg.host} "$@"
+              fi
+            ''}
         '';
       }
     else
@@ -32,7 +44,7 @@ in
       type = types.nullOr types.str;
       default = null;
       example = "codeberg.org";
-      description = "The Forgejo host to target. Hardcodes the `--host` flag on every `fj` invocation when non-null.";
+      description = "The default Forgejo host to target when no explicit `--host` or `-H` flag is supplied.";
     };
   };
 
