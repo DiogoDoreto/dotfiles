@@ -72,6 +72,10 @@ in
 
       fish = {
         enable = true;
+        shellInit = ''
+          # Reset the config inherited when Fish is launched from Bash.
+          set -gx STARSHIP_CONFIG "${config.programs.starship.configPath}"
+        '';
         shellAbbrs = {
           e = "emacsclient -nc";
           la = "eza -l --icons --git -a";
