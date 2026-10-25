@@ -6,6 +6,10 @@ Test the fork-approval gate before admitting untrusted users. Manual reconciliat
 and on-demand maintenance are implemented locally; production cleanup has not
 been performed.
 Replaces the former `nix-host-updater` standalone orchestrator (removed).
+The manual input updater and best-effort PR host package change reports are now
+implemented locally; their separate bot credential/variable, Python PATH rollout
+and live pilot remain operator work. See [nix-input-updates.md](nix-input-updates.md)
+for approved behavior, verification results and primary-source compatibility.
 Harmonia and its signing/client configuration are unchanged; see [nix-cache.md](nix-cache.md).
 
 ## Ownership
@@ -67,8 +71,10 @@ The YAML fork condition is only defense in depth. If the access/approval policy
 cannot be enforced and verified, **leave this host runner disabled** and use a
 separately designed isolated runner instead. Never use `pull_request_target` to
 execute source-head code. No administrator/push/API/signing secrets are supplied
-to builds. Forgejo still supplies its automatic job token; `pull_request` tokens
-are read-only, while main/manual tokens have Forgejo's normal permissions. Do
+to Nix check/build subprocesses. The separate repository-limited automation token
+is exposed only to the new updater/report publishing steps, never at job scope
+or to Nix; this does not create isolation between trusted native-runner jobs.
+Forgejo still supplies its automatic job token; `pull_request` tokens are read-only, while main/manual tokens have Forgejo's normal permissions. Do
 not assume a GitHub-style `permissions:` block reduces those permissions here.
 
 Promotion uses that same short-lived automatic token for its fixed-repository
@@ -188,8 +194,10 @@ design. Crashes/cancellation can leave abandoned registered staging links,
 including an old success after pointer replacement. These are conservatively
 retained; there is **no recovery engine or automatic abandoned-root cleanup**.
 Do not move staging links or sweep that directory. Use only the manual procedure
-below. Lock-update/PR creation remains deferred. Closing/merging/deleting a PR or
-branch does not itself remove roots. No timer or GC policy changes.
+below. Manual lock-update/PR creation is implemented separately in
+[nix-input-updates.md](nix-input-updates.md); it does not change retention.
+Closing/merging/deleting a PR or branch does not itself remove roots. No timer or
+GC policy changes.
 
 ## On-demand maintenance on Chungus
 

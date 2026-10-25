@@ -58,3 +58,38 @@ jobs:
         run: |
           nix-cache-roots promote --branch "$SOURCE_BRANCH" --host "$HOST" \
             --commit "$SOURCE_SHA" --staging-root "$STAGING_ROOT"
+      # Reporting is deliberately AFTER mandatory promotion and never builds a baseline.
+      - name: Compare retained target closure (best effort)
+        id: report
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          STAGING_ROOT: ${{ steps.system.outputs.staging-root }}
+          NIX_CACHE_JOB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: python3 scripts/nix-input-updates/report.py prepare
+      # Forgejo's v3 artifact protocol on native runner 13.2.0, node20 action.
+      - name: Upload complete host package change report
+        id: artifact
+        if: steps.report.outputs.ready == 'true'
+        continue-on-error: true
+        uses: https://code.forgejo.org/forgejo/upload-artifact@97a0fba1372883ab732affbe8f94b823f91727db
+        with:
+          name: host-package-report-${{ matrix.host }}-${{ github.run_attempt }}
+          path: .private/tmp/host-package-report/
+          if-no-files-found: error
+      - name: Publish bot-owned host report (best effort)
+        id: comment
+        if: steps.report.outputs.ready == 'true' && steps.artifact.outcome == 'success'
+        continue-on-error: true
+        env:
+          NIX_AUTOMATION_TOKEN: ${{ secrets.NIX_AUTOMATION_TOKEN }}
+          NIX_AUTOMATION_BOT_ID: ${{ vars.NIX_AUTOMATION_BOT_ID }}
+        run: python3 scripts/nix-input-updates/report.py publish
+      - name: Warn about reporting infrastructure failures
+        if: >-
+          !cancelled() && (steps.report.outcome == 'failure' ||
+          steps.artifact.outcome == 'failure' || steps.comment.outcome == 'failure')
+        run: echo '::warning::Host package change reporting failed; mandatory build/retention result is unchanged. Any earlier PR report is preserved.'

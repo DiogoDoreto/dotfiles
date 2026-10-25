@@ -77,6 +77,7 @@ in
         gitMinimal
         nix
         nodejs
+        python3
         roots
       ];
     };

@@ -32,6 +32,10 @@ _Avoid_: Paseo Desktop, Paseo app
 A version of a host's NixOS system retained in its system profile as a rollback option.
 _Avoid_: Generation (when referring to other Nix profiles)
 
+**Host package change report**:
+A comparison of a host's complete system closure with that of the PR's target branch, including dependencies, showing package additions, removals, version changes, and same-version rebuilds. Its baseline is the target branch's configuration, not the runner's installed system.
+_Avoid_: Installed-package diff (which suggests only explicitly installed packages), nixpkgs changelog
+
 **Rescue image**:
 A portable bootable system for diagnosing and repairing a variety of x86-64 machines.
 _Avoid_: Host-specific recovery image

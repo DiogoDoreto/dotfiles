@@ -1,0 +1,64 @@
+name: Update host flake inputs
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Host whose complete flake inputs should be updated
+        required: true
+        default: all
+        type: choice
+        options: [lapdog, mini, chungus, all]
+
+jobs:
+  capture:
+    runs-on: chungus-nix
+    if: >-
+      github.repository == 'diogo/dotfiles' &&
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    outputs:
+      sha: ${{ steps.capture.outputs.sha }}
+      hosts: ${{ steps.capture.outputs.hosts }}
+    steps:
+      - name: Capture dispatch main revision once
+        id: capture
+        env:
+          DISPATCH_SHA: ${{ github.sha }}
+          SELECTED_HOST: ${{ inputs.host }}
+        run: |
+          set -euo pipefail
+          [[ "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]]
+          case "$SELECTED_HOST" in
+            all) hosts='["lapdog","mini","chungus"]' ;;
+            lapdog|mini|chungus) hosts="[\"$SELECTED_HOST\"]" ;;
+            *) echo 'Invalid host selector' >&2; exit 1 ;;
+          esac
+          echo "sha=$DISPATCH_SHA" >> "$GITHUB_OUTPUT"
+          echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
+  update:
+    name: Update ${{ matrix.host }} inputs
+    needs: capture
+    runs-on: chungus-nix
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.capture.outputs.hosts) }}
+    env:
+      HOST: ${{ matrix.host }}
+      BASE_SHA: ${{ needs.capture.outputs.sha }}
+      DISPATCH_REF: ${{ github.ref }}
+      RUN_ID: ${{ github.run_id }}
+    steps:
+      - uses: https://git.local.doreto.com.br/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: diogo/dotfiles
+          ref: ${{ env.BASE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Update all host inputs (no checks or builds)
+        id: update
+        run: python3 scripts/nix-input-updates/update.py prepare
+      - name: Publish fresh branch and PR
+        if: steps.update.outputs.changed == 'true'
+        env:
+          NIX_AUTOMATION_TOKEN: ${{ secrets.NIX_AUTOMATION_TOKEN }}
+        run: python3 scripts/nix-input-updates/update.py publish
