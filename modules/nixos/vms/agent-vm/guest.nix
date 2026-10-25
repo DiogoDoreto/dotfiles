@@ -25,7 +25,8 @@ in
         22
       ]
       ++ optional cfg.opencode.enable cfg.opencodePort
-      ++ optional cfg.paseo.enable cfg.paseo.guestPort;
+      ++ optional cfg.paseo.enable cfg.paseo.guestPort
+      ++ optional cfg.t3code.enable cfg.t3code.guestPort;
     };
   };
 
@@ -99,7 +100,8 @@ in
       "sshd.service"
     ]
     ++ optional cfg.opencode.enable "${cfg.vmName}-opencode.service"
-    ++ optional cfg.paseo.enable "paseo.service";
+    ++ optional cfg.paseo.enable "paseo.service"
+    ++ optional cfg.t3code.enable "${cfg.vmName}-t3code.service";
     after = [ "local-fs.target" ];
     serviceConfig.Type = "oneshot";
     script = ''
@@ -168,6 +170,28 @@ in
       RestartSec = "5s";
       KillSignal = "SIGTERM";
       TimeoutStopSec = 15;
+    };
+  };
+
+  systemd.services."${cfg.vmName}-t3code" = mkIf cfg.t3code.enable {
+    description = "t3code agent control surface inside ${cfg.vmName}";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "network-online.target" ];
+    after = [
+      "network-online.target"
+      "${cfg.vmName}-guest-ssh-setup.service"
+    ];
+    environment = {
+      HOME = "/home/${cfg.guestUser}";
+      T3CODE_HOME = "/home/${cfg.guestUser}/.t3";
+    };
+    serviceConfig = {
+      Type = "simple";
+      User = cfg.guestUser;
+      WorkingDirectory = cfg.workingDirectory;
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'exec ${pkgs.llm-agents.t3code}/bin/t3 serve --host ${cfg.guestAddress} --port ${toString cfg.t3code.guestPort} --no-browser'";
+      Restart = "on-failure";
+      RestartSec = "5s";
     };
   };
 

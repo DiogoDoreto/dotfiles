@@ -7,7 +7,6 @@
   ];
 
   dog.services.agent-vm = (import ./settings.nix) // {
-    t3code.enable = true;
     workingDirectory = "/home/agent";
     guest.tailscale.enable = true;
   };

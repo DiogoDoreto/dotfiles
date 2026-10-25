@@ -3,6 +3,7 @@
 {
   autostart = true;
   paseo.enable = true;
+  t3code.enable = true;
   shares = [
     {
       tag = "projects";

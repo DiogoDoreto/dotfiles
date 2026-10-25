@@ -3,4 +3,5 @@
 {
   opencode.enable = true;
   paseo.enable = true;
+  t3code.enable = true;
 }

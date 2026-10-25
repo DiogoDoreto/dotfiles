@@ -23,6 +23,7 @@ let
     echo ""
     ${optionalString cfg.opencode.enable ''echo "OpenCode:            http://${cfg.hostLocalAddress}:${toString cfg.hostLocalPort}"''}
     ${optionalString cfg.paseo.enable ''echo "Paseo:               http://${cfg.hostLocalAddress}:${toString cfg.paseo.hostLocalPort}"''}
+    ${optionalString cfg.t3code.enable ''echo "t3code:              http://${cfg.hostLocalAddress}:${toString cfg.t3code.hostLocalPort}"''}
     echo "SSH:                 agent-vm-ssh"
     echo "VM public key:       agent-vm-public-key"
     echo "DNS audit:           journalctl -u dnsmasq -g 'query'"
@@ -59,6 +60,7 @@ let
       -u microvm@${cfg.vmName}.service \
       ${optionalString cfg.opencode.enable "-u ${cfg.vmName}-proxy.service"} \
       ${optionalString cfg.paseo.enable "-u ${cfg.vmName}-paseo-proxy.service"} \
+      ${optionalString cfg.t3code.enable "-u ${cfg.vmName}-t3code-proxy.service"} \
       "$@"
   '';
 in
@@ -74,6 +76,25 @@ in
       assertion =
         !(cfg.opencode.enable && cfg.paseo.enable) || cfg.paseo.hostLocalPort != cfg.hostLocalPort;
       message = "dog.services.agent-vm.paseo.hostLocalPort must differ from hostLocalPort.";
+    }
+    {
+      assertion =
+        !cfg.t3code.enable
+        || (
+          (!cfg.opencode.enable || cfg.t3code.hostLocalPort != cfg.hostLocalPort)
+          && (!cfg.paseo.enable || cfg.t3code.hostLocalPort != cfg.paseo.hostLocalPort)
+        );
+      message = "dog.services.agent-vm.t3code.hostLocalPort must differ from other enabled host proxy ports.";
+    }
+    {
+      assertion =
+        !cfg.t3code.enable
+        || (
+          cfg.t3code.guestPort != 22
+          && (!cfg.opencode.enable || cfg.t3code.guestPort != cfg.opencodePort)
+          && (!cfg.paseo.enable || cfg.t3code.guestPort != cfg.paseo.guestPort)
+        );
+      message = "dog.services.agent-vm.t3code.guestPort must differ from SSH and other enabled guest service ports.";
     }
   ];
 
@@ -238,6 +259,19 @@ in
     };
   };
 
+  systemd.services."${cfg.vmName}-t3code-proxy" = mkIf cfg.t3code.enable {
+    description = "Local-only proxy to t3code inside ${cfg.vmName}";
+    after = [ "microvm@${cfg.vmName}.service" ];
+    partOf = [ "microvm@${cfg.vmName}.service" ];
+    wantedBy = [ "microvm@${cfg.vmName}.service" ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = "2s";
+      ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:${toString cfg.t3code.hostLocalPort},bind=${cfg.hostLocalAddress},fork,reuseaddr TCP:${cfg.guestAddress}:${toString cfg.t3code.guestPort}";
+    };
+  };
+
   security.sudo.extraRules = [
     {
       users = [ cfg.controlUser ];
@@ -288,6 +322,24 @@ in
       }
 
       reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.paseo.hostLocalPort}
+    '';
+  };
+
+  services.caddy.virtualHosts.${cfg.t3code.hostName} = mkIf (cfg.caddy.enable && cfg.t3code.enable) {
+    extraConfig = ''
+      request_header X-Forwarded-Host {http.request.host}
+
+      @outpost path /outpost.goauthentik.io/*
+      reverse_proxy @outpost ${cfg.caddy.authentikUrl}
+
+      @protected not path /outpost.goauthentik.io/*
+      forward_auth @protected ${cfg.caddy.authentikUrl} {
+        uri /outpost.goauthentik.io/auth/caddy
+        copy_headers X-Authentik-Username
+        trusted_proxies private_ranges
+      }
+
+      reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.t3code.hostLocalPort}
     '';
   };
 

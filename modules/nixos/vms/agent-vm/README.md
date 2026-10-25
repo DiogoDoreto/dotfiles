@@ -1,8 +1,8 @@
 # Agent VM
 
 The Agent VM runs coding agents and their control surfaces in an isolated
-MicroVM. It optionally runs `opencode serve` and the Paseo daemon, and exposes
-their interfaces through host-local proxies. Its storage consists of VM-owned
+MicroVM. It optionally runs `opencode serve`, the Paseo daemon, and `t3 serve`,
+and exposes their interfaces through host-local proxies. Its storage consists of VM-owned
 persistent state and explicitly configured host-directory shares.
 
 ## Organization
@@ -56,8 +56,8 @@ expect those common ingredients, plus `inputs` and `self` in `specialArgs`.
 | OpenCode | Disabled | Enabled |
 | Paseo | Enabled | Enabled |
 | Pi | Enabled | Disabled |
-| t3code CLI | Enabled | Enabled |
-| Public frontends | None | Caddy with Authentik for OpenCode and Paseo |
+| t3code service and CLI | Enabled | Enabled |
+| Public frontends | None | Caddy with Authentik for OpenCode, Paseo, and t3code |
 | Guest Tailscale | Disabled | Enabled |
 | Guest Nix GC | No automatic policy | Daily space check; collect below 15 GiB free |
 
@@ -90,8 +90,8 @@ agent-vm-logs
 
 `start-agent-vm` initializes state, starts `microvm@agent-vm.service`, and prints
 the URLs of enabled services (OpenCode: `http://127.0.0.1:32860`, Paseo:
-`http://127.0.0.1:32861`). `autostart = true` starts the VM at host
-boot instead, as configured on mini.
+`http://127.0.0.1:32861`, t3code: `http://127.0.0.1:32862`). `autostart = true`
+starts the VM at host boot instead, as configured on mini.
 
 `agent-vm-public-key` prints the outbound SSH public key for manually adding to
 GitHub, Forgejo, or other Git remotes. The private key stays in VM-owned state;
@@ -174,6 +174,29 @@ hostname through DNS-rebinding protection and trusts the host bridge address for
 forwarded requests. Its state lives in the persistent guest home at
 `/home/agent/.paseo`.
 
+t3code is optional (`t3code.enable`, default `false`) and enabled on both hosts.
+The `agent-vm-t3code.service` guest unit runs `t3 serve --no-browser` as `agent`,
+starts with the VM, and restarts on failure. It listens on `10.0.101.2:3773`;
+the host proxy exposes `http://127.0.0.1:32862`. Mini additionally exposes
+`https://t3code.local.doreto.com.br` through Caddy with Authentik forward
+authentication. Add that hostname to the Authentik proxy provider/application
+and embedded outpost, as for the other protected frontends.
+
+t3code keeps its state and native browser pairing in `/home/agent/.t3`, on the
+persistent guest home. Authentik does not replace t3code's own pairing. After
+deployment, generate a browser pairing link using the reachable frontend URL:
+
+```sh
+# On lapdog (also works for mini's host-local frontend):
+agent-vm-ssh -t 't3 auth pairing create --base-url http://127.0.0.1:32862'
+# On mini, for the Caddy frontend:
+agent-vm-ssh -t 't3 auth pairing create --base-url https://t3code.local.doreto.com.br'
+```
+
+Open the resulting link in the browser. Inspect guest service logs with
+`agent-vm-ssh -t 'sudo journalctl -u agent-vm-t3code -f'`; host proxy logs are
+included in `agent-vm-logs`.
+
 ## Guest environment and isolation
 
 The guest has 4 vCPUs and 16 GiB RAM by default. Its user is `agent`, UID/GID 1000,
@@ -189,7 +212,7 @@ uses only VM-owned persistent storage.
 The guest trusts `hosts/mini/home-caddy.crt` so Git, curl, and Forgejo CLI can use
 local HTTPS services. Home Manager configures Git, CLI tools, agent skills,
 Playwright CLI, and Forgejo CLI; the system includes SSH, GitHub CLI, and common
-maintenance tools. OpenCode uses a login shell, while Paseo's explicit PATH
+maintenance tools. OpenCode and t3code use login shells, while Paseo's explicit PATH
 includes the guest's Nix and Home Manager profiles.
 
 Pi is optional (`pi.enable`, default `false`). Enabling it installs
@@ -199,8 +222,8 @@ service or opening ports. Lapdog enables it in its guest deployment; run it with
 
 t3code is optional (`t3code.enable`, default `false`). Both deployments install
 `llm-agents.t3code` in the guest user's Home Manager profile. Run its CLI with
-`agent-vm-ssh -t t3`; use `agent-vm-ssh -t 't3 --help'` for available options.
-It is launched on demand, without a managed service or host proxy.
+`agent-vm-ssh -t 't3 --help'` for available options. Its managed server is described
+above; use the CLI for pairing and administration of that running instance.
 
 The dotfiles checkout is expected at `/home/agent/projects/dotfiles`. Agent skills
 are linked from that checkout into `~/.agents/skills`. Edits to linked skills

@@ -47,7 +47,24 @@ in
     guest.tailscale.enable = mkEnableOption "Tailscale inside the Agent VM guest";
     opencode.enable = mkEnableOption "OpenCode inside the Agent VM guest";
     pi.enable = mkEnableOption "the Pi coding agent inside the Agent VM guest";
-    t3code.enable = mkEnableOption "t3code inside the Agent VM guest";
+    t3code = {
+      enable = mkEnableOption "the t3code server inside the Agent VM guest";
+      guestPort = mkOption {
+        type = types.port;
+        default = 3773;
+        description = "Port where the t3code HTTP/WebSocket server listens inside the guest.";
+      };
+      hostLocalPort = mkOption {
+        type = types.port;
+        default = 32862;
+        description = "Host loopback port forwarded to the guest t3code server.";
+      };
+      hostName = mkOption {
+        type = types.str;
+        default = "t3code.local.doreto.com.br";
+        description = "Caddy virtual host for t3code access.";
+      };
+    };
 
     vmName = mkOption {
       type = types.str;
