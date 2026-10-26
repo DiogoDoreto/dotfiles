@@ -280,7 +280,9 @@ class Summary(Temporary):
         self.assertIn("&#96;", bounded)
         self.assertIn("&#124;", bounded)
         self.assertGreater(len(full), len(bounded) * 10)
-        self.assertIn("Exact changed paths", full)
+        self.assertNotIn("Exact changed paths", full)
+        self.assertNotIn("/nix/store/", full)
+        self.assertIn("report.json", bounded)
         self.data.update(after=self.data["before"], groups={k: [] for k in r.GROUPS})
         self.assertIn("No system closure changes", r.render(self.data))
 
@@ -319,7 +321,12 @@ class Preparation(Temporary):
         self.assertEqual((data["source"], data["baseline"]), (A, B))
         self.assertEqual(data["before"], [store(1, "system")])
         self.assertIn("ready=true", Path(".private/output").read_text())
-        self.assertTrue((r.REPORT / "report.md").exists())
+        markdown = (r.REPORT / "report.md").read_text()
+        self.assertNotIn("/nix/store/", markdown)
+        self.assertNotIn("Exact changed paths", markdown)
+        self.assertIn("system", markdown)
+        self.assertEqual(data["changes"]["rebuilds"],
+                         [dict(before=store(1, "system"), after=store(2, "system"))])
 
     def test_missing_corrupt_stale_baseline_and_candidate_mismatch_no_ready(self):
         for failure in (FileNotFoundError(), ValueError("corrupt")):

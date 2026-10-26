@@ -87,14 +87,18 @@ The run uploads `host-package-report-<host>-<attempt>` containing:
 - `report.json`: schema version **2**, host/run/PR/commit provenance, both complete
   sorted path inventories, a `nar_sizes` mapping in bytes, exact `changes`, and
   `groups` with full before/after paths and integer-byte deltas.
-- `report.md`: all grouped rows and all exact changed paths, without truncation.
+- `report.md`: all grouped rows, without truncation. Exact changed paths and
+  complete inventories are available only in `report.json`, not repeated in Markdown.
 
 The exact-path audit categories remain additions, removals, version changes and
 same-version rebuilds. Only names occurring once in each entire closure are
 paired as version changes/rebuilds; ambiguous versions/outputs remain explicit
 additions/removals in these categories. Every added/removed path appears exactly
 once. Grouped presentation does not alter those conservative audit semantics.
-Artifact availability follows instance retention.
+Artifact availability follows instance retention. Forgejo's Actions artifact
+endpoint serves downloads as ZIP archives, including single-file artifacts; the
+pinned upload action has no raw-file download option. Direct unzipped attachments
+would require a separate storage/publication destination and are not implemented.
 
 ## Job summaries (no PR-comment writes)
 

@@ -214,14 +214,8 @@ def render(data, bounded=True, artifact_available=True):
             remaining -= 1
         lines.append("")
     if bounded and sum(map(len, data["groups"].values())) > 40:
-        lines.append("Preview limited to 40 grouped rows; the artifact contains every group, changed path and both complete closures.")
-    if not bounded:
-        lines.extend(["## Exact changed paths", ""])
-        for key in CATEGORIES:
-            lines.append(f"### {key.replace('_', ' ').title()}")
-            for change in data["changes"][key]:
-                text = f"{change['before']} → {change['after']}" if isinstance(change, dict) else change
-                lines.append("- " + code(text))
+        lines.append("Preview limited to 40 grouped rows; report.md contains every group. "
+                     "See report.json for exact changed paths and both complete closures.")
     return "\n".join(lines) + "\n"
 
 
