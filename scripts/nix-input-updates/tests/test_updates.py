@@ -1,6 +1,5 @@
 """Offline tests. Git uses disposable local repos; Nix and Forgejo are fakes."""
 
-from concurrent.futures import ThreadPoolExecutor
 import copy
 import importlib.util
 import json
@@ -9,7 +8,6 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-import threading
 import unittest
 from unittest.mock import Mock, patch
 
@@ -201,7 +199,6 @@ class FakeAPI:
                        head=dict(sha=A, ref="feature", repo=dict(full_name=c.REPO)),
                        base=dict(ref="main", repo=dict(full_name=c.REPO)))
         self.tip = B
-        self.comments = []
         self.writes = []
         self.fail = False
 
@@ -211,139 +208,80 @@ class FakeAPI:
         if method != "GET":
             self.writes.append((method, path, data))
             return {}
-        if path == "/user":
-            return {"id": 42}
         if "/pulls/" in path:
             return copy.deepcopy(self.pr)
         if "/branches/" in path:
             return {"commit": {"id": self.tip}}
         raise AssertionError(path)
 
-    def pages(self, path):
-        return copy.deepcopy(self.comments)
-
-
 def report_data():
     before, after = {store(1, "app-1")}, {store(2, "app-2")}
     return dict(host="mini", source=A, target="main", baseline=B, pr=3,
                 run_number=10, attempt=1, run_url=f"{c.SERVER}/{c.REPO}/actions/runs/10",
-                before=sorted(before), after=sorted(after), changes=r.differences(before, after))
+                schema_version=2, before=sorted(before), after=sorted(after),
+                nar_sizes={p: 100 for p in before | after},
+                groups=r.grouped(dict.fromkeys(before, 100), dict.fromkeys(after, 100)),
+                changes=r.differences(before, after))
 
 
-class Publication(Temporary):
+class Summary(Temporary):
     def setUp(self):
         super().setUp()
-        self.api = FakeAPI()
         self.data = report_data()
+        r.REPORT.mkdir(parents=True)
+        (r.REPORT / "report.json").write_text(json.dumps(self.data))
 
-    def publish(self):
-        r.publish(self.data, self.api, 42, self.base)
+    def test_summary_file_append_and_forgejo_precedence(self):
+        with patch.dict(os.environ, {"REPORT_READY": "true", "ARTIFACT_OUTCOME": "success"}):
+            r.summarize()
+            self.assertIn("app", Path(".private/summary").read_text())
+            with patch.dict(os.environ, {"FORGEJO_STEP_SUMMARY": str(self.base / ".private/forgejo")}):
+                r.summarize()
+                r.write_summary("extra\n")
+            self.assertTrue(Path(".private/forgejo").read_text().endswith("extra\n"))
+        self.assertNotIn("nix-host-report-state", Path(".private/summary").read_text())
 
-    def comment(self, data=None, user=42, body=None, host="mini"):
-        data = copy.deepcopy(data or self.data)
-        data["host"] = host
-        return dict(id=99, user=dict(id=user), body=body if body is not None else r.render(data))
+    def test_artifact_failure_keeps_preview_with_warning(self):
+        with patch.dict(os.environ, {"REPORT_READY": "true", "ARTIFACT_OUTCOME": "failure"}):
+            r.summarize()
+        body = Path(".private/summary").read_text()
+        self.assertIn("Complete artifact unavailable", body)
+        self.assertIn("app", body)
+        self.assertIn("bounded preview", body)
 
-    def test_create_then_edit_only_bot_owned_host_marker(self):
-        self.api.comments = [self.comment(user=66), self.comment(host="lapdog")]
-        self.publish()
-        self.assertEqual(self.api.writes[0][0], "POST")
-        self.api.comments.append(self.comment())
-        self.data["run_number"] += 1
-        self.publish()
-        self.assertEqual(self.api.writes[-1][0:2], ("PATCH", f"/repos/{c.REPO}/issues/comments/99"))
+    def test_unavailable_comparison_does_not_use_stale_report(self):
+        (r.REPORT / "failure.txt").write_text("baseline <missing>\n|bad|")
+        with patch.dict(os.environ, {"HOST": "mini", "REPORT_READY": "", "PREPARE_OUTCOME": "success"}):
+            r.summarize()
+        body = Path(".private/summary").read_text()
+        self.assertIn("Comparison unavailable", body)
+        self.assertIn("&lt;missing&gt;", body)
+        self.assertNotIn("app", body)
+        Path(".private/summary").unlink()
+        with patch.dict(os.environ, {"HOST": "mini", "REPORT_READY": "", "PREPARE_OUTCOME": "failure"}):
+            r.summarize()
+        self.assertNotIn("missing", Path(".private/summary").read_text())
 
-    def test_old_run_same_run_and_old_retry_cannot_overwrite(self):
-        for run, attempt in ((9, 100), (10, 1), (10, 2), (11, 1)):
-            with self.subTest(run=run, attempt=attempt):
-                previous = copy.deepcopy(self.data)
-                previous.update(run_number=run, attempt=attempt)
-                self.api.comments = [self.comment(previous)]
-                if (run, attempt) < (10, 1):
-                    self.publish()
-                else:
-                    with self.assertRaises(ValueError):
-                        self.publish()
-        self.assertEqual(len(self.api.writes), 1)
-
-    def test_later_retry_updates_existing_report(self):
-        self.api.comments = [self.comment()]
-        self.data["attempt"] = 2
-        self.publish()
-        self.assertEqual(self.api.writes[0][0], "PATCH")
-
-    def test_stale_head_target_tip_retarget_closed_and_foreign_preserve_comment(self):
-        original = copy.deepcopy(self.api.pr)
-        mutations = [lambda: self.api.pr["head"].update(sha=C),
-                     lambda: setattr(self.api, "tip", C),
-                     lambda: self.api.pr["base"].update(ref="other"),
-                     lambda: self.api.pr.update(state="closed"),
-                     lambda: self.api.pr["head"]["repo"].update(full_name="foreign/repo")]
-        for mutate in mutations:
-            self.api.pr, self.api.tip = copy.deepcopy(original), B
-            self.api.comments = [self.comment(dict(self.data, run_number=9))]
-            mutate()
-            with self.assertRaises(ValueError):
-                self.publish()
-        self.assertEqual(self.api.writes, [])
-
-    def test_ambiguous_corrupt_and_network_failure_preserve_old(self):
-        for comments in ([self.comment(), self.comment()],
-                         [self.comment(body=r.marker("mini"))],
-                         [self.comment(body=r.marker("mini") + '\n<!-- nix-host-report-state {} -->')]):
-            self.api.comments = comments
-            with self.assertRaises((ValueError, KeyError)):
-                self.publish()
-        self.api.fail = True
-        self.api.comments = []
+    def test_missing_summary_env_and_size_guard(self):
+        with patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError):
+            r.write_summary("report")
         with self.assertRaises(ValueError):
-            self.publish()
-        self.assertEqual(self.api.writes, [])
+            r.write_summary("×" * 120001)
 
-    def test_concurrent_older_run_waits_and_cannot_overwrite_newer(self):
-        entered, release = threading.Event(), threading.Event()
-        original_pages, original_request = self.api.pages, self.api.request
-        first = True
-        def pages(path):
-            nonlocal first
-            if first:
-                first = False
-                entered.set()
-                if not release.wait(5):
-                    raise TimeoutError("test release timed out")
-            return original_pages(path)
-        def request(method, path, data=None):
-            result = original_request(method, path, data)
-            if method == "POST":
-                self.api.comments.append(self.comment(body=data["body"]))
-            return result
-        self.api.pages, self.api.request = pages, request
-        newer = dict(self.data, run_number=11)
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            future_new = pool.submit(r.publish, newer, self.api, 42, self.base)
-            self.assertTrue(entered.wait(5))
-            future_old = pool.submit(r.publish, self.data, self.api, 42, self.base)
-            release.set()
-            future_new.result(timeout=5)
-            with self.assertRaises(ValueError):
-                future_old.result(timeout=5)
-        self.assertEqual(len(self.api.writes), 1)
-        self.assertIn('"run_number": 11', self.api.comments[0]["body"])
-
-    def test_missing_bot_id_fails_before_any_mutation(self):
-        with self.assertRaises(ValueError):
-            r.publish(self.data, self.api, "", self.base)
-        self.assertEqual(self.api.writes, [])
-
-    def test_bounded_preview_full_report_and_html_escaping(self):
-        self.data["changes"]["additions"] = [store(i, "evil-`<tag>" + "x" * 500) for i in range(500)]
+    def test_bounded_preview_full_report_and_escaping(self):
+        before = dict.fromkeys(self.data["before"], 100)
+        after = {store(i + 10, f"evil{i}-`<tag>|" + "x" * 500): 200 for i in range(500)}
+        self.data.update(after=sorted(after), nar_sizes=before | after,
+                         groups=r.grouped(before, after), changes=r.differences(set(before), set(after)))
         bounded, full = r.render(self.data), r.render(self.data, bounded=False)
-        self.assertLess(len(bounded), 24000)
+        self.assertLess(len(bounded.encode()), 240000)
         self.assertIn("Preview limited", bounded)
         self.assertNotIn("<tag>", bounded)
         self.assertIn("&#96;", bounded)
+        self.assertIn("&#124;", bounded)
         self.assertGreater(len(full), len(bounded) * 10)
-        self.data["after"] = self.data["before"]
+        self.assertIn("Exact changed paths", full)
+        self.data.update(after=self.data["before"], groups={k: [] for k in r.GROUPS})
         self.assertIn("No system closure changes", r.render(self.data))
 
 
@@ -365,7 +303,7 @@ class Preparation(Temporary):
         self.roots.selected.return_value = self.baseline
         self.roots.stage_path.return_value = self.candidate
         self.roots.output.return_value = self.candidate_data["output"]
-        self.closure = patch.object(r, "closure", side_effect=lambda p: {store(1 if p == self.baseline else 2, "system")})
+        self.closure = patch.object(r, "closure", side_effect=lambda p: {store(1 if p == self.baseline else 2, "system"): 100})
         self.closure.start()
         self.addCleanup(self.closure.stop)
 
@@ -417,7 +355,7 @@ class Preparation(Temporary):
         self.api.tip = B
         def moved(p):
             self.api.pr["head"]["sha"] = C
-            return {store(1, "system")}
+            return {store(1, "system"): 100}
         with patch.object(r, "closure", side_effect=moved), self.assertRaises(ValueError):
             self.prepare()
 
@@ -431,7 +369,7 @@ class Preparation(Temporary):
                         (self.candidate.parent / "provenance.json").write_text("{}")
                     else:
                         self.roots.output.return_value = store(3, "other-system")
-                return {store(1, "system")}
+                return {store(1, "system"): 100}
             with patch.object(r, "closure", side_effect=corrupt), self.assertRaises(ValueError):
                 self.prepare()
             self.assertFalse(Path(".private/output").exists())
@@ -442,7 +380,7 @@ class Preparation(Temporary):
         with self.assertRaises(OSError):
             self.prepare()
         self.assertFalse((r.REPORT / "report.json").exists())
-        with patch.object(sys, "argv", ["report.py", "publish"]), patch.object(r, "warning") as warn:
+        with patch.object(sys, "argv", ["report.py", "summary"]), patch.object(r, "warning") as warn:
             r.main()
         warn.assert_called_once()
 
@@ -470,14 +408,17 @@ class WorkflowContracts(Temporary):
         self.assertIn("fail-fast: false", workflow)
         self.assertIn("ref: ${{ env.BASE_SHA }}", workflow)
 
-    def test_bot_secret_only_publish_and_report_upload_failure_guards(self):
+    def test_bot_secret_only_updater_and_summary_after_upload(self):
         updater = (HERE.parents[1] / ".forgejo/workflows/nix-input-update.yml").read_text()
         builder = (HERE.parents[1] / ".forgejo/workflows/nix-build.yml").read_text()
         self.assertNotIn("secrets.NIX_AUTOMATION_TOKEN", updater.split("      - name: Publish fresh")[0])
-        self.assertNotIn("secrets.NIX_AUTOMATION_TOKEN", builder.split("      - name: Publish bot-owned")[0])
+        self.assertNotIn("NIX_AUTOMATION_TOKEN", builder)
+        self.assertNotIn("NIX_AUTOMATION_BOT_ID", builder)
+        self.assertNotIn("report.py publish", builder)
         self.assertEqual(updater.count("secrets.NIX_AUTOMATION_TOKEN"), 1)
-        self.assertEqual(builder.count("secrets.NIX_AUTOMATION_TOKEN"), 1)
-        self.assertIn("steps.artifact.outcome == 'success'", builder)
+        self.assertIn("report.py summary", builder)
+        self.assertIn("steps.report.outcome != 'skipped'", builder)
+        self.assertIn("ARTIFACT_OUTCOME: ${{ steps.artifact.outcome }}", builder)
         self.assertEqual(builder.count("continue-on-error: true"), 3)
         self.assertIn("::warning::", builder)
         self.assertIn("github.event_name == 'pull_request'", builder)

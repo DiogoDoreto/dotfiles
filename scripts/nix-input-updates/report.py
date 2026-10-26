@@ -1,7 +1,7 @@
-"""Best-effort complete-closure reports; never check/build/promote a system."""
+"""Best-effort complete-closure reports and job summaries; never build a baseline."""
 
 import argparse
-from collections import defaultdict
+from collections import Counter, defaultdict
 import fcntl
 import hashlib
 import html
@@ -12,23 +12,37 @@ from pathlib import Path
 import re
 from urllib.parse import quote
 
-from common import Forgejo, HOSTS, REMOTE, REPO, SERVER, host, output, positive, run, sha, warning
+from common import Forgejo, REMOTE, REPO, SERVER, host, output, positive, run, sha, warning
 
 spec = importlib.util.spec_from_file_location("cache_roots", Path(__file__).parents[1] / "nix-cache-roots/roots.py")
 roots_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(roots_module)
 REPORT = Path(".private/tmp/host-package-report")
 CATEGORIES = ("additions", "removals", "version_changes", "rebuilds")
-LABELS = dict(additions="additions", removals="removals", version_changes="version changes",
-              rebuilds="same-version rebuilds")
+GROUPS = ("changed", "added", "removed")
 
 
 def closure(path):
-    paths = run("nix-store", "--query", "--requisites", str(path)).splitlines()
-    if not paths or len(paths) != len(set(paths)) or any(
-            not re.fullmatch(r"/nix/store/[0-9a-z]{32}-.+", p) for p in paths):
-        raise ValueError("invalid or empty closure listing")
-    return set(paths)
+    data = json.loads(run("nix", "path-info", "--json", "--recursive", str(path)))
+    # Nix versions expose either a path-keyed object or a list with path fields.
+    if isinstance(data, dict):
+        entries = list(data.items())
+    elif isinstance(data, list):
+        entries = [(entry.get("path"), entry) for entry in data if isinstance(entry, dict)]
+        if len(entries) != len(data):
+            raise ValueError("invalid closure metadata")
+    else:
+        raise ValueError("invalid closure metadata")
+    result = {}
+    for path, info in entries:
+        if (not isinstance(path, str) or not re.fullmatch(r"/nix/store/[0-9a-z]{32}-.+", path)
+                or path in result or not isinstance(info, dict)
+                or type(info.get("narSize")) is not int or info["narSize"] < 0):
+            raise ValueError("invalid closure path or NAR size")
+        result[path] = info["narSize"]
+    if not result:
+        raise ValueError("empty closure metadata")
+    return result
 
 
 def identity(path):
@@ -40,11 +54,7 @@ def identity(path):
 
 def differences(before, after):
     old, new = defaultdict(list), defaultdict(list)
-    old_counts, new_counts = defaultdict(int), defaultdict(int)
-    for p in before:
-        old_counts[identity(p)[0]] += 1
-    for p in after:
-        new_counts[identity(p)[0]] += 1
+    old_counts, new_counts = Counter(identity(p)[0] for p in before), Counter(identity(p)[0] for p in after)
     for p in sorted(before - after):
         old[identity(p)[0]].append(p)
     for p in sorted(after - before):
@@ -52,8 +62,7 @@ def differences(before, after):
     changes = {key: [] for key in CATEGORIES}
     for name in sorted(old.keys() | new.keys()):
         left, right = old[name], new[name]
-        # Only pair unambiguous singleton names, including the unchanged closure.
-        # Multiple versions/outputs under the same name remain additions/removals.
+        # Exact-path audit categories retain conservative singleton pairing.
         if len(left) == len(right) == old_counts[name] == new_counts[name] == 1:
             key = "rebuilds" if identity(left[0])[1] == identity(right[0])[1] else "version_changes"
             changes[key].append(dict(before=left[0], after=right[0]))
@@ -61,6 +70,23 @@ def differences(before, after):
             changes["removals"].extend(left)
             changes["additions"].extend(right)
     return changes
+
+
+def grouped(before, after):
+    old, new = defaultdict(set), defaultdict(set)
+    for p in before:
+        old[identity(p)[0]].add(p)
+    for p in after:
+        new[identity(p)[0]].add(p)
+    groups = {key: [] for key in GROUPS}
+    for name in sorted(old.keys() | new.keys()):
+        left, right = old[name], new[name]
+        if left == right:
+            continue
+        key = "changed" if left and right else "added" if right else "removed"
+        groups[key].append(dict(name=name, before=sorted(left), after=sorted(right),
+                                delta=sum(after[p] for p in right) - sum(before[p] for p in left)))
+    return groups
 
 
 def pr_state(api, number, source, target=None):
@@ -84,16 +110,14 @@ def prepare(machine, source, number, run_number, attempt, staging_root, api, roo
     positive(number)
     positive(run_number)
     positive(attempt)
-    # A failed retry must not accidentally publish files from an earlier attempt.
     REPORT.mkdir(parents=True, exist_ok=True)
-    for name in ("report.json", "report.md"):
+    for name in ("report.json", "report.md", "failure.txt"):
         (REPORT / name).unlink(missing_ok=True)
     pr = pr_state(api, number, source)
     target = pr["base"]["ref"]
     roots = roots or roots_module.Roots()
     with (roots.base / "promotion.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        # Resolve immediately before comparison, never trust the event's base SHA.
         tip = target_tip(api, target)
         pointer = roots.base / "branches" / hashlib.sha256(f"refs/heads/{target}".encode()).hexdigest() / machine
         baseline = roots.selected(pointer, target, machine)
@@ -108,6 +132,8 @@ def prepare(machine, source, number, run_number, attempt, staging_root, api, roo
         if candidate_provenance.is_symlink() or candidate_data != expected:
             raise ValueError("candidate root provenance mismatch")
         before, after = closure(baseline), closure(candidate)
+        if any(before[p] != after[p] for p in before.keys() & after.keys()):
+            raise ValueError("inconsistent NAR sizes for shared paths")
         # The lock prevents promotion/cleanup releasing either link during queries.
         if roots.selected(pointer, target, machine) != baseline or target_tip(api, target) != tip:
             raise ValueError("target baseline changed during comparison")
@@ -115,106 +141,134 @@ def prepare(machine, source, number, run_number, attempt, staging_root, api, roo
                 json.loads(candidate_provenance.read_text()) != expected):
             raise ValueError("candidate root changed during comparison")
         pr_state(api, number, source, target)
-    data = dict(host=machine, source=source, target=target, baseline=tip, pr=positive(number),
+    data = dict(schema_version=2, host=machine, source=source, target=target, baseline=tip, pr=positive(number),
                 run_number=positive(run_number), attempt=positive(attempt),
                 run_url=f"{SERVER}/{REPO}/actions/runs/{positive(run_number)}",
-                before=sorted(before), after=sorted(after), changes=differences(before, after))
+                before=sorted(before), after=sorted(after),
+                nar_sizes=dict(sorted((before | after).items())),
+                changes=differences(set(before), set(after)), groups=grouped(before, after))
     (REPORT / "report.json").write_text(json.dumps(data, indent=2) + "\n")
     (REPORT / "report.md").write_text(render(data, bounded=False))
     output("ready", "true")
     return data
 
 
-def marker(machine):
-    return f"<!-- nix-host-package-report:{host(machine)} -->"
-
-
 def code(value):
-    return "`" + html.escape(str(value)).replace("`", "&#96;").replace("\n", " ").replace("\r", " ") + "`"
+    # HTML code spans keep entities readable (Markdown backticks display them literally).
+    return "<code>" + html.escape(str(value)).replace("`", "&#96;").replace("|", "&#124;").replace("\n", " ").replace("\r", " ") + "</code>"
 
 
-def render(data, bounded=True):
-    lines = [marker(data["host"]),
-             "<!-- nix-host-report-state " + json.dumps({k: data[k] for k in
-                 ("run_number", "attempt", "source", "baseline")}, sort_keys=True) + " -->",
-             f"## Host package change report: {data['host']}",
+def size(value, signed=False):
+    magnitude = abs(value)
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB", "PiB"):
+        if magnitude < 1024 or unit == "PiB":
+            break
+        magnitude /= 1024
+    text = f"{magnitude:.3g}" if unit != "B" else str(magnitude)
+    return ("-" if value < 0 else "+" if signed and value > 0 else "") + text + " " + unit
+
+
+def versions(paths, shared):
+    counts = Counter(identity(p)[1] or "<none>" for p in set(paths) - shared)
+    labels = [version + (f" ×{count}" if count > 1 else "") for version, count in sorted(counts.items())]
+    if shared:
+        labels.append("<unchanged>")
+    return ", ".join(labels) or "<none>"
+
+
+def render(data, bounded=True, artifact_available=True):
+    before, after = set(data["before"]), set(data["after"])
+    sizes = data["nar_sizes"]
+    old_size, new_size = sum(sizes[p] for p in before), sum(sizes[p] for p in after)
+    artifact = ("Full report: Actions artifact " + code("host-package-report-" + data["host"] + "-" + str(data["attempt"]))
+                + " (instance retention applies)." if artifact_available else
+                "**Complete artifact unavailable: upload failed or was skipped. This is only a bounded preview.**")
+    lines = [f"## Host package change report: {host(data['host'])}",
              f"Target {code(data['target'])} at {code(data['baseline'])} → PR {code(data['source'])}",
-             f"[Build run]({data['run_url']}) · Full report: Actions artifact "
-             f"{code('host-package-report-' + data['host'] + '-' + str(data['attempt']))} (instance retention applies).",
-             "", "Complete system closures, including transitive dependencies. Store names are heuristic "
-             "identities: only unique names are paired; ambiguous outputs/versions remain additions/removals.", "",
-             " · ".join(f"{LABELS[key]}: **{len(data['changes'][key])}**" for key in CATEGORIES), ""]
-    if data["before"] == data["after"]:
+             f"[Build run]({data['run_url']}) · {artifact}", "",
+             "Complete system closures, including transitive dependencies. Names/versions are heuristic; "
+             "grouping does not imply an unambiguous package upgrade. Sizes are NAR sizes, not disk usage.", "",
+             f"**PATHS:** {len(before)} → {len(after)} (+{len(after - before)}, -{len(before - after)})  ",
+             f"**SIZE:** {size(old_size)} → {size(new_size)}  ",
+             f"**DIFF:** {size(new_size - old_size, signed=True)}", "",
+             " · ".join(f"{key}: **{len(data['groups'][key])}**" for key in GROUPS), ""]
+    if before == after:
         lines.append("No system closure changes.")
     remaining = 40 if bounded else float("inf")
-    for key in CATEGORIES:
-        lines.append(f"### {LABELS[key].title()}")
-        for change in data["changes"][key]:
+    for key in GROUPS:
+        rows = data["groups"][key]
+        if not rows or remaining <= 0:
+            continue
+        lines.extend([f"### {key.title()}", "", "| Name | Before → After | NAR size delta |",
+                      "| --- | --- | ---: |"])
+        for row in rows:
             if remaining <= 0:
                 break
-            text = (f"{change['before']} → {change['after']}" if isinstance(change, dict) else change)
-            if bounded and len(text) > 300:
-                text = text[:297] + "…"
-            lines.append("- " + code(text))
+            shared = set(row["before"]) & set(row["after"])
+            name = row["name"]
+            text = versions(row["before"], shared) + " → " + versions(row["after"], shared)
+            if bounded:
+                name = name[:200] + ("…" if len(name) > 200 else "")
+                text = text[:500] + ("…" if len(text) > 500 else "")
+            lines.append(f"| {code(name)} | {code(text)} | {size(row['delta'], signed=True)} |")
             remaining -= 1
-    if bounded and sum(map(len, data["changes"].values())) > 40:
-        lines.append("\nPreview limited to 40 changes; download the artifact for every path/change and both complete closures.")
+        lines.append("")
+    if bounded and sum(map(len, data["groups"].values())) > 40:
+        lines.append("Preview limited to 40 grouped rows; the artifact contains every group, changed path and both complete closures.")
+    if not bounded:
+        lines.extend(["## Exact changed paths", ""])
+        for key in CATEGORIES:
+            lines.append(f"### {key.replace('_', ' ').title()}")
+            for change in data["changes"][key]:
+                text = f"{change['before']} → {change['after']}" if isinstance(change, dict) else change
+                lines.append("- " + code(text))
     return "\n".join(lines) + "\n"
 
 
-def publish(data, api, bot_id, base=roots_module.BASE):
-    machine = host(data["host"])
-    positive(data["attempt"])
-    positive(data["run_number"])
-    # Same persistent single-runner domain as retention. Serializes even concurrent
-    # processes; never assume a Forgejo concurrency queue is ordered by run age.
-    with (Path(base) / f"report-{positive(data['pr'])}-{machine}.lock").open("a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        # Forgejo 16 repo-specific tokens cannot carry read:user (/user).
-        # The operator pins the dedicated account's numeric ID as a repo variable.
-        bot_id = positive(bot_id)
-        comments = api.pages(f"/repos/{REPO}/issues/{positive(data['pr'])}/comments")
-        owned = [c for c in comments if c["user"]["id"] == bot_id and marker(machine) in c["body"]]
-        if len(owned) > 1:
-            raise ValueError("multiple bot-owned marked comments; refusing ambiguous edit")
-        if owned:
-            match = re.search(r"<!-- nix-host-report-state (.+?) -->", owned[0]["body"])
-            if not match:
-                raise ValueError("marked comment has no valid freshness metadata")
-            previous = json.loads(match[1])
-            prior_order = (positive(previous["run_number"]), positive(previous["attempt"]))
-            order = (positive(data["run_number"]), positive(data["attempt"]))
-            if prior_order >= order:
-                raise ValueError("same or newer report already published; preserving it")
-        # Last observation before mutation: head, target ref, target tip must all
-        # still match. Forgejo comments have no compare-and-swap API.
-        pr_state(api, data["pr"], data["source"], data["target"])
-        if target_tip(api, data["target"]) != sha(data["baseline"]):
-            raise ValueError("target tip changed before comment publication")
-        body = render(data)
-        if len(body) > 24000:
-            raise ValueError("bounded report exceeded comment budget")
-        if owned:
-            api.request("PATCH", f"/repos/{REPO}/issues/comments/{positive(owned[0]['id'])}", dict(body=body))
-        else:
-            api.request("POST", f"/repos/{REPO}/issues/{positive(data['pr'])}/comments", dict(body=body))
+def write_summary(body):
+    path = os.environ.get("FORGEJO_STEP_SUMMARY") or os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        raise ValueError("runner did not provide a step summary file")
+    # Leave ample headroom under Forgejo's 1 MiB per-step limit; never rely on its truncation.
+    if len(body.encode("utf-8")) > 240000:
+        raise ValueError("bounded report exceeded summary budget")
+    with open(path, "a") as file:
+        file.write(body)
+
+
+def summarize():
+    if os.environ.get("REPORT_READY") == "true":
+        data = json.loads((REPORT / "report.json").read_text())
+        write_summary(render(data, artifact_available=os.environ.get("ARTIFACT_OUTCOME") == "success"))
+    else:
+        reason = "Comparison step failed before producing a report."
+        if os.environ.get("PREPARE_OUTCOME") == "success" and (REPORT / "failure.txt").exists():
+            reason = (REPORT / "failure.txt").read_text()[:1000]
+        write_summary(f"## Host package change report: {host(os.environ['HOST'])}\n\n"
+                      f"Comparison unavailable: {code(reason)}\n\n"
+                      "No baseline was built. Mandatory build/retention result is unchanged.\n")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("prepare", "publish"))
+    parser.add_argument("operation", choices=("prepare", "summary"))
     args = parser.parse_args()
     try:
         if args.operation == "prepare":
+            # Also clear stale state if environment/API initialization fails.
+            REPORT.mkdir(parents=True, exist_ok=True)
+            for name in ("report.json", "report.md", "failure.txt"):
+                (REPORT / name).unlink(missing_ok=True)
             prepare(os.environ["HOST"], os.environ["SOURCE_SHA"], os.environ["PR_NUMBER"],
                     os.environ["RUN_NUMBER"], os.environ["RUN_ATTEMPT"], os.environ["STAGING_ROOT"],
                     Forgejo(os.environ.get("NIX_CACHE_JOB_TOKEN")))
         else:
-            publish(json.loads((REPORT / "report.json").read_text()),
-                    Forgejo(os.environ.get("NIX_AUTOMATION_TOKEN")),
-                    os.environ.get("NIX_AUTOMATION_BOT_ID"))
+            summarize()
     except Exception as error:
         warning(f"Host package change report {args.operation} skipped/failed: {error}")
+        if args.operation == "prepare":
+            REPORT.mkdir(parents=True, exist_ok=True)
+            (REPORT / "failure.txt").write_text(str(error)[:1000])
         # Reporting cannot change a successful mandatory check/build/retention result.
 
 

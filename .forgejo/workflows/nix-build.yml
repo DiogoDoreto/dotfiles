@@ -80,16 +80,19 @@ jobs:
           name: host-package-report-${{ matrix.host }}-${{ github.run_attempt }}
           path: .private/tmp/host-package-report/
           if-no-files-found: error
-      - name: Publish bot-owned host report (best effort)
-        id: comment
-        if: steps.report.outputs.ready == 'true' && steps.artifact.outcome == 'success'
+      - name: Write host job summary (best effort)
+        id: summary
+        if: >-
+          !cancelled() && github.event_name == 'pull_request' &&
+          steps.report.outcome != 'skipped'
         continue-on-error: true
         env:
-          NIX_AUTOMATION_TOKEN: ${{ secrets.NIX_AUTOMATION_TOKEN }}
-          NIX_AUTOMATION_BOT_ID: ${{ vars.NIX_AUTOMATION_BOT_ID }}
-        run: python3 scripts/nix-input-updates/report.py publish
+          REPORT_READY: ${{ steps.report.outputs.ready }}
+          PREPARE_OUTCOME: ${{ steps.report.outcome }}
+          ARTIFACT_OUTCOME: ${{ steps.artifact.outcome }}
+        run: python3 scripts/nix-input-updates/report.py summary
       - name: Warn about reporting infrastructure failures
         if: >-
           !cancelled() && (steps.report.outcome == 'failure' ||
-          steps.artifact.outcome == 'failure' || steps.comment.outcome == 'failure')
-        run: echo '::warning::Host package change reporting failed; mandatory build/retention result is unchanged. Any earlier PR report is preserved.'
+          steps.artifact.outcome == 'failure' || steps.summary.outcome == 'failure')
+        run: echo '::warning::Host package change reporting failed; mandatory build/retention result is unchanged.'

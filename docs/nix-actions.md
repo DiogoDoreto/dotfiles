@@ -72,8 +72,9 @@ cannot be enforced and verified, **leave this host runner disabled** and use a
 separately designed isolated runner instead. Never use `pull_request_target` to
 execute source-head code. No administrator/push/API/signing secrets are supplied
 to Nix check/build subprocesses. The separate repository-limited automation token
-is exposed only to the new updater/report publishing steps, never at job scope
-or to Nix; this does not create isolation between trusted native-runner jobs.
+is exposed only to the updater's publishing step, never at job scope or to
+Nix. Host package change reports use job summaries without a publishing token;
+this does not create isolation between trusted native-runner jobs.
 Forgejo still supplies its automatic job token; `pull_request` tokens are read-only, while main/manual tokens have Forgejo's normal permissions. Do
 not assume a GitHub-style `permissions:` block reduces those permissions here.
 
