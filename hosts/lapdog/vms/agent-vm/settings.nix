@@ -2,7 +2,6 @@
 # Network identities and state paths use the shared module defaults.
 {
   autostart = true;
-  paseo.enable = true;
   t3code.enable = true;
   shares = [
     {
