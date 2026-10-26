@@ -10,6 +10,8 @@ with lib;
 
 let
   cfg = config.dog.services.agent-vm;
+  # Use explicitly installed agents from the login shell's PATH, not upstream's bundle.
+  t3code = pkgs.llm-agents.t3code.override { providerPackages = [ ]; };
 in
 {
   imports = [ ./options.nix ];
@@ -189,7 +191,7 @@ in
       Type = "simple";
       User = cfg.guestUser;
       WorkingDirectory = cfg.workingDirectory;
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'exec ${pkgs.llm-agents.t3code}/bin/t3 serve --host ${cfg.guestAddress} --port ${toString cfg.t3code.guestPort} --no-browser'";
+      ExecStart = "${pkgs.bash}/bin/bash -lc 'exec ${t3code}/bin/t3 serve --host ${cfg.guestAddress} --port ${toString cfg.t3code.guestPort} --no-browser'";
       Restart = "on-failure";
       RestartSec = "5s";
     };
@@ -209,7 +211,7 @@ in
           optional cfg.opencode.enable llm-agents.opencode
           ++ optional cfg.paseo.enable paseo
           ++ optional cfg.pi.enable llm-agents.pi
-          ++ optional cfg.t3code.enable llm-agents.t3code;
+          ++ optional cfg.t3code.enable t3code;
       };
       targets.genericLinux.enable = true;
       dog.programs = {

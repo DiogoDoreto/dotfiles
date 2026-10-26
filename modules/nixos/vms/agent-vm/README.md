@@ -220,7 +220,10 @@ service or opening ports. Lapdog enables it in its guest deployment; run it with
 `agent-vm-ssh -t pi`.
 
 t3code is optional (`t3code.enable`, default `false`). Both deployments install
-`llm-agents.t3code` in the guest user's Home Manager profile. Run its CLI with
+`llm-agents.t3code` in the guest user's Home Manager profile, with upstream's
+bundled provider packages disabled (`providerPackages = [ ]`). Both the CLI and
+managed server use only agents explicitly installed in the guest's PATH; enabling
+t3code does not implicitly install additional coding agents. Run its CLI with
 `agent-vm-ssh -t 't3 --help'` for available options. Its managed server is described
 above; use the CLI for pairing and administration of that running instance.
 
