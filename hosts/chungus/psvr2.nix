@@ -42,18 +42,28 @@ let
     hash = "sha256-Jje7MsPp1M4vjYr08eqn8q/+TE9USGiYi6T9fang9+w=";
   };
 
-  # Toolkit experimental driver build that runs the PSVR2 driver under
-  # Wine/Proton (required for Ignition).
+  # Matched upstream CI builds at a34894a61c3866a880e2c85c3cc99a4216ce86cb.
+  # Run 39070690432; nightly.link provides unauthenticated artifact downloads.
+  # Hashes verified against GitHub's artifact digests. These artifacts expire
+  # 2027-01-15: retain their store paths (or mirror them) before then.
   psvr2tk-ignition = pkgs.fetchurl {
-    url = "https://github.com/BnuuySolutions/PSVR2Toolkit/releases/download/v1.0.0-experimental-2/PSVR2TK-win64-Ignition.zip";
-    hash = "sha256-QnRiAVeZzyCyL/vXgQfACVVuuLFDm0R6Zo+7e1ZLDdE=";
+    name = "psvr2-toolkit-a34894a-windows.zip";
+    url = "https://nightly.link/BnuuySolutions/PSVR2Toolkit/actions/artifacts/12115002925.zip";
+    hash = "sha256-ZcNBTbvQgdNO/Endisarsp+x6VY1o+G+Y4i4vWPFW3I=";
   };
 
-  # Linux CAPI companion libraries (loader, IPC server, SDL) used by the
-  # Toolkit's Linux apps (e.g. the Unity room-setup app).
+  # Includes the Wine libcrossipc.dll as well as native Linux CAPI libraries.
   psvr2tk-capi-linux = pkgs.fetchurl {
-    url = "https://github.com/BnuuySolutions/PSVR2Toolkit/releases/download/v1.0.0-experimental-2/CAPIApps-Linux.zip";
-    hash = "sha256-SqEV2yP84p0iPGCH8AVoAoLwQq614/QOpQKl79GmRcc=";
+    name = "psvr2-toolkit-a34894a-linux.zip";
+    url = "https://nightly.link/BnuuySolutions/PSVR2Toolkit/actions/artifacts/12115197424.zip";
+    hash = "sha256-CNId7TRNdOXupBKOyZdblOOxTrKsLUfjpejebHwQChc=";
+  };
+
+  # CI copies the stock Windows libusb DLL into both archives. Ignition needs
+  # the Wine ELF bridge from the experimental release instead; retain only it.
+  psvr2tk-wine-usb = pkgs.fetchurl {
+    url = "https://github.com/BnuuySolutions/PSVR2Toolkit/releases/download/v1.0.0-experimental-2/PSVR2TK-win64-Ignition.zip";
+    hash = "sha256-QnRiAVeZzyCyL/vXgQfACVVuuLFDm0R6Zo+7e1ZLDdE=";
   };
 
   # Vulkan layer that patches SteamVR's vrcompositor for wired headsets:
@@ -195,15 +205,21 @@ let
       # driver_*.sh into bin/linux64 — fix the copies too.
       fix_shebangs "$plug_in/bin/linux64"
 
-      # 2. Swap the official Sony driver for the PSVR2 Toolkit experimental
-      #    build, plus the Linux CAPI companion libraries (both flat into
-      #    bin/win64).
+      # 2. Install the matched Toolkit CI driver and Linux companions flat
+      #    into bin/win64. Do not extract the Windows IPC DLL, stock libusb,
+      #    version.dll redirection shim, or unrelated CI build/debug files.
       win64="$plug_in/bin/win64"
       if [ -f "$win64/driver_playstation_vr2.dll" ] && [ ! -f "$win64/driver_playstation_vr2_orig.dll" ]; then
         mv "$win64/driver_playstation_vr2.dll" "$win64/driver_playstation_vr2_orig.dll"
       fi
-      unzip -oq ${psvr2tk-ignition} -d "$win64"
-      unzip -oq ${psvr2tk-capi-linux} -d "$win64"
+      unzip -oq ${psvr2tk-ignition} \
+        driver_playstation_vr2.dll psvr2_toolkit_capi.dll -d "$win64"
+      unzip -oq ${psvr2tk-capi-linux} \
+        libcrossipc.dll libcrossipc.so libpsvr2_toolkit_capi.so \
+        libSDL3.so libSDL3.so.0 libSDL3.so.0.5.0 \
+        libpsvr2_toolkit_capi_loader.so \
+        psvr2_toolkit_legacy_ipc_server psvr2_toolkit_capi_test -d "$win64"
+      unzip -oq ${psvr2tk-wine-usb} libusb-1.0.dll -d "$win64"
 
       # 3. Repair the Toolkit's compositor binding. Its shipped binding uses
       #    an obsolete power-menu action and leaves Options unbound. Match the

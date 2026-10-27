@@ -64,7 +64,7 @@ Research background: `../_kb/research/psvr2-linux-desktop.org` (2026-09-20).
 |---|---|
 | `services.udev.packages` → `70-xrhardware.rules` | udev rules for the headset (`054c:0cde`) and both Sense controllers (`0e45`/`0e46`). Pinned to xr-hardware **main** (`143de7a`), because the nixpkgs package (1.1.1, 2024) predates the **left** controller rule added in 1.1.2 (2026-07-31) — that is the Toolkit wiki's "left controller not working" fix. The `70-` prefix matters: it must sort before the uaccess rules. |
 | `environment.etc` → `vulkan/implicit_layer.d/VkLayer_steamvr_linux_fixes.json` | **SteamVRLinuxFixes** implicit Vulkan layer (v0.2.0). Patches SteamVR's vrcompositor: enables **120 Hz** on the PSVR2, fixes present-wait view lag, enables `VK_PRESENT_MODE_FIFO_LATEST_READY_EXT` (NVIDIA), fixes the Mesa 26 swapchain usage-bit no-image bug. Manifest ships with a relative `library_path`; we rewrite it to the absolute store path. |
-| Pinned artifacts (in the Nix store) | Ignition **v1.1.0**, PSVR2 Toolkit **v1.0.0-experimental-2** (+ CAPIApps-Linux), SteamVRLinuxFixes **v0.2.0**, PSVR2Updater **v1.0**, PSVR2Toolkit.UnitySetup **v1.1.0** — see "Updating pinned versions". |
+| Pinned artifacts (in the Nix store) | Ignition **v1.1.0**, PSVR2 Toolkit **a34894a** (matched Windows/Linux CI builds; Wine USB bridge from **v1.0.0-experimental-2**), SteamVRLinuxFixes **v0.2.0**, PSVR2Updater **v1.0**, PSVR2Toolkit.UnitySetup **v1.1.0** — see "Updating pinned versions". |
 | `psvr2-setup` | one-shot installer: extracts Ignition to `~/.local/share/psvr2/ignition`, rewrites `#!/bin/bash` shebangs to `#!/usr/bin/env bash` (NixOS has no `/bin`) — in the Ignition scripts (the `bin/linux64` copies of `proton` and `launch_serverhelper.sh` are executed by the driver shim on every SteamVR launch) **and in Steam's own `SteamVR/bin/*.sh` scripts** (`vrpathreg.sh` et al., which `driver_install.sh` execs on the host, outside Steam's FHS sandbox), runs `install_ignition.sh` against the PSVR2 App's `SteamVR_Plug-In`, swaps the official driver for the Toolkit experimental build (renames the original to `driver_playstation_vr2_orig.dll`), repairs the shipped Sense compositor binding (PS opens the dashboard; hold right Options to recenter), registers the driver via `vrpathreg` **inside Steam's FHS sandbox** (`steam-run` — NixOS's dynamic-loader stub refuses to run Steam's native Linux binaries on the bare host), merges the Toolkit's `steamvr.vrsettings` keys, applies the `setcap` RT-priority fix, and extracts the Unity room-setup app to `~/.local/share/psvr2/unitysetup`. Re-runnable. |
 | `psvr2-room-setup` | launches the Toolkit Unity room-setup app through `steam-run` with the same NVIDIA-only environment as SteamVR. A valid saved play area is required for hold-Options recentering. |
 | `psvr2-firmware` | `check` prints firmware; `update` flashes V6.00 via DepotDownloader (depot 2580191, manifest 8448590652442674786) + PSVR2Updater. PSVR2Updater is a generic Linux ELF, so it runs inside the Steam FHS (`steam-run`) with its work dir under `~/.local/share/psvr2/` (the FHS shares `$HOME` but not `/tmp`). Needs `STEAM_USER`/`STEAM_PASS`. |
@@ -107,6 +107,41 @@ Research background: `../_kb/research/psvr2-linux-desktop.org` (2026-09-20).
 8. `psvr2-status` to verify, then play.
 
 ## Updating pinned versions
+
+### Current Toolkit CI pin (2026-10-27)
+
+Toolkit is pinned to commit **`a34894a61c3866a880e2c85c3cc99a4216ce86cb`**,
+six commits after experimental-2, using the successful upstream
+[CI run 39070690432](https://github.com/BnuuySolutions/PSVR2Toolkit/actions/runs/39070690432).
+The Windows driver/CAPI and Linux companion builds come from the same run.
+This includes the October controller timestamp, alignment, polling-retry and
+gaze-disabled initialization changes; it is **not a new upstream release** and
+does not establish that Bluetooth tracking limitations are resolved.
+
+The artifacts are downloaded through `nightly.link` using immutable artifact IDs
+(`12115002925` Windows, `12115197424` Linux), with hashes verified against
+GitHub's artifact digests. **They expire on 2027-01-15.** This temporary risk is
+accepted: rebuilds can reuse the exact fetched ZIP store paths while retained,
+but a fresh download after expiry will fail. Retain a system generation that
+references them, add GC roots, or mirror the ZIPs before collecting them.
+Copies extracted into the Steam directory are not a substitute for these store
+paths when rebuilding. Fetching them on another machine does not retain them
+in chungus's store; deploy while the downloads are available.
+
+`psvr2-setup` selects only the runtime files needed from the larger CI ZIPs.
+It deliberately uses Linux's **Wine ELF `libcrossipc.dll`**, not Windows's IPC
+DLL, and keeps the experimental-2 **Wine ELF `libusb-1.0.dll`**: both CI archives
+ship the stock Windows USB DLL instead of the Linux USB bridge. The release ZIP
+is still pinned solely to supply that bridge. No unrelated CI executables,
+Windows `version.dll` redirection shim, or debug/static libraries are installed.
+
+After deploying, stop SteamVR, run **`psvr2-setup`**, then restart SteamVR and
+run **`psvr2-status`**. Test controller alignment/tracking, room setup, recentering
+and dashboard rendering. Hardware validation of this CI pin is still pending.
+To roll back, restore the two experimental-2 fetches and the original full-ZIP
+extraction in `psvr2.nix`, redeploy, and rerun `psvr2-setup`.
+
+### Release updates
 
 All versions live in `psvr2.nix`. To bump one (e.g. a new Toolkit
 experimental release):
@@ -151,8 +186,9 @@ Check logs first: `~/.local/share/Steam/logs/vrserver.txt`,
 
 ## Known limitations (accept, don't fight)
 
-- **Experimental stack**: Toolkit v1.0.0-experimental-2 labels itself
-  experimental ("things will break"); Ignition 1.1.0 is weeks old.
+- **Experimental stack**: Toolkit is an unreleased CI build at `a34894a`
+  (six commits after experimental-2); upstream warns "things will break".
+  Ignition remains pinned to 1.1.0.
 - **No Sony app**: firmware, settings, play-area management via the official
   app are unavailable on Linux (hence PSVR2Updater + UnitySetup).
 - **SteamVR Room View**: unsupported or unstable under Ignition.
