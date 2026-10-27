@@ -41,7 +41,35 @@ class Temporary(unittest.TestCase):
         self.addCleanup(self.env.stop)
 
 
+class InputReport(unittest.TestCase):
+    def test_updated_added_removed_and_unchanged_sources(self):
+        def source(rev):
+            return {"locked": {"type": "github", "owner": "NixOS", "repo": "nixpkgs",
+                               "rev": rev, "lastModified": 1704067200}}
+        before = {"root": "root", "nodes": {
+            "root": {}, "nixpkgs": source(A), "removed": source(A), "same": source(A)}}
+        after = {"root": "root", "nodes": {
+            "root": {}, "nixpkgs": source(B), "added": source(C), "same": source(A)}}
+        report = u.input_report(before, after)
+        self.assertIn("Updated input 'nixpkgs'", report)
+        self.assertIn("github:NixOS/nixpkgs/aaaaaaaaaaaa (2024-01-01)", report)
+        self.assertIn("→ github:NixOS/nixpkgs/bbbbbbbbbbbb", report)
+        self.assertIn("Added input 'added'", report)
+        self.assertIn("Removed input 'removed'", report)
+        self.assertNotIn("'same'", report)
+
+    def test_graph_only_change_and_path_source(self):
+        before = {"root": "root", "nodes": {"root": {}}}
+        self.assertIn("Lock graph changed", u.input_report(before, before))
+        after = {"root": "root", "nodes": {
+            "root": {}, "local": {"locked": {"type": "path", "path": "./local"}}}}
+        self.assertIn("./local", u.input_report(before, after))
+
+
 class Update(Temporary):
+    OLD = json.dumps({"root": "root", "nodes": {"root": {}, "nixpkgs": {
+        "locked": {"type": "github", "owner": "NixOS", "repo": "nixpkgs", "rev": A}}}})
+    NEW = OLD.replace(A, B)
     def setUp(self):
         super().setUp()
         c.run("git", "init", "-b", "main")
@@ -49,7 +77,7 @@ class Update(Temporary):
         for machine in c.HOSTS:
             path = Path(f"hosts/{machine}")
             path.mkdir(parents=True)
-            (path / "flake.lock").write_text("old\n")
+            (path / "flake.lock").write_text(self.OLD)
         c.run("git", "add", ".")
         c.run("git", "-c", "user.name=Test", "-c", "user.email=test@invalid", "commit", "-m", "base")
         self.sha = c.run("git", "rev-parse", "HEAD")
@@ -61,7 +89,7 @@ class Update(Temporary):
         if args[0] == "nix":
             self.assertEqual(args[:4], ("nix", "flake", "update", "--flake"))
             if self.change:
-                (Path(args[4]) / "flake.lock").write_text("new\n")
+                (Path(args[4]) / "flake.lock").write_text(self.NEW)
             return ""
         return c.run(*args, **kwargs)
 
@@ -98,6 +126,8 @@ class Update(Temporary):
         self.assertEqual(len(c.run("git", "--git-dir", str(remote), "for-each-ref").splitlines()), 2)
         for call in api.request.call_args_list:
             self.assertEqual(call.args[2]["base"], "main")
+            self.assertIn("### Flake input changes", call.args[2]["body"])
+            self.assertIn("Updated input 'nixpkgs'", call.args[2]["body"])
         for args, kwargs in self.calls:
             self.assertNotIn("test-secret", str(args))
             if args[:2] == ("git", "push"):
@@ -122,8 +152,8 @@ class Update(Temporary):
                 with self.assertRaises((ValueError, subprocess.CalledProcessError)):
                     u.publish("mini", self.sha, "8", api, "fake")
             self.assertEqual(api.request.call_count, 0 if fail_at == "push" else 1)
-            self.assertEqual(Path("hosts/chungus/flake.lock").read_text(), "old\n")
-            self.assertEqual(Path("hosts/lapdog/flake.lock").read_text(), "old\n")
+            self.assertEqual(Path("hosts/chungus/flake.lock").read_text(), self.OLD)
+            self.assertEqual(Path("hosts/lapdog/flake.lock").read_text(), self.OLD)
 
     def test_dirty_or_wrong_base_never_updates(self):
         with patch.object(u, "run", self.command):

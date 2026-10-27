@@ -2,6 +2,7 @@
 
 import argparse
 import base64
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,40 @@ def changed_lock(machine):
     if run("git", "diff", "--cached", "--name-only"):
         raise ValueError("unexpected staged changes")
     return bool(changed)
+
+
+def input_report(before, after):
+    """Summarize locked sources, including transitive inputs, without evaluation."""
+    def sources(lock):
+        return {name: node["locked"] for name, node in lock["nodes"].items()
+                if name != lock["root"] and "locked" in node}
+
+    def describe(source):
+        kind = source.get("type", "unknown")
+        if kind in ("github", "gitlab"):
+            location = f"{kind}:{source['owner']}/{source['repo']}"
+        else:
+            location = source.get("url", source.get("path", kind))
+        revision = source.get("rev", source.get("narHash", ""))
+        if revision:
+            location += f"/{revision[:12]}"
+        if "lastModified" in source:
+            date = datetime.fromtimestamp(source["lastModified"], timezone.utc).date()
+            location += f" ({date})"
+        return location
+
+    old, new = sources(before), sources(after)
+    lines = []
+    for name in sorted(old.keys() | new.keys()):
+        if name not in old:
+            lines.append(f"• Added input '{name}':\n    {describe(new[name])}")
+        elif name not in new:
+            lines.append(f"• Removed input '{name}':\n    {describe(old[name])}")
+        elif old[name] != new[name]:
+            lines.append(f"• Updated input '{name}':\n    {describe(old[name])}\n  → {describe(new[name])}")
+    text = "\n".join(lines) or "Lock graph changed without changes to locked sources."
+    # Indented code keeps lock-file strings from being interpreted as Markdown.
+    return "### Flake input changes\n\n" + "\n".join("    " + line for line in text.splitlines()) + "\n\n"
 
 
 def prepare(machine, base):
@@ -50,6 +85,9 @@ def publish(machine, base, run_id, api, token):
         raise ValueError("no changed update prepared for this host/base")
     if run("git", "rev-parse", "HEAD") != base or not changed_lock(machine):
         raise ValueError("prepared checkout no longer matches")
+    lock = f"hosts/{machine}/flake.lock"
+    report = input_report(json.loads(run("git", "show", f"{base}:{lock}")),
+                          json.loads(Path(lock).read_text()))
     # A fresh random branch for every invocation, including retries. Never force.
     branch = f"automation/inputs/{machine}/{run_id}-{uuid.uuid4().hex}"
     run("git", "checkout", "-b", branch)
@@ -67,7 +105,7 @@ def publish(machine, base, run_id, api, token):
     pr = api.request("POST", f"/repos/{REPO}/pulls", dict(
         base="main", head=branch, title=f"Update {machine} flake inputs",
         body=f"Update all flake inputs for **{machine}**, starting from main `{base}`.\n\n"
-             "This updater performed no flake checks or system builds. The trusted Nix systems "
+             + report + "This updater performed no flake checks or system builds. The trusted Nix systems "
              "workflow owns validation, retention and any available host package change report.\n\n"
              "No deployment or activation is performed."))
     print(f"Published {machine} PR #{positive(pr['number'])}")
