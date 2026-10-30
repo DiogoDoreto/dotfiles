@@ -6,4 +6,4 @@
 
 (package! org-mem :pin "07094dac902e452d59533e4d01e8177afaa0cfd1")
 
-(package! org-node :pin "10ea878528a24ae9bf6903da198f347d093f2b11")
+(package! org-node :pin "7466daf5ec82504eab0fe2a68652830776f0baa8")

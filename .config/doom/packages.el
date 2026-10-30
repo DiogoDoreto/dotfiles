@@ -4,9 +4,9 @@
 
 (package! tts :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
-(package! modus-themes :pin "75aa3fa79efd04ddf7980a1d3ec0cef6e4f4af90")
+(package! modus-themes :pin "b1647b2980f4f27c3c81ac1531d992a14fefd06a")
 
-(package! ef-themes :pin "db36d53c090d7820643157f2e81ee37937fe4a0d")
+(package! ef-themes :pin "48920f6ca277a0f55b3e21eefa04bdb57bfd8509")
 
 (package! consult-gh :recipe (:host github :repo "armindarvish/consult-gh")
   :pin "c8707e86d36ea4ec38e177ca8fa0313a5374a0a9")
@@ -20,25 +20,25 @@
 
 (package! magit-delta :pin "5fc7dbddcfacfe46d3fd876172ad02a9ab6ac616")
 
-(package! git-link :pin "3870ae57408dc72ae2215b0056d6661e2c198e75")
+(package! git-link :pin "ca01d013bd575710e2cd47001ee1ef6ee41667cf")
 
 (package! fancy-compilation :pin "502d36e0fb4c4daedc16ea5d732dcbc8285d6fb1")
 
 (package! info-rename-buffer :pin "87fb263b18717538fd04878e3358e1e720415db8")
 
-(package! ct :pin "d47271cc1b5ef55cf74a3e25ac45a187b36910d5") ;; Color Tools
+(package! ct :pin "0183c1120a5b405c9886fa3ec3fabef4dc4f9ec6") ;; Color Tools
 
-(package! devdocs-browser :pin "f6c3b96748cb4e6d3022a2cece15d0d0fc437cd6")
+(package! devdocs-browser :pin "a49adc1f20b745338db34b729a7c94394c1c1689")
 
 (package! daemons :pin "4900fe1ec64ab339da29082e8fd4545fc6e48ec4")
 
-(package! hnreader :pin "a56f67a99a855ca656da1c1985e09f44509e4bbb")
+(package! hnreader :pin "3a1ad5f3711b89e3e2f8506cc485ce9f8e8ca216")
 
 (package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")
 
 (package! elfeed-protocol :pin "58936590459ccc2dfd6132f69983011d15d9404a")
 (package! elfeed-protocol-freshrss :recipe (:host codeberg :repo "lou/elfeed-protocol-freshrss")
-  :pin "117772f9063e62c51a6772524ba129389bd8f3d8")
+  :pin "5b282ae09f994d9d63ac2f7aa0d07414d9802464")
 
 (package! evil-textobj-tree-sitter :pin "fecc0e11615df31a6651ce11b012388e53cad4e9")
 
