@@ -20,6 +20,8 @@ spec.loader.exec_module(roots_module)
 REPORT = Path(".private/tmp/host-package-report")
 CATEGORIES = ("additions", "removals", "version_changes", "rebuilds")
 GROUPS = ("changed", "added", "removed")
+# Forgejo and runner enforce this byte limit per step, not a row limit.
+SUMMARY_LIMIT = 1024 * 1024
 
 
 def closure(path):
@@ -176,7 +178,11 @@ def versions(paths, shared):
     return ", ".join(labels) or "<none>"
 
 
-def render(data, bounded=True, artifact_available=True):
+def render(data, bounded=True, artifact_available=True, budget=SUMMARY_LIMIT):
+    if bounded:
+        full = render(data, bounded=False, artifact_available=artifact_available)
+        if len(full.encode("utf-8")) <= budget:
+            return full
     before, after = set(data["before"]), set(data["after"])
     sizes = data["nar_sizes"]
     old_size, new_size = sum(sizes[p] for p in before), sum(sizes[p] for p in after)
@@ -194,46 +200,71 @@ def render(data, bounded=True, artifact_available=True):
              " · ".join(f"{key}: **{len(data['groups'][key])}**" for key in GROUPS), ""]
     if before == after:
         lines.append("No system closure changes.")
-    remaining = 40 if bounded else float("inf")
+    total = sum(map(len, data["groups"].values()))
+
+    def notice(shown):
+        return (f"Preview limited by Forgejo's 1 MiB per-step summary budget: {shown} of {total} grouped rows shown; "
+                "report.md contains every group. See report.json for exact changed paths and both complete closures.")
+
+    used = len(("\n".join(lines) + "\n").encode("utf-8"))
+    shown = 0
+    stopped = False
     for key in GROUPS:
-        rows = data["groups"][key]
-        if not rows or remaining <= 0:
-            continue
-        lines.extend([f"### {key.title()}", "", "| Name | Before → After | NAR size delta |",
-                      "| --- | --- | ---: |"])
-        for row in rows:
-            if remaining <= 0:
-                break
+        heading = [f"### {key.title()}", "", "| Name | Before → After | NAR size delta |",
+                   "| --- | --- | ---: |"]
+        started = False
+        for row in data["groups"][key]:
             shared = set(row["before"]) & set(row["after"])
-            name = row["name"]
             text = versions(row["before"], shared) + " → " + versions(row["after"], shared)
-            if bounded:
-                name = name[:200] + ("…" if len(name) > 200 else "")
-                text = text[:500] + ("…" if len(text) > 500 else "")
-            lines.append(f"| {code(name)} | {code(text)} | {size(row['delta'], signed=True)} |")
-            remaining -= 1
-        lines.append("")
-    if bounded and sum(map(len, data["groups"].values())) > 40:
-        lines.append("Preview limited to 40 grouped rows; report.md contains every group. "
-                     "See report.json for exact changed paths and both complete closures.")
-    return "\n".join(lines) + "\n"
+            addition = ([] if started else heading) + [
+                f"| {code(row['name'])} | {code(text)} | {size(row['delta'], signed=True)} |"]
+            cost = len(("\n".join(addition) + "\n").encode("utf-8"))
+            # Reserve the section's trailing newline and an accurate truncation notice.
+            reserve = 1 + (len((notice(shown + 1) + "\n").encode("utf-8")) if shown + 1 < total else 0)
+            if bounded and used + cost + reserve > budget:
+                stopped = True
+                break
+            lines.extend(addition)
+            used += cost
+            shown += 1
+            started = True
+        if started:
+            lines.append("")
+            used += 1
+        if stopped:
+            break
+    if bounded and shown < total:
+        lines.append(notice(shown))
+    body = "\n".join(lines) + "\n"
+    if bounded and len(body.encode("utf-8")) > budget:
+        raise ValueError("report metadata exceeded summary budget")
+    return body
 
 
-def write_summary(body):
+def summary_path():
     path = os.environ.get("FORGEJO_STEP_SUMMARY") or os.environ.get("GITHUB_STEP_SUMMARY")
     if not path:
         raise ValueError("runner did not provide a step summary file")
-    # Leave ample headroom under Forgejo's 1 MiB per-step limit; never rely on its truncation.
-    if len(body.encode("utf-8")) > 240000:
+    return Path(path)
+
+
+def summary_budget():
+    path = summary_path()
+    return SUMMARY_LIMIT - (path.stat().st_size if path.exists() else 0)
+
+
+def write_summary(body):
+    if len(body.encode("utf-8")) > summary_budget():
         raise ValueError("bounded report exceeded summary budget")
-    with open(path, "a") as file:
+    with summary_path().open("a", encoding="utf-8", newline="\n") as file:
         file.write(body)
 
 
 def summarize():
     if os.environ.get("REPORT_READY") == "true":
         data = json.loads((REPORT / "report.json").read_text())
-        write_summary(render(data, artifact_available=os.environ.get("ARTIFACT_OUTCOME") == "success"))
+        write_summary(render(data, artifact_available=os.environ.get("ARTIFACT_OUTCOME") == "success",
+                             budget=summary_budget()))
     else:
         reason = "Comparison step failed before producing a report."
         if os.environ.get("PREPARE_OUTCOME") == "success" and (REPORT / "failure.txt").exists():

@@ -110,10 +110,16 @@ would require a separate storage/publication destination and are not implemented
 
 After the artifact step, `report.py summary` appends Markdown to
 `FORGEJO_STEP_SUMMARY`, falling back to `GITHUB_STEP_SUMMARY`. It includes host,
-exact compared SHAs, build-run link, artifact name, totals and at most **40 grouped
-rows**. Long preview names/versions are bounded and escaped for Markdown/HTML.
-A final **240,000-byte UTF-8 guard** stays below Forgejo's 1 MiB per-step limit;
-the complete artifacts are never silently truncated.
+exact compared SHAs, build-run link, artifact name, totals and **as many complete
+grouped rows as fit in Forgejo's 1 MiB (1,048,576-byte) per-step limit**. There is
+no fixed row cap or name/version truncation; fields are escaped for Markdown/HTML.
+The budget counts UTF-8 bytes after escaping, including headings, table syntax,
+and any existing content in the step summary file. If the full report does not
+fit, rows are included in Changed/Added/Removed order with space reserved for a
+notice stating how many rows were shown. Tables are never cut mid-row. A final
+byte guard prevents relying on Forgejo's automatic truncation; complete artifacts
+remain unbounded. Both the runner and server source confirm the same 1 MiB limit
+(see compatibility references below).
 
 - Artifact upload failure still produces the preview, clearly marked **complete
   artifact unavailable**; no successful-download claim is made.
@@ -202,7 +208,13 @@ and disposable local Git pushes. Nix/API operations in these tests are fakes.
 The retention suite skips real-Nix tests unless `NIX_CACHE_ROOTS_REAL_NIX=1`.
 Local workflow validation does not publish anything or prove live rendering.
 
-For this change, the input-update/report suite passed **40 tests**; the retention
+After replacing the fixed summary row cap with the byte budget, the
+input-update/report suite passed **48 tests**, including reports above 40 rows,
+untruncated long fields, byte-boundary fits, multibyte UTF-8 content, truncation
+notices, and existing summary content.
+
+For the original reporting implementation, the input-update/report suite passed
+**40 tests**; the retention
 suite passed **62 tests**, with 25 real-Nix tests skipped. Runner 13.2.0 workflow
 schema validation and job planning passed. A separate real-Nix smoke test added
 a tiny file to a disposable store rooted under `.private/tmp`, validated its

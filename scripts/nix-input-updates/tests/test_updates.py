@@ -341,20 +341,54 @@ class Summary(Temporary):
         with patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError):
             r.write_summary("report")
         with self.assertRaises(ValueError):
-            r.write_summary("×" * 120001)
+            r.write_summary("×" * (r.SUMMARY_LIMIT // 2 + 1))
+
+    def test_more_than_40_rows_fit_without_field_truncation(self):
+        rows = [dict(name=f"package{i}", before=[], after=[store(i + 10, "app-2")], delta=100)
+                for i in range(500)]
+        rows[-1]["name"] = "long" + "界" * 600
+        self.data["groups"] = dict(changed=rows[:200], added=rows[200:400], removed=rows[400:])
+        full = r.render(self.data, bounded=False)
+        self.assertEqual(r.render(self.data), full)
+        self.assertNotIn("Preview limited", full)
+        self.assertIn(r.code(rows[-1]["name"]), full)
+        self.assertEqual(r.render(self.data, budget=len(full.encode())), full)
+
+    def test_budget_counts_existing_summary_bytes(self):
+        prefix = "界" * 100
+        Path(".private/summary").write_text(prefix, encoding="utf-8")
+        self.assertEqual(r.summary_budget(), r.SUMMARY_LIMIT - len(prefix.encode()))
+        r.write_summary("x" * r.summary_budget())
+        self.assertEqual(Path(".private/summary").stat().st_size, r.SUMMARY_LIMIT)
+        with self.assertRaises(ValueError):
+            r.write_summary("x")
+
+    def test_small_budget_preserves_tables_and_reports_row_count(self):
+        self.data["groups"] = {
+            key: [dict(name=f"{key}{i}", before=[], after=[], delta=0) for i in range(100)]
+            for key in r.GROUPS}
+        body = r.render(self.data, budget=2000)
+        shown = sum(line.startswith("| <code>") for line in body.splitlines())
+        self.assertGreater(shown, 0)
+        self.assertIn(f"{shown} of 300 grouped rows shown", body)
+        self.assertLessEqual(len(body.encode()), 2000)
+        self.assertNotIn("### Added", body)
+        with self.assertRaises(ValueError):
+            r.render(self.data, budget=10)
 
     def test_bounded_preview_full_report_and_escaping(self):
         before = dict.fromkeys(self.data["before"], 100)
-        after = {store(i + 10, f"evil{i}-`<tag>|" + "x" * 500): 200 for i in range(500)}
+        after = {store(i + 10, f"evil{i}-`<tag>|" + "界" * 1000): 200 for i in range(500)}
         self.data.update(after=sorted(after), nar_sizes=before | after,
                          groups=r.grouped(before, after), changes=r.differences(set(before), set(after)))
         bounded, full = r.render(self.data), r.render(self.data, bounded=False)
-        self.assertLess(len(bounded.encode()), 240000)
+        self.assertLessEqual(len(bounded.encode()), r.SUMMARY_LIMIT)
+        self.assertGreater(len(bounded.encode()), r.SUMMARY_LIMIT - 4000)
         self.assertIn("Preview limited", bounded)
         self.assertNotIn("<tag>", bounded)
         self.assertIn("&#96;", bounded)
         self.assertIn("&#124;", bounded)
-        self.assertGreater(len(full), len(bounded) * 10)
+        self.assertGreater(len(full.encode()), r.SUMMARY_LIMIT)
         self.assertNotIn("Exact changed paths", full)
         self.assertNotIn("/nix/store/", full)
         self.assertIn("report.json", bounded)
