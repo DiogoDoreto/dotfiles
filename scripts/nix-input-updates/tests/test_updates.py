@@ -351,6 +351,10 @@ class Summary(Temporary):
         full = r.render(self.data, bounded=False)
         self.assertEqual(r.render(self.data), full)
         self.assertNotIn("Preview limited", full)
+        self.assertEqual(
+            [line for line in full.splitlines() if line.startswith("### ")],
+            ["### Added", "### Removed", "### Changed"],
+        )
         self.assertIn(r.code(rows[-1]["name"]), full)
         self.assertEqual(r.render(self.data, budget=len(full.encode())), full)
 
@@ -372,7 +376,9 @@ class Summary(Temporary):
         self.assertGreater(shown, 0)
         self.assertIn(f"{shown} of 300 grouped rows shown", body)
         self.assertLessEqual(len(body.encode()), 2000)
-        self.assertNotIn("### Added", body)
+        self.assertIn("### Added", body)
+        self.assertNotIn("### Removed", body)
+        self.assertNotIn("### Changed", body)
         with self.assertRaises(ValueError):
             r.render(self.data, budget=10)
 

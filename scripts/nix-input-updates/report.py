@@ -19,7 +19,7 @@ roots_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(roots_module)
 REPORT = Path(".private/tmp/host-package-report")
 CATEGORIES = ("additions", "removals", "version_changes", "rebuilds")
-GROUPS = ("changed", "added", "removed")
+GROUPS = ("added", "removed", "changed")
 # Forgejo and runner enforce this byte limit per step, not a row limit.
 SUMMARY_LIMIT = 1024 * 1024
 

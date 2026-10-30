@@ -69,7 +69,7 @@ forwarded to Nix subprocesses.
 
 ## Grouped presentation and sizes
 
-The summary is inspired by `nh`, with **Changed**, **Added**, and **Removed**
+The summary is inspired by `nh`, with **Added**, **Removed**, and **Changed**
 sections. Paths are grouped by Nix's conventional name/version split, not a
 semantic package identity. A name present on both sides is Changed when its
 paths differ; a name present on only one side is Added or Removed. Multiple
