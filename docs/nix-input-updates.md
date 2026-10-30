@@ -32,6 +32,12 @@ a PR against main. A push followed by API failure can leave an orphan branch;
 retries deliberately use a new branch rather than recover/deduplicate it.
 Invalid API-supplied host choices fail before updating anything.
 
+The PR's flake input changes compare locked sources by their paths from the
+flake root (for example, `nixpkgs` and `llm-agents/nixpkgs`), not internal lock
+node IDs such as `nixpkgs_4`. Node IDs are allocation details and may change
+without a source update. Transitive inputs are included; `follows` aliases are
+not listed separately because they do not lock independent sources.
+
 ## Build-workflow reporting
 
 `.forgejo/workflows/nix-build.yml` preserves mandatory checking, building and

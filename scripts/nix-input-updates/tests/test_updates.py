@@ -47,9 +47,11 @@ class InputReport(unittest.TestCase):
             return {"locked": {"type": "github", "owner": "NixOS", "repo": "nixpkgs",
                                "rev": rev, "lastModified": 1704067200}}
         before = {"root": "root", "nodes": {
-            "root": {}, "nixpkgs": source(A), "removed": source(A), "same": source(A)}}
+            "root": {"inputs": {name: name for name in ("nixpkgs", "removed", "same")}},
+            "nixpkgs": source(A), "removed": source(A), "same": source(A)}}
         after = {"root": "root", "nodes": {
-            "root": {}, "nixpkgs": source(B), "added": source(C), "same": source(A)}}
+            "root": {"inputs": {name: name for name in ("nixpkgs", "added", "same")}},
+            "nixpkgs": source(B), "added": source(C), "same": source(A)}}
         report = u.input_report(before, after)
         self.assertIn("Updated input 'nixpkgs'", report)
         self.assertIn("github:NixOS/nixpkgs/aaaaaaaaaaaa (2024-01-01)", report)
@@ -58,16 +60,59 @@ class InputReport(unittest.TestCase):
         self.assertIn("Removed input 'removed'", report)
         self.assertNotIn("'same'", report)
 
+    def test_input_paths_not_internal_node_ids(self):
+        before = {"root": "root", "nodes": {
+            "root": {"inputs": {"nixpkgs": "nixpkgs_4", "tool": "tool"}},
+            "tool": {"inputs": {"nixpkgs": "nixpkgs_2", "alias": ["nixpkgs"]}},
+            "nixpkgs_4": {"locked": {"type": "path", "path": "./host", "rev": A}},
+            "nixpkgs_2": {"locked": {"type": "path", "path": "./tool", "rev": A}},
+            "nixpkgs": {"locked": {"type": "path", "path": "./unreachable"}}}}
+        after = copy.deepcopy(before)
+        after["nodes"]["nixpkgs_4"]["locked"]["rev"] = B
+        after["nodes"]["nixpkgs_2"]["locked"]["rev"] = C
+        report = u.input_report(before, after)
+        self.assertIn("Updated input 'nixpkgs'", report)
+        self.assertIn("Updated input 'tool/nixpkgs'", report)
+        self.assertNotIn("nixpkgs_", report)
+        self.assertNotIn("alias", report)
+        self.assertNotIn("unreachable", report)
+
+    def test_renumbering_nodes_is_not_a_source_change(self):
+        before = {"root": "root", "nodes": {
+            "root": {"inputs": {"nixpkgs": "nixpkgs_4"}},
+            "nixpkgs_4": {"locked": {"type": "path", "path": "./local", "rev": A}}}}
+        after = copy.deepcopy(before)
+        after["nodes"]["nixpkgs_5"] = after["nodes"].pop("nixpkgs_4")
+        after["nodes"]["root"]["inputs"]["nixpkgs"] = "nixpkgs_5"
+        self.assertIn("Lock graph changed", u.input_report(before, after))
+        # Repointing a logical input to an existing different source is an update.
+        after["nodes"]["nixpkgs_5"]["locked"]["rev"] = B
+        self.assertIn("Updated input 'nixpkgs'", u.input_report(before, after))
+
+    def test_shared_nodes_and_cycles(self):
+        before = {"root": "root", "nodes": {
+            "root": {"inputs": {"one": "shared", "two": "shared"}},
+            "shared": {"locked": {"type": "path", "path": "./local", "rev": A},
+                       "inputs": {"cycle": "root"}}}}
+        after = copy.deepcopy(before)
+        after["nodes"]["shared"]["locked"]["rev"] = B
+        report = u.input_report(before, after)
+        self.assertIn("Updated input 'one'", report)
+        self.assertIn("Updated input 'two'", report)
+        self.assertEqual(report.count("Updated input"), 2)
+
     def test_graph_only_change_and_path_source(self):
         before = {"root": "root", "nodes": {"root": {}}}
         self.assertIn("Lock graph changed", u.input_report(before, before))
         after = {"root": "root", "nodes": {
-            "root": {}, "local": {"locked": {"type": "path", "path": "./local"}}}}
+            "root": {"inputs": {"local": "local"}},
+            "local": {"locked": {"type": "path", "path": "./local"}}}}
         self.assertIn("./local", u.input_report(before, after))
 
 
 class Update(Temporary):
-    OLD = json.dumps({"root": "root", "nodes": {"root": {}, "nixpkgs": {
+    OLD = json.dumps({"root": "root", "nodes": {
+        "root": {"inputs": {"nixpkgs": "nixpkgs"}}, "nixpkgs": {
         "locked": {"type": "github", "owner": "NixOS", "repo": "nixpkgs", "rev": A}}}})
     NEW = OLD.replace(A, B)
     def setUp(self):

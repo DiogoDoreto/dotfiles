@@ -24,10 +24,24 @@ def changed_lock(machine):
 
 
 def input_report(before, after):
-    """Summarize locked sources, including transitive inputs, without evaluation."""
+    """Compare sources by input path, not Nix's implementation-specific node IDs."""
     def sources(lock):
-        return {name: node["locked"] for name, node in lock["nodes"].items()
-                if name != lock["root"] and "locked" in node}
+        result = {}
+
+        def visit(node_id, path, ancestors):
+            node = lock["nodes"][node_id]
+            if path and "locked" in node:
+                result["/".join(path)] = node["locked"]
+            if node_id in ancestors:
+                return
+            for name, target in node.get("inputs", {}).items():
+                # Lists are `follows` aliases, not independently locked inputs.
+                # Report the source at its actual input path instead.
+                if isinstance(target, str):
+                    visit(target, (*path, name), ancestors | {node_id})
+
+        visit(lock["root"], (), set())
+        return result
 
     def describe(source):
         kind = source.get("type", "unknown")
