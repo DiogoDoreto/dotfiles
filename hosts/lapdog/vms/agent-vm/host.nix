@@ -7,6 +7,7 @@
   ];
 
   dog.services.agent-vm = (import ./settings.nix) // {
+    sshAlias.enable = true;
     dnsForwardZones = [
       {
         domain = "local.doreto.com.br";

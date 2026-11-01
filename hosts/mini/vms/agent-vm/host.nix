@@ -12,5 +12,8 @@
     dnsmasqBindInterfaces = false;
     dnsUpstreams = [ ];
     caddy.enable = true;
+    t3code = (import ./settings.nix).t3code // {
+      hostProxy.enable = true;
+    };
   };
 }

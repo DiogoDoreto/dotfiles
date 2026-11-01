@@ -49,6 +49,7 @@ in
     pi.enable = mkEnableOption "the Pi coding agent inside the Agent VM guest";
     t3code = {
       enable = mkEnableOption "the t3code server inside the Agent VM guest";
+      hostProxy.enable = mkEnableOption "the host loopback proxy to the guest t3code server";
       guestPort = mkOption {
         type = types.port;
         default = 3773;
@@ -63,6 +64,15 @@ in
         type = types.str;
         default = "t3code.local.doreto.com.br";
         description = "Caddy virtual host for t3code access.";
+      };
+    };
+
+    sshAlias = {
+      enable = mkEnableOption "a Home Manager SSH alias for the Agent VM control user";
+      name = mkOption {
+        type = types.strMatching "[a-zA-Z0-9_-]+";
+        default = "agent-vm";
+        description = "SSH alias for the guest, added only to the host control user's Home Manager configuration.";
       };
     };
 

@@ -10,6 +10,7 @@ with lib;
 
 let
   cfg = config.dog.services.agent-vm;
+  t3codeHostProxyEnabled = cfg.t3code.enable && cfg.t3code.hostProxy.enable;
   dnsServers = (map (zone: "/${zone.domain}/${zone.server}") cfg.dnsForwardZones) ++ cfg.dnsUpstreams;
   startCommand = "${pkgs.systemd}/bin/systemctl start microvm@${cfg.vmName}.service";
   stopCommand = "${pkgs.systemd}/bin/systemctl stop microvm@${cfg.vmName}.service";
@@ -23,7 +24,7 @@ let
     echo ""
     ${optionalString cfg.opencode.enable ''echo "OpenCode:            http://${cfg.hostLocalAddress}:${toString cfg.hostLocalPort}"''}
     ${optionalString cfg.paseo.enable ''echo "Paseo:               http://${cfg.hostLocalAddress}:${toString cfg.paseo.hostLocalPort}"''}
-    ${optionalString cfg.t3code.enable ''echo "t3code:              http://${cfg.hostLocalAddress}:${toString cfg.t3code.hostLocalPort}"''}
+    ${optionalString t3codeHostProxyEnabled ''echo "t3code:              http://${cfg.hostLocalAddress}:${toString cfg.t3code.hostLocalPort}"''}
     echo "SSH:                 agent-vm-ssh"
     echo "VM public key:       agent-vm-public-key"
     echo "DNS audit:           journalctl -u dnsmasq -g 'query'"
@@ -60,7 +61,7 @@ let
       -u microvm@${cfg.vmName}.service \
       ${optionalString cfg.opencode.enable "-u ${cfg.vmName}-proxy.service"} \
       ${optionalString cfg.paseo.enable "-u ${cfg.vmName}-paseo-proxy.service"} \
-      ${optionalString cfg.t3code.enable "-u ${cfg.vmName}-t3code-proxy.service"} \
+      ${optionalString t3codeHostProxyEnabled "-u ${cfg.vmName}-t3code-proxy.service"} \
       "$@"
   '';
 in
@@ -79,12 +80,16 @@ in
     }
     {
       assertion =
-        !cfg.t3code.enable
+        !t3codeHostProxyEnabled
         || (
           (!cfg.opencode.enable || cfg.t3code.hostLocalPort != cfg.hostLocalPort)
           && (!cfg.paseo.enable || cfg.t3code.hostLocalPort != cfg.paseo.hostLocalPort)
         );
       message = "dog.services.agent-vm.t3code.hostLocalPort must differ from other enabled host proxy ports.";
+    }
+    {
+      assertion = !(cfg.caddy.enable && cfg.t3code.enable) || cfg.t3code.hostProxy.enable;
+      message = "dog.services.agent-vm.t3code.hostProxy.enable is required for the T3 Caddy frontend.";
     }
     {
       assertion =
@@ -97,6 +102,16 @@ in
       message = "dog.services.agent-vm.t3code.guestPort must differ from SSH and other enabled guest service ports.";
     }
   ];
+
+  home-manager.users = mkIf cfg.sshAlias.enable {
+    ${cfg.controlUser}.programs.ssh.settings.${cfg.sshAlias.name} = {
+      HostName = cfg.guestAddress;
+      User = cfg.guestUser;
+      IdentityFile = "${cfg.stateDir}/ssh/host/host_to_vm";
+      IdentitiesOnly = true;
+      ForwardAgent = false;
+    };
+  };
 
   environment.systemPackages = [
     startScript
@@ -259,7 +274,7 @@ in
     };
   };
 
-  systemd.services."${cfg.vmName}-t3code-proxy" = mkIf cfg.t3code.enable {
+  systemd.services."${cfg.vmName}-t3code-proxy" = mkIf t3codeHostProxyEnabled {
     description = "Local-only proxy to t3code inside ${cfg.vmName}";
     after = [ "microvm@${cfg.vmName}.service" ];
     partOf = [ "microvm@${cfg.vmName}.service" ];
@@ -325,13 +340,15 @@ in
     '';
   };
 
-  services.caddy.virtualHosts.${cfg.t3code.hostName} = mkIf (cfg.caddy.enable && cfg.t3code.enable) {
-    extraConfig = ''
-      request_header X-Forwarded-Host {http.request.host}
+  services.caddy.virtualHosts.${cfg.t3code.hostName} =
+    mkIf (cfg.caddy.enable && t3codeHostProxyEnabled)
+      {
+        extraConfig = ''
+          request_header X-Forwarded-Host {http.request.host}
 
-      reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.t3code.hostLocalPort}
-    '';
-  };
+          reverse_proxy ${cfg.hostLocalAddress}:${toString cfg.t3code.hostLocalPort}
+        '';
+      };
 
   microvm.vms.${cfg.vmName} = {
     autostart = cfg.autostart;
