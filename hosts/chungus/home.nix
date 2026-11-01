@@ -65,7 +65,10 @@
     cli-tools.enable = true;
     pi = {
       enable = true;
-      extraWritablePaths = [ "~/p/" ];
+      extraWritablePaths = [
+        "~/p/"
+        "~/.t3/"
+      ];
     };
     git.enable = true;
     emacs.enable = true;

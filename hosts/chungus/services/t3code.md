@@ -39,7 +39,7 @@ The pinned T3 version has a native Pi provider using the `pi` executable.
 Configure/authenticate Pi as `dog` before using that provider in T3.
 
 Pi uses bubblewrap by default, with writable access to `~/.pi/`, `~/.agents`,
-and Chungus's `~/p/` project directory. Create these directories before use
+`~/.t3/` (including T3's generated Pi extension), and Chungus's `~/p/` project directory. Create these directories before use
 (the wrapper only binds paths that already exist). The shared Pi module also
 links the Nix-managed `pi-web-access` extension into
 `~/.pi/agent/extensions/pi-web-access`. Do not additionally install a second copy
