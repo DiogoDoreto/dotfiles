@@ -205,13 +205,16 @@ Playwright CLI, and Forgejo CLI; the system includes SSH, GitHub CLI, and common
 maintenance tools. OpenCode and t3code use login shells to include the guest's Nix
 and Home Manager profiles.
 
-Pi is optional (`pi.enable`, default `false`). Enabling it installs
-`llm-agents.pi` in the guest user's Home Manager profile without starting a
-service or opening ports. Both lapdog and mini enable it; run it with
-`agent-vm-ssh -t pi`.
+Pi is optional (`pi.enable`, default `false`). Enabling it uses the shared
+`dog.programs.pi` Home Manager module to install `llm-agents.pi` and
+`llm-agents.pi-acp` without starting a service or opening ports. The guest sets
+`dog.programs.pi.sandbox.enable = false`: the Agent VM provides isolation, so
+these commands do not need the module's default bubblewrap wrappers. Both lapdog
+and mini enable it; run it with `agent-vm-ssh -t pi`.
 
 Enabling Pi also installs the pinned `pi-web-access` extension from
-`modules/flakes/pi-web-access/`. Home Manager links the Nix-built package into
+`modules/flakes/pi-web-access/` through the same shared Pi module. Home Manager
+links the Nix-built package into
 `~/.pi/agent/extensions/pi-web-access`; its npm dependencies are locked and built
 into the Nix store, so no runtime `pi install` or npm downloads are needed.
 Pi's settings, authentication, sessions, and optional `web-search.json` provider

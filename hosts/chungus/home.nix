@@ -16,8 +16,30 @@
       pods
       ungoogled-chromium
       nvtopPackages.nvidia
+      (llm-agents.t3code.override { providerPackages = [ ]; })
+      (llm-agents.t3code.override { providerPackages = [ ]; }).desktop
     ];
   };
+
+  # The desktop connects to the persistent service, never a second local backend.
+  # Keep the settings mutable so UI-managed preferences survive activation.
+  home.activation.t3codeRemoteOnly = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    settings_dir="$HOME/.t3/userdata"
+    settings_file="$settings_dir/desktop-settings.json"
+    if [ ! -e "$settings_file" ] || ! ${pkgs.jq}/bin/jq -e '.localEnvironmentEnabled == false' "$settings_file" >/dev/null; then
+      run mkdir -p "$settings_dir"
+      if [[ ! -v DRY_RUN ]]; then
+        settings_tmp=$(mktemp "$settings_dir/.desktop-settings.XXXXXX")
+        if ${pkgs.jq}/bin/jq '. + {localEnvironmentEnabled: false}' \
+          <(if [ -e "$settings_file" ]; then ${pkgs.coreutils}/bin/cat "$settings_file"; else echo '{}'; fi) > "$settings_tmp"; then
+          mv "$settings_tmp" "$settings_file"
+        else
+          rm -f "$settings_tmp"
+          exit 1
+        fi
+      fi
+    fi
+  '';
 
   programs = {
     bash = {
@@ -58,6 +80,10 @@
 
   dog.programs = {
     cli-tools.enable = true;
+    pi = {
+      enable = true;
+      extraWritablePaths = [ "~/p/" ];
+    };
     git.enable = true;
     emacs.enable = true;
     firefox = {

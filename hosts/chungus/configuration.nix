@@ -18,6 +18,7 @@
     ./services/monitoring.nix
     ./services/harmonia.nix
     ./services/forgejo-runner.nix
+    ./services/t3code.nix
   ];
 
   nix.settings = {

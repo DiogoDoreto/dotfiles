@@ -19,6 +19,10 @@
       url = "git+https://github.com/doomemacs/doomemacs?submodules=1";
       flake = false;
     };
+    pi-web-access = {
+      url = "../../modules/flakes/pi-web-access";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     llm-agents = {
       url = "github:numtide/llm-agents.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -35,6 +39,7 @@
       system = "x86_64-linux";
       overlays = [
         inputs.nur.overlays.default
+        inputs.pi-web-access.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
           llama-cpp = inputs.llama-cpp.packages.${system}.cuda;

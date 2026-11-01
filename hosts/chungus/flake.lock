@@ -231,6 +231,22 @@
         "type": "github"
       }
     },
+    "pi-web-access": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "../../modules/flakes/pi-web-access",
+        "type": "path"
+      },
+      "original": {
+        "path": "../../modules/flakes/pi-web-access",
+        "type": "path"
+      },
+      "parent": []
+    },
     "root": {
       "inputs": {
         "doomemacs": "doomemacs",
@@ -238,7 +254,8 @@
         "llama-cpp": "llama-cpp",
         "llm-agents": "llm-agents",
         "nixpkgs": "nixpkgs",
-        "nur": "nur"
+        "nur": "nur",
+        "pi-web-access": "pi-web-access"
       }
     },
     "systems": {

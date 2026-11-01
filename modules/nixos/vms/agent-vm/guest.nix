@@ -175,15 +175,14 @@ in
         stateVersion = "25.05";
         packages =
           with pkgs;
-          optional cfg.opencode.enable llm-agents.opencode
-          ++ optional cfg.pi.enable llm-agents.pi
-          ++ optional cfg.t3code.enable t3code;
-      };
-      home.file.".pi/agent/extensions/pi-web-access" = mkIf cfg.pi.enable {
-        source = pkgs.pi-web-access;
+          optional cfg.opencode.enable llm-agents.opencode ++ optional cfg.t3code.enable t3code;
       };
       targets.genericLinux.enable = true;
       dog.programs = {
+        pi = {
+          enable = cfg.pi.enable;
+          sandbox.enable = false;
+        };
         agent-skills.enable = true;
         cli-tools.enable = true;
         git.enable = true;
