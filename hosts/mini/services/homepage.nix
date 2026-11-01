@@ -126,8 +126,8 @@ in
           {
             Code = [
               {
-                "t3code" = rec {
-                  icon = "t3-code";
+                "T3 Code" = rec {
+                  icon = "https://cdn.jsdelivr.net/gh/selfhst/icons/png/t3-code.png";
                   href = "https://t3code.local.doreto.com.br";
                   siteMonitor = href;
                 };
