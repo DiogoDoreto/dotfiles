@@ -10,8 +10,6 @@ with lib;
 
 let
   cfg = config.dog.services.agent-vm;
-  # Use explicitly installed agents from the login shell's PATH, not upstream's bundle.
-  t3code = pkgs.llm-agents.t3code.override { providerPackages = [ ]; };
 in
 {
   imports = [ ./options.nix ];
@@ -107,7 +105,7 @@ in
       "sshd.service"
     ]
     ++ optional cfg.opencode.enable "${cfg.vmName}-opencode.service"
-    ++ optional cfg.t3code.enable "${cfg.vmName}-t3code.service";
+    ++ optional cfg.t3code.enable "t3code.service";
     after = [ "local-fs.target" ];
     serviceConfig.Type = "oneshot";
     script = ''
@@ -142,26 +140,16 @@ in
     };
   };
 
-  systemd.services."${cfg.vmName}-t3code" = mkIf cfg.t3code.enable {
-    description = "t3code agent control surface inside ${cfg.vmName}";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "network-online.target" ];
-    after = [
-      "network-online.target"
-      "${cfg.vmName}-guest-ssh-setup.service"
-    ];
-    environment = {
-      HOME = "/home/${cfg.guestUser}";
-      T3CODE_HOME = "/home/${cfg.guestUser}/.t3";
-    };
-    serviceConfig = {
-      Type = "simple";
-      User = cfg.guestUser;
-      WorkingDirectory = cfg.workingDirectory;
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'exec ${t3code}/bin/t3 serve --host ${cfg.guestAddress} --port ${toString cfg.t3code.guestPort} --no-browser'";
-      Restart = "on-failure";
-      RestartSec = "5s";
-    };
+  dog.services.t3code = {
+    enable = cfg.t3code.enable;
+    user = cfg.guestUser;
+    host = cfg.guestAddress;
+    port = cfg.t3code.guestPort;
+    workingDirectory = cfg.workingDirectory;
+  };
+
+  systemd.services.t3code = mkIf cfg.t3code.enable {
+    after = [ "${cfg.vmName}-guest-ssh-setup.service" ];
   };
 
   home-manager = {
@@ -173,12 +161,11 @@ in
         username = cfg.guestUser;
         homeDirectory = "/home/${cfg.guestUser}";
         stateVersion = "25.05";
-        packages =
-          with pkgs;
-          optional cfg.opencode.enable llm-agents.opencode ++ optional cfg.t3code.enable t3code;
+        packages = with pkgs; optional cfg.opencode.enable llm-agents.opencode;
       };
       targets.genericLinux.enable = true;
       dog.programs = {
+        t3code.enable = cfg.t3code.enable;
         pi = {
           enable = cfg.pi.enable;
           sandbox.enable = false;

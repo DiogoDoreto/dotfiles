@@ -22,6 +22,7 @@
     ./podman.nix
     ./polybar.nix
     ./rofi.nix
+    ./t3code.nix
     ./websearch.nix
     ./wezterm.nix
   ];

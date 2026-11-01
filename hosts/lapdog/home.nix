@@ -26,8 +26,6 @@
       podman-compose
       pods # podman GUI
       sshfs
-      # Remote-only client; the server and provider CLIs live in the Agent VM.
-      (llm-agents.t3code.override { providerPackages = [ ]; }).desktop
       ungoogled-chromium
       onedrivegui
       wl-clipboard
@@ -42,26 +40,6 @@
       # pureref
     ];
   };
-
-  # Keep this mutable: T3 also stores UI-managed preferences in this file.
-  # Disable the local backend before the first launch (and on each activation).
-  home.activation.t3codeRemoteOnly = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    settings_dir="$HOME/.t3/userdata"
-    settings_file="$settings_dir/desktop-settings.json"
-    if [ ! -e "$settings_file" ] || ! ${pkgs.jq}/bin/jq -e '.localEnvironmentEnabled == false' "$settings_file" >/dev/null; then
-      run mkdir -p "$settings_dir"
-      if [[ ! -v DRY_RUN ]]; then
-        settings_tmp=$(mktemp "$settings_dir/.desktop-settings.XXXXXX")
-        if ${pkgs.jq}/bin/jq '. + {localEnvironmentEnabled: false}' \
-          <(if [ -e "$settings_file" ]; then ${pkgs.coreutils}/bin/cat "$settings_file"; else echo '{}'; fi) > "$settings_tmp"; then
-          mv "$settings_tmp" "$settings_file"
-        else
-          rm -f "$settings_tmp"
-          exit 1
-        fi
-      fi
-    fi
-  '';
 
   xdg.autostart = {
     enable = true;
@@ -167,6 +145,12 @@
   };
 
   dog.programs = {
+    # Pair with the Agent VM; never start an app-managed backend on the host.
+    t3code = {
+      enable = true;
+      desktop.enable = true;
+      desktop.localBackend.enable = false;
+    };
     agent-skills.enable = true;
     cli-tools.enable = true;
     ghostty.enable = true;

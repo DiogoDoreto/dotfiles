@@ -166,7 +166,8 @@ It listens on guest `10.0.101.2:32859`. A host-local socat proxy forwards
 hostname with Authentik forward authentication.
 
 t3code is optional (`t3code.enable`, default `false`) and enabled on both hosts.
-The `agent-vm-t3code.service` guest unit runs `t3 serve --no-browser` as `agent`,
+The shared `dog.services.t3code` NixOS module provides the `t3code.service`
+guest unit, which runs `t3 serve --no-browser` as `agent`,
 starts with the VM, and restarts on failure. It listens on `10.0.101.2:3773`;
 the host proxy exposes `http://127.0.0.1:32862`. Mini additionally exposes
 `https://t3code.local.doreto.com.br` through Caddy, using t3code's native token
@@ -184,7 +185,7 @@ agent-vm-ssh -t 't3 auth pairing create --base-url https://t3code.local.doreto.c
 ```
 
 Open the resulting link in the browser. Inspect guest service logs with
-`agent-vm-ssh -t 'sudo journalctl -u agent-vm-t3code -f'`; host proxy logs are
+`agent-vm-ssh -t 'sudo journalctl -u t3code -f'`; host proxy logs are
 included in `agent-vm-logs`.
 
 ## Guest environment and isolation
@@ -224,8 +225,11 @@ Nix store. Remove any existing npm/git installation of this plugin to avoid
 loading it twice. Restart Pi after deploying an updated package.
 
 t3code is optional (`t3code.enable`, default `false`). Both deployments install
-`llm-agents.t3code` in the guest user's Home Manager profile, with upstream's
-bundled provider packages disabled (`providerPackages = [ ]`). Both the CLI and
+the CLI through the shared `dog.programs.t3code` Home Manager module, with
+upstream's bundled provider packages disabled (`providerPackages = [ ]`).
+The desktop is not installed in the guest. The backend lifecycle is managed by
+`dog.services.t3code`; the Agent VM deployment still owns guest firewall rules,
+host proxies, Caddy, and SSH setup ordering. Both the CLI and
 managed server use only agents explicitly installed in the guest's PATH; enabling
 t3code does not implicitly install additional coding agents. Run its CLI with
 `agent-vm-ssh -t 't3 --help'` for available options. Its managed server is described

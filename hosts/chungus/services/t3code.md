@@ -1,8 +1,10 @@
 # T3 Code on Chungus
 
 T3 runs at boot as `dog` via the system service `t3code.service`, independently
-of desktop login. State, pairing credentials, and sessions live in
-`/home/dog/.t3`. The service restarts on failure.
+of desktop login. The deployment enables the shared `dog.services.t3code`
+NixOS module; this host file owns only listen settings and LAN firewall policy.
+State, pairing credentials, and sessions live in `/home/dog/.t3`. The service
+restarts on failure.
 
 ## Access and pairing
 
@@ -21,8 +23,10 @@ t3 auth pairing create --base-url http://192.168.0.3:32862
 ```
 
 Use T3's pairing flow to add this backend to the desktop app or a LAN browser.
-The installed desktop has its app-managed local environment disabled during
-Home Manager activation, so it does not launch a second backend. Other desktop
+The shared `dog.programs.t3code` Home Manager module installs the CLI and
+desktop. With `desktop.localBackend.enable = false`, the desktop has its
+app-managed local environment disabled during Home Manager activation, so it
+does not launch a second backend. Other desktop
 preferences are preserved. The persistent service is a separately paired
 environment even when using the desktop on Chungus itself.
 
