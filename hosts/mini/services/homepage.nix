@@ -175,6 +175,13 @@ in
           {
             Admin = [
               {
+                "Host health" = {
+                  icon = "grafana.png";
+                  href = "https://grafana.local.doreto.com.br/d/host-health-fleet";
+                  description = "Fleet health and host drill-down (Authentik)";
+                };
+              }
+              {
                 "Authentik" = rec {
                   icon = "authentik.png";
                   href = "https://auth.local.doreto.com.br";

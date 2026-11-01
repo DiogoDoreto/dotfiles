@@ -199,8 +199,10 @@
   services.fwupd.enable = true;
 
   # Monitoring: expose node metrics for VictoriaMetrics on mini to scrape.
-  # Since lapdog gets a dynamic LAN IP, add it to mini's scrape config manually
-  # once its IP is known (or add a static DHCP lease in mini's dnsmasq).
+  # Addressing prerequisite: reserve the real LAN profile MAC/IP at the actual
+  # router/DHCP server, then add LAN-only lapdog.home DNS and the mini target.
+  # Mini's dnsmasq instances are DNS-only, not DHCP servers. See
+  # docs/host-health.md; until then the dashboard explicitly shows lapdog missing.
   services.prometheus.exporters.node = {
     enable = true;
     listenAddress = "0.0.0.0";

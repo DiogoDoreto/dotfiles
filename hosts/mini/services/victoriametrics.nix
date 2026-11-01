@@ -18,8 +18,11 @@ let
           - targets: ["192.168.0.3:${p.nodeExporter}"]
             labels:
               host: chungus
-          # Uncomment and set lapdog's LAN IP when it has a stable address:
-          # - targets: ["<lapdog-ip>:${p.nodeExporter}"]
+          # BLOCKED on a real router DHCP reservation + LAN-only DNS record.
+          # See docs/host-health.md. Do not use lapdog.local.doreto.com.br:
+          # the service wildcard resolves to mini, NOT lapdog.
+          # After verifying lapdog.home resolves to the reserved laptop address:
+          # - targets: ["lapdog.home:${p.nodeExporter}"]
           #   labels:
           #     host: lapdog
 

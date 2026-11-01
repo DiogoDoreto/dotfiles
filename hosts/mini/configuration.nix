@@ -53,6 +53,7 @@ in
     ./services/readeck.nix
     ./services/searx.nix
     ./services/vscodium-web.nix
+    ./services/grafana.nix
     ./services/victoriametrics.nix
     ./services/victorialogs.nix
     ./services/monitoring-exporters.nix

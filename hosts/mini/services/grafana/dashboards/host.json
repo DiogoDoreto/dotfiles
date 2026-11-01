@@ -1,0 +1,1942 @@
+{
+  "uid": "host-health-detail",
+  "title": "Host health \u00b7 Host detail",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "tags": [
+    "host-health",
+    "provisioned"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Semantics",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Choose **mini/chungus/lapdog**, even if never scraped. Unknown resources are not zero. Current stats require a successful node and relevant collector scrape. Systemd is the node collector (not separate systemd_exporter). Disk I/O is whole-device; network is physical interfaces plus Tailscale. GPU section explicitly stays Chungus-only. Dashboard shows infrastructure, not end-to-end application availability."
+      }
+    },
+    {
+      "id": 2,
+      "type": "row",
+      "title": "Current host / collector health",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 3,
+      "title": "Node reachability",
+      "description": "",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 8,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Missing",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Scrape failed",
+                  "color": "orange",
+                  "index": 1
+                },
+                "2": {
+                  "text": "Reachable",
+                  "color": "green",
+                  "index": 2
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) or on(host) (label_replace(vector(0), \"host\", \"$host\", \"\", \"\"))) + on(host) (count by(host) (up{job=\"node\",host=~\"${host:regex}\"}) or on(host) (label_replace(vector(0), \"host\", \"$host\", \"\", \"\")))",
+          "legendFormat": "{{host}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Uptime",
+      "description": "",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 5,
+        "w": 8,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(time() - node_boot_time_seconds{job=\"node\",host=~\"${host:regex}\"}) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"stat\"}) == 1)",
+          "legendFormat": "{{host}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Collector success",
+      "description": "",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 5,
+        "w": 8,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Failed",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Success",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=~\"cpu|meminfo|loadavg|filesystem|diskstats|netdev|systemd|stat\"}) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1)",
+          "legendFormat": "{{collector}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 6,
+      "type": "row",
+      "title": "Resources \u00b7 gaps are unknown, not zero",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 7,
+      "title": "CPU busy",
+      "description": "Idle counter rate across logical CPUs; up and cpu collector gated.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * (1 - avg by(host) (rate(node_cpu_seconds_total{job=\"node\",host=~\"${host:regex}\",mode=\"idle\"}[$__rate_interval])))) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"cpu\"}) == 1)",
+          "legendFormat": "{{host}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Memory used / total",
+      "description": "MemAvailable (includes reclaimable cache), not MemFree.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * (1 - node_memory_MemAvailable_bytes{job=\"node\",host=~\"${host:regex}\"} / node_memory_MemTotal_bytes{job=\"node\",host=~\"${host:regex}\"})) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"meminfo\"}) == 1)",
+          "legendFormat": "{{host}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Swap used / total",
+      "description": "No swap configured => Unknown/not applicable, not 0%.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * (1 - node_memory_SwapFree_bytes{job=\"node\",host=~\"${host:regex}\"} / node_memory_SwapTotal_bytes{job=\"node\",host=~\"${host:regex}\"}) and (node_memory_SwapTotal_bytes{job=\"node\",host=~\"${host:regex}\"} > 0)) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"meminfo\"}) == 1)",
+          "legendFormat": "{{host}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Load 1m / logical CPU",
+      "description": "Load is a gauge; 1 means one runnable/blocked task per logical CPU.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((node_load1{job=\"node\",host=~\"${host:regex}\"} / on(host) group_left count by(host) (node_cpu_seconds_total{job=\"node\",host=~\"${host:regex}\",mode=\"idle\"})) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"loadavg\"}) == 1)) and on(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"cpu\"} == 1)",
+          "legendFormat": "{{host}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "Network and block-device throughput",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 12,
+      "title": "Network throughput",
+      "description": "Per interface; bridges, veth and loopback excluded. Tailscale/physical traffic can overlap; do not sum.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(rate(node_network_receive_bytes_total{job=\"node\",host=~\"${host:regex}\",device=~\"en.*|eth.*|wl.*|tailscale0\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"netdev\"}) == 1)",
+          "legendFormat": "{{device}} \u00b7 receive",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "(rate(node_network_transmit_bytes_total{job=\"node\",host=~\"${host:regex}\",device=~\"en.*|eth.*|wl.*|tailscale0\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"netdev\"}) == 1)",
+          "legendFormat": "{{device}} \u00b7 transmit",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Disk throughput",
+      "description": "Whole devices only, not partitions. Counter rates; do not sum device and partition metrics.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(rate(node_disk_read_bytes_total{job=\"node\",host=~\"${host:regex}\",device=~\"nvme[0-9]+n[0-9]+|sd[a-z]+\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"diskstats\"}) == 1)",
+          "legendFormat": "{{device}} \u00b7 read",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "(rate(node_disk_written_bytes_total{job=\"node\",host=~\"${host:regex}\",device=~\"nvme[0-9]+n[0-9]+|sd[a-z]+\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"diskstats\"}) == 1)",
+          "legendFormat": "{{device}} \u00b7 written",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Disk busy time",
+      "description": "",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * rate(node_disk_io_time_seconds_total{job=\"node\",host=~\"${host:regex}\",device=~\"nvme[0-9]+n[0-9]+|sd[a-z]+\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"diskstats\"}) == 1)",
+          "legendFormat": "{{device}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Network errors / dropped packets",
+      "description": "",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pps",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(rate(node_network_receive_errs_total{job=\"node\",host=~\"${host:regex}\",device=~\"en.*|eth.*|wl.*|tailscale0\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"netdev\"}) == 1)",
+          "legendFormat": "{{device}} \u00b7 receive errs",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "(rate(node_network_receive_drop_total{job=\"node\",host=~\"${host:regex}\",device=~\"en.*|eth.*|wl.*|tailscale0\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"netdev\"}) == 1)",
+          "legendFormat": "{{device}} \u00b7 receive drop",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "(rate(node_network_transmit_errs_total{job=\"node\",host=~\"${host:regex}\",device=~\"en.*|eth.*|wl.*|tailscale0\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"netdev\"}) == 1)",
+          "legendFormat": "{{device}} \u00b7 transmit errs",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        },
+        {
+          "refId": "D",
+          "expr": "(rate(node_network_transmit_drop_total{job=\"node\",host=~\"${host:regex}\",device=~\"en.*|eth.*|wl.*|tailscale0\"}[$__rate_interval])) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"netdev\"}) == 1)",
+          "legendFormat": "{{device}} \u00b7 transmit drop",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "row",
+      "title": "System services \u00b7 system manager only",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 17,
+      "title": "Failed services (all service units)",
+      "description": "Zero means observed healthy. Unknown means node/systemd collection failed. Does not include user-manager/Podman user units.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 45,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum by(host) (node_systemd_unit_state{job=\"node\",host=~\"${host:regex}\",name=~\".+\\\\.service\",state=\"failed\"})) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"systemd\"}) == 1)",
+          "legendFormat": "{{host}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 18,
+      "title": "Failed service identities",
+      "description": "Empty is normal when no failures; check the count/collector before interpreting emptiness.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 45,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(node_systemd_unit_state{job=\"node\",host=~\"${host:regex}\",name=~\".+\\\\.service\",state=\"failed\"} == 1) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"systemd\"}) == 1)",
+          "legendFormat": "{{host}} \u00b7 {{name}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 19,
+      "title": "Required continuously-running services",
+      "description": "0 absent exact unit; 1 present but not active; 2 active. Requires successful node/systemd collection. Curated baseline only; inactive oneshots/timers are not blanket failures.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 24,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Missing unit",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Not active",
+                  "color": "orange",
+                  "index": 1
+                },
+                "2": {
+                  "text": "Active",
+                  "color": "green",
+                  "index": 2
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((((node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"caddy.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"caddy.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"caddy.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"caddy.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"mini\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"mini\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"victoriametrics.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"victoriametrics.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"victoriametrics.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"victoriametrics.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"mini\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"mini\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"grafana.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"grafana.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"grafana.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"grafana.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"mini\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"mini\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"prometheus-node-exporter.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"prometheus-node-exporter.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"prometheus-node-exporter.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"prometheus-node-exporter.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"mini\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"mini\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"sshd.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"sshd.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"mini\",name=\"sshd.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"name\", \"sshd.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"mini\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"mini\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"chungus\",name=\"NetworkManager.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"name\", \"NetworkManager.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"chungus\",name=\"NetworkManager.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"name\", \"NetworkManager.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"chungus\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"chungus\",name=\"sshd.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"name\", \"sshd.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"chungus\",name=\"sshd.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"name\", \"sshd.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"chungus\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"chungus\",name=\"prometheus-node-exporter.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"name\", \"prometheus-node-exporter.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"chungus\",name=\"prometheus-node-exporter.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"name\", \"prometheus-node-exporter.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"chungus\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"chungus\",name=\"prometheus-nvidia-gpu-exporter.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"name\", \"prometheus-nvidia-gpu-exporter.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"chungus\",name=\"prometheus-nvidia-gpu-exporter.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"name\", \"prometheus-nvidia-gpu-exporter.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"chungus\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"lapdog\",name=\"NetworkManager.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"lapdog\", \"\", \"\"), \"name\", \"NetworkManager.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"lapdog\",name=\"NetworkManager.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"lapdog\", \"\", \"\"), \"name\", \"NetworkManager.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"lapdog\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"lapdog\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"lapdog\",name=\"sshd.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"lapdog\", \"\", \"\"), \"name\", \"sshd.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"lapdog\",name=\"sshd.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"lapdog\", \"\", \"\"), \"name\", \"sshd.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"lapdog\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"lapdog\",collector=\"systemd\"}) == 1)) or (((node_systemd_unit_state{job=\"node\",host=~\"lapdog\",name=\"prometheus-node-exporter.service\",state=\"active\"} or on(host,name) label_replace(label_replace(vector(0), \"host\", \"lapdog\", \"\", \"\"), \"name\", \"prometheus-node-exporter.service\", \"\", \"\")) + on(host,name) (count by(host,name) (node_systemd_unit_state{job=\"node\",host=~\"lapdog\",name=\"prometheus-node-exporter.service\",state=\"active\"}) or on(host,name) label_replace(label_replace(vector(0), \"host\", \"lapdog\", \"\", \"\"), \"name\", \"prometheus-node-exporter.service\", \"\", \"\"))) and on(host) (max by(host) (up{job=\"node\",host=~\"lapdog\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"lapdog\",collector=\"systemd\"}) == 1))) and on(host) (up{job=\"node\",host=~\"${host:regex}\"} == 1)",
+          "legendFormat": "{{host}} \u00b7 {{name}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Local filesystem capacity \u00b7 no remote or duplicate snapshot mounts",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 62,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 21,
+      "title": "Usable space used",
+      "description": "1 - avail/size; excludes device errors and zero-size filesystems. /boot included; btrfs snapshots, bind aliases and NFS excluded.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * (1 - node_filesystem_avail_bytes{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"} / node_filesystem_size_bytes{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"}) and (node_filesystem_size_bytes{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"} > 0) and (node_filesystem_device_error{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"} == 0)) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"filesystem\"}) == 1)",
+          "legendFormat": "{{host}} \u00b7 {{mountpoint}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "title": "Inodes used",
+      "description": "Filesystems with zero/unsupported inode totals stay unknown (e.g. btrfs/vfat).",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 63,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * (1 - node_filesystem_files_free{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"} / node_filesystem_files{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"}) and (node_filesystem_files{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"} > 0) and (node_filesystem_device_error{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"} == 0)) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"filesystem\"}) == 1)",
+          "legendFormat": "{{host}} \u00b7 {{mountpoint}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 23,
+      "title": "Expected mount / device health",
+      "description": "Explicit expected inventory. A disappeared mount is not a zero-used disk. Scrape/filesystem collector failure => Unknown.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 71,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Missing mount",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Device error",
+                  "color": "red",
+                  "index": 1
+                },
+                "2": {
+                  "text": "Available",
+                  "color": "green",
+                  "index": 2
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((((((1 - max by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"mini\",mountpoint=\"/\"})) + on(host,mountpoint) count by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"mini\",mountpoint=\"/\"})) or on(host,mountpoint) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"mountpoint\", \"/\", \"\", \"\")) and on(host) (max by(host) (up{job=\"node\",host=~\"mini\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"mini\",collector=\"filesystem\"}) == 1)) or ((((1 - max by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"mini\",mountpoint=\"/boot\"})) + on(host,mountpoint) count by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"mini\",mountpoint=\"/boot\"})) or on(host,mountpoint) label_replace(label_replace(vector(0), \"host\", \"mini\", \"\", \"\"), \"mountpoint\", \"/boot\", \"\", \"\")) and on(host) (max by(host) (up{job=\"node\",host=~\"mini\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"mini\",collector=\"filesystem\"}) == 1))) or (((((1 - max by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"chungus\",mountpoint=\"/\"})) + on(host,mountpoint) count by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"chungus\",mountpoint=\"/\"})) or on(host,mountpoint) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"mountpoint\", \"/\", \"\", \"\")) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"chungus\",collector=\"filesystem\"}) == 1)) or ((((1 - max by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"chungus\",mountpoint=\"/boot\"})) + on(host,mountpoint) count by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"chungus\",mountpoint=\"/boot\"})) or on(host,mountpoint) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"mountpoint\", \"/boot\", \"\", \"\")) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"chungus\",collector=\"filesystem\"}) == 1)) or ((((1 - max by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"chungus\",mountpoint=\"/data\"})) + on(host,mountpoint) count by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"chungus\",mountpoint=\"/data\"})) or on(host,mountpoint) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"mountpoint\", \"/data\", \"\", \"\")) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"chungus\",collector=\"filesystem\"}) == 1)) or ((((1 - max by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"chungus\",mountpoint=\"/mnt/snapraid-parity1\"})) + on(host,mountpoint) count by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"chungus\",mountpoint=\"/mnt/snapraid-parity1\"})) or on(host,mountpoint) label_replace(label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"), \"mountpoint\", \"/mnt/snapraid-parity1\", \"\", \"\")) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"chungus\",collector=\"filesystem\"}) == 1))) or (((((1 - max by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"lapdog\",mountpoint=\"/\"})) + on(host,mountpoint) count by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"lapdog\",mountpoint=\"/\"})) or on(host,mountpoint) label_replace(label_replace(vector(0), \"host\", \"lapdog\", \"\", \"\"), \"mountpoint\", \"/\", \"\", \"\")) and on(host) (max by(host) (up{job=\"node\",host=~\"lapdog\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"lapdog\",collector=\"filesystem\"}) == 1)) or ((((1 - max by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"lapdog\",mountpoint=\"/boot\"})) + on(host,mountpoint) count by(host,mountpoint) (node_filesystem_device_error{job=\"node\",host=~\"lapdog\",mountpoint=\"/boot\"})) or on(host,mountpoint) label_replace(label_replace(vector(0), \"host\", \"lapdog\", \"\", \"\"), \"mountpoint\", \"/boot\", \"\", \"\")) and on(host) (max by(host) (up{job=\"node\",host=~\"lapdog\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"lapdog\",collector=\"filesystem\"}) == 1)))) and on(host) (up{job=\"node\",host=~\"${host:regex}\"} == 1)",
+          "legendFormat": "{{host}} \u00b7 {{mountpoint}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 24,
+      "title": "Read-only filesystems",
+      "description": "1 is read-only; 0 is writable. Consult device/mount health for missing devices.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 71,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Writable",
+                  "color": "green",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Read-only",
+                  "color": "red",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(node_filesystem_readonly{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"} and (node_filesystem_device_error{job=\"node\",host=~\"${host:regex}\",fstype=~\"ext4|btrfs|xfs|vfat\",mountpoint=~\"/|/boot|/data|/mnt/snapraid-parity1\"} == 0)) and on(host) (max by(host) (up{job=\"node\",host=~\"${host:regex}\"}) == 1) and on(host) (max by(host) (node_scrape_collector_success{job=\"node\",host=~\"${host:regex}\",collector=\"filesystem\"}) == 1)",
+          "legendFormat": "{{host}} \u00b7 {{mountpoint}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 25,
+      "type": "row",
+      "title": "Chungus NVIDIA GPU \u00b7 not applicable to mini/lapdog",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 79,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 26,
+      "title": "GPU exporter scrape",
+      "description": "",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 80,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Missing",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Scrape failed",
+                  "color": "orange",
+                  "index": 1
+                },
+                "2": {
+                  "text": "Reachable",
+                  "color": "green",
+                  "index": 2
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(max by(host) (up{job=\"nvidia_gpu\",host=~\"chungus\"}) or on(host) (label_replace(vector(0), \"host\", \"chungus\", \"\", \"\"))) + on(host) (count by(host) (up{job=\"nvidia_gpu\",host=~\"chungus\"}) or on(host) (label_replace(vector(0), \"host\", \"chungus\", \"\", \"\")))",
+          "legendFormat": "{{host}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 27,
+      "title": "nvidia-smi exit code",
+      "description": "Nonzero = command failure despite HTTP 200; absent = Unknown. GPU panels remain fleet-scoped even on host detail.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 80,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Success",
+                  "color": "green",
+                  "index": 0
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nvidia_smi_command_exit_code{job=\"nvidia_gpu\",host=~\"chungus\"} and on(host) (up{job=\"nvidia_gpu\",host=~\"chungus\"} == 1) and on(host) (up{job=\"node\",host=~\"chungus\"} == 1)",
+          "legendFormat": "{{host}}",
+          "range": false,
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 28,
+      "title": "GPU utilization",
+      "description": "",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 88,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((100 * nvidia_smi_utilization_gpu_ratio{job=\"nvidia_gpu\",host=~\"chungus\"}) and on(host) (up{job=\"nvidia_gpu\",host=~\"chungus\"} == 1) and on(host) (nvidia_smi_command_exit_code{job=\"nvidia_gpu\",host=~\"chungus\"} == 0)) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1)",
+          "legendFormat": "{{host}} \u00b7 {{uuid}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 29,
+      "title": "VRAM used / total",
+      "description": "",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 88,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ],
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((100 * nvidia_smi_memory_used_bytes{job=\"nvidia_gpu\",host=~\"chungus\"} / nvidia_smi_memory_total_bytes{job=\"nvidia_gpu\",host=~\"chungus\"}) and on(host) (up{job=\"nvidia_gpu\",host=~\"chungus\"} == 1) and on(host) (nvidia_smi_command_exit_code{job=\"nvidia_gpu\",host=~\"chungus\"} == 0)) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1)",
+          "legendFormat": "{{host}} \u00b7 {{uuid}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 30,
+      "title": "GPU temperature",
+      "description": "",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 96,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((nvidia_smi_temperature_gpu{job=\"nvidia_gpu\",host=~\"chungus\"}) and on(host) (up{job=\"nvidia_gpu\",host=~\"chungus\"} == 1) and on(host) (nvidia_smi_command_exit_code{job=\"nvidia_gpu\",host=~\"chungus\"} == 0)) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1)",
+          "legendFormat": "{{host}} \u00b7 {{uuid}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 31,
+      "title": "GPU power draw",
+      "description": "",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 96,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false
+          },
+          "links": [
+            {
+              "title": "Host detail",
+              "url": "/d/host-health-detail?var-host=${__field.labels.host}&${__url_time_range}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((nvidia_smi_power_draw_watts{job=\"nvidia_gpu\",host=~\"chungus\"}) and on(host) (up{job=\"nvidia_gpu\",host=~\"chungus\"} == 1) and on(host) (nvidia_smi_command_exit_code{job=\"nvidia_gpu\",host=~\"chungus\"} == 0)) and on(host) (max by(host) (up{job=\"node\",host=~\"chungus\"}) == 1)",
+          "legendFormat": "{{host}} \u00b7 {{uuid}}",
+          "range": true,
+          "instant": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "Fleet overview",
+      "type": "link",
+      "url": "/d/host-health-fleet",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "host",
+        "label": "Host",
+        "type": "custom",
+        "query": "mini,chungus,lapdog",
+        "multi": false,
+        "includeAll": false,
+        "allValue": null,
+        "current": {
+          "text": "mini",
+          "value": "mini"
+        },
+        "options": [
+          {
+            "text": "mini",
+            "value": "mini",
+            "selected": true
+          },
+          {
+            "text": "chungus",
+            "value": "chungus",
+            "selected": false
+          },
+          {
+            "text": "lapdog",
+            "value": "lapdog",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  }
+}

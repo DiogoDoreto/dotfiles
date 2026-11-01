@@ -47,6 +47,7 @@
     vscodium = 32849;
 
     # monitoring
+    grafana = 3001;
     victoriametrics = 8428;
     victorialogs = 9428;
     nodeExporter = 9100;

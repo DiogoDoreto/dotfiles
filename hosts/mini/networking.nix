@@ -57,6 +57,9 @@ let
       // settings
     );
 
+  # DNS only: leasefile paths above do not enable a DHCP server. The real
+  # router must reserve lapdog's verified LAN MAC/IP before adding a LAN-only
+  # /lapdog.home/<reserved-ip> address here (see docs/host-health.md).
   dnsmasqLanConfig = mkDnsmasqConfig "lan" dnsmasqLanLeaseFile {
     listen-address = [
       "::1"

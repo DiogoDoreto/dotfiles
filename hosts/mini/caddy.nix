@@ -210,6 +210,26 @@ in
           file_server browse
         '';
       };
+      "grafana.local.doreto.com.br" = {
+        extraConfig = ''
+          tls internal
+          route {
+            request_header -X-WEBAUTH-USER
+            request_header -X-Authentik-Username
+            request_header X-Forwarded-Host {http.request.host}
+            handle /outpost.goauthentik.io/* {
+              reverse_proxy http://127.0.0.1:${p.authentik}
+            }
+            handle {
+              forward_auth http://127.0.0.1:${p.authentik} {
+                uri /outpost.goauthentik.io/auth/caddy
+                copy_headers X-Authentik-Username>X-WEBAUTH-USER
+              }
+              reverse_proxy http://127.0.0.1:${p.grafana}
+            }
+          }
+        '';
+      };
       "metrics.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy 127.0.0.1:${p.victoriametrics}
