@@ -126,6 +126,13 @@ in
           {
             Code = [
               {
+                "t3code" = rec {
+                  icon = "t3-code";
+                  href = "https://t3code.local.doreto.com.br";
+                  siteMonitor = href;
+                };
+              }
+              {
                 "Forgejo" = rec {
                   icon = "forgejo.png";
                   href = "https://git.local.doreto.com.br";
