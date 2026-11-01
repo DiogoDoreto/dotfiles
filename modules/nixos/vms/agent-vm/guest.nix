@@ -18,6 +18,12 @@ in
 
   system.stateVersion = "25.05";
 
+  environment.etc."machine-info" = mkIf (cfg.guest.prettyHostname != null) {
+    text = ''
+      PRETTY_HOSTNAME=${builtins.toJSON cfg.guest.prettyHostname}
+    '';
+  };
+
   networking = {
     hostName = cfg.guestHostname;
     useNetworkd = true;

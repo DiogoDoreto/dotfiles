@@ -2,6 +2,7 @@
 # Network identities and state paths use the shared module defaults.
 {
   autostart = true;
+  guest.prettyHostname = "Lapdog Agent VM";
   t3code.enable = true;
   shares = [
     {

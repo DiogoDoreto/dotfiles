@@ -45,6 +45,12 @@ in
 {
   options.dog.services.agent-vm = {
     guest.tailscale.enable = mkEnableOption "Tailscale inside the Agent VM guest";
+    guest.prettyHostname = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      example = "Lapdog Agent VM";
+      description = "Human-readable guest machine name, also used by T3 as its environment display name. Does not change the guest's network hostname.";
+    };
     opencode.enable = mkEnableOption "OpenCode inside the Agent VM guest";
     pi.enable = mkEnableOption "the Pi coding agent inside the Agent VM guest";
     t3code = {

@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   imports = [
@@ -6,7 +11,7 @@
     ../../../../modules/nixos/vms/agent-vm/guest.nix
   ];
 
-  dog.services.agent-vm = (import ./settings.nix) // {
+  dog.services.agent-vm = lib.recursiveUpdate (import ./settings.nix) {
     pi.enable = true;
     workingDirectory = "/home/agent";
     guest.tailscale.enable = true;
