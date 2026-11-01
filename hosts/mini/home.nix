@@ -83,7 +83,10 @@
     };
   };
 
-  services.handy.enable = true;
+  services.handy = {
+    enable = true;
+    package = pkgs.handy;
+  };
 
   dog.programs = {
     cli-tools.enable = true;

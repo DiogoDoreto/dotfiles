@@ -135,6 +135,7 @@
 
           llm-agents = inputs.llm-agents.packages.${system};
         })
+        (import ../../modules/overlays/handy.nix)
       ];
 
       specialArgs = {

@@ -232,7 +232,10 @@
     };
   };
 
-  services.handy.enable = true;
+  services.handy = {
+    enable = true;
+    package = pkgs.handy;
+  };
 
   services.kdeconnect = {
     enable = true;

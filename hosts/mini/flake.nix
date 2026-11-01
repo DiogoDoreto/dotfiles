@@ -91,6 +91,7 @@
           };
           orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
         })
+        (import ../../modules/overlays/handy.nix)
       ];
       pkgs = import nixpkgs {
         inherit system overlays;
