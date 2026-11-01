@@ -132,13 +132,6 @@ in
                   siteMonitor = href;
                 };
               }
-              {
-                "VSCode" = rec {
-                  icon = "vscode.png";
-                  href = "https://code.local.doreto.com.br";
-                  siteMonitor = href;
-                };
-              }
             ];
           }
           {

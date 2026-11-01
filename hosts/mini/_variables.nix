@@ -43,7 +43,6 @@
     readeck = 18084;
     searx = 8888;
     sonarr = 8989;
-    vscodium = 32849;
 
     # monitoring
     grafana = 3001;

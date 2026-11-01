@@ -179,11 +179,6 @@ in
           reverse_proxy 127.0.0.1:${p.searx}
         '';
       };
-      "code.local.doreto.com.br" = {
-        extraConfig = ''
-          reverse_proxy 127.0.0.1:${p.vscodium}
-        '';
-      };
       "tts.local.doreto.com.br" = {
         extraConfig = ''
           reverse_proxy 127.0.0.1:${p.kokoro}
