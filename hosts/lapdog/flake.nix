@@ -33,10 +33,6 @@
       url = "../../modules/flakes/pi-web-access";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    paseo-src = {
-      url = "github:getpaseo/paseo/v0.11.4";
-      flake = false;
-    };
     linux-systems.url = "github:nix-systems/x86_64-linux";
     handy = {
       url = "github:cjpais/Handy";
@@ -138,9 +134,6 @@
           ffmpeg-full = prev.ffmpeg-full.override { withWhisper = false; };
 
           llm-agents = inputs.llm-agents.packages.${system};
-          paseo = final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") {
-            npmDepsHash = "sha256-nBFW6cm/4LO3q9BAsZSjBoNQN1i1PshCfcKbup0G/Lg=";
-          };
         })
       ];
 

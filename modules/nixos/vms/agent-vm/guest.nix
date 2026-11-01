@@ -33,7 +33,6 @@ in
         22
       ]
       ++ optional cfg.opencode.enable cfg.opencodePort
-      ++ optional cfg.paseo.enable cfg.paseo.guestPort
       ++ optional cfg.t3code.enable cfg.t3code.guestPort;
     };
   };
@@ -108,7 +107,6 @@ in
       "sshd.service"
     ]
     ++ optional cfg.opencode.enable "${cfg.vmName}-opencode.service"
-    ++ optional cfg.paseo.enable "paseo.service"
     ++ optional cfg.t3code.enable "${cfg.vmName}-t3code.service";
     after = [ "local-fs.target" ];
     serviceConfig.Type = "oneshot";
@@ -141,43 +139,6 @@ in
       ExecStart = "${pkgs.bash}/bin/bash -lc 'exec ${pkgs.llm-agents.opencode}/bin/opencode serve --hostname ${cfg.guestAddress} --port ${toString cfg.opencodePort}'";
       Restart = "on-failure";
       RestartSec = "2s";
-    };
-  };
-
-  systemd.services.paseo = mkIf cfg.paseo.enable {
-    description = "Paseo agent control surface inside ${cfg.vmName}";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "network-online.target" ];
-    after = [
-      "network-online.target"
-      "${cfg.vmName}-guest-ssh-setup.service"
-    ];
-    environment = {
-      PATH = mkForce (
-        concatStringsSep ":" [
-          "/home/${cfg.guestUser}/.nix-profile/bin"
-          "/home/${cfg.guestUser}/.local/state/nix/profile/bin"
-          "/etc/profiles/per-user/${cfg.guestUser}/bin"
-          "/run/current-system/sw/bin"
-          "/run/wrappers/bin"
-          "/nix/var/nix/profiles/default/bin"
-        ]
-      );
-      PASEO_HOME = "/home/${cfg.guestUser}/.paseo";
-      PASEO_HOSTNAMES = cfg.paseo.hostName;
-      PASEO_LISTEN = "${cfg.guestAddress}:${toString cfg.paseo.guestPort}";
-      PASEO_TRUSTED_PROXIES = cfg.hostAddress;
-      PASEO_WEB_UI_ENABLED = "true";
-    };
-    serviceConfig = {
-      Type = "simple";
-      User = cfg.guestUser;
-      WorkingDirectory = cfg.workingDirectory;
-      ExecStart = "${pkgs.paseo}/bin/paseo-server --no-relay";
-      Restart = "on-failure";
-      RestartSec = "5s";
-      KillSignal = "SIGTERM";
-      TimeoutStopSec = 15;
     };
   };
 
@@ -215,7 +176,6 @@ in
         packages =
           with pkgs;
           optional cfg.opencode.enable llm-agents.opencode
-          ++ optional cfg.paseo.enable paseo
           ++ optional cfg.pi.enable llm-agents.pi
           ++ optional cfg.t3code.enable t3code;
       };

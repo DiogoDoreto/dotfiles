@@ -126,13 +126,6 @@ in
           {
             Code = [
               {
-                "OpenCode" = rec {
-                  icon = "opencode.png";
-                  href = "https://opencode.local.doreto.com.br";
-                  siteMonitor = href;
-                };
-              }
-              {
                 "Forgejo" = rec {
                   icon = "forgejo.png";
                   href = "https://git.local.doreto.com.br";

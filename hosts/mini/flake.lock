@@ -122,24 +122,6 @@
         "type": "github"
       }
     },
-    "doomemacs": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1790918042,
-        "narHash": "sha256-Wu2Tztg+QibAewCBeI3UKxN2mheSU2aoXEtb19RuIPM=",
-        "ref": "refs/heads/master",
-        "rev": "59cdaa32ae933469bb6a1fb3cadee8a988c15968",
-        "revCount": 21396,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/doomemacs/doomemacs"
-      },
-      "original": {
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/doomemacs/doomemacs"
-      }
-    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -655,23 +637,6 @@
         "type": "github"
       }
     },
-    "paseo-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1792088959,
-        "narHash": "sha256-UhQVi9qq2WaUKGwyxfis4JN8qhMJH5i8EvvA58wO0IM=",
-        "owner": "getpaseo",
-        "repo": "paseo",
-        "rev": "dc5b02f7d7c120baea380d76def8b968020d8823",
-        "type": "github"
-      },
-      "original": {
-        "owner": "getpaseo",
-        "ref": "v0.11.4",
-        "repo": "paseo",
-        "type": "github"
-      }
-    },
     "pi-web-access": {
       "inputs": {
         "nixpkgs": [
@@ -741,7 +706,6 @@
     "root": {
       "inputs": {
         "authentik-nix": "authentik-nix",
-        "doomemacs": "doomemacs",
         "git-pages": "git-pages",
         "handy": "handy",
         "home-manager": "home-manager",
@@ -753,7 +717,6 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_4",
         "nur": "nur",
-        "paseo-src": "paseo-src",
         "pi-web-access": "pi-web-access"
       }
     },

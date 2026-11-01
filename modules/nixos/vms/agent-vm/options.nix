@@ -248,23 +248,5 @@ in
         description = "Base URL for the Authentik outpost used by Caddy forward_auth.";
       };
     };
-    paseo = {
-      enable = mkEnableOption "Paseo inside the Agent VM guest";
-      guestPort = mkOption {
-        type = types.port;
-        default = 6767;
-        description = "Port where the Paseo daemon listens inside the guest.";
-      };
-      hostLocalPort = mkOption {
-        type = types.port;
-        default = 32861;
-        description = "Host loopback port forwarded to the guest Paseo daemon.";
-      };
-      hostName = mkOption {
-        type = types.str;
-        default = "paseo.local.doreto.com.br";
-        description = "Caddy virtual host for Paseo access.";
-      };
-    };
   };
 }

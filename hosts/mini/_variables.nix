@@ -36,7 +36,6 @@
     kokoro = 8880;
     libreChat = 11112;
     openWebui = 11111;
-    opencode = 32859;
     openssh = 17098;
     prowlarr = 9696;
     qbittorrent = 8079;

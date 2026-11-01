@@ -1,7 +1,7 @@
 # Agent VM
 
 The Agent VM runs coding agents and their control surfaces in an isolated
-MicroVM. It optionally runs `opencode serve`, the Paseo daemon, and `t3 serve`,
+MicroVM. It optionally runs `opencode serve` and `t3 serve`,
 and exposes their interfaces through host-local proxies. Its storage consists of VM-owned
 persistent state and explicitly configured host-directory shares.
 
@@ -36,7 +36,7 @@ through `modules/nixos/default.nix`.
 
 Both entry points import their local `settings.nix` attribute set. Use that file
 for agreement across the boundary: network identities, persistent backing
-paths, filesystem shares, and capabilities such as Paseo that need both a guest
+paths, filesystem shares, and capabilities such as t3code that need both a guest
 daemon and a host proxy. Defaults in `options.nix` already provide the common
 network identities and state paths. Host-only policy belongs in the deployment's
 `host.nix`; guest-only policy belongs in its `guest.nix`.
@@ -53,11 +53,10 @@ expect those common ingredients, plus `inputs` and `self` in `specialArgs`.
 | Starts at host boot | No | Yes |
 | Additional host shares | `/home/dog/projects` → `/home/agent/projects`, read-write | None |
 | Agent working directory | `/home/agent/projects` | `/home/agent` |
-| OpenCode | Disabled | Enabled |
-| Paseo | Enabled | Enabled |
+| OpenCode | Disabled | Disabled |
 | Pi | Enabled | Disabled |
 | t3code service and CLI | Enabled | Enabled |
-| Public frontends | None | Caddy with Authentik for OpenCode and Paseo; native token auth for t3code |
+| Public frontends | None | Caddy with native token auth for t3code |
 | Guest Tailscale | Disabled | Enabled |
 | Guest Nix GC | No automatic policy | Daily space check; collect below 15 GiB free |
 
@@ -89,8 +88,8 @@ agent-vm-logs
 ```
 
 `start-agent-vm` initializes state, starts `microvm@agent-vm.service`, and prints
-the URLs of enabled services (OpenCode: `http://127.0.0.1:32860`, Paseo:
-`http://127.0.0.1:32861`, t3code: `http://127.0.0.1:32862`). `autostart = true`
+the URLs of enabled services (OpenCode, if enabled: `http://127.0.0.1:32860`,
+t3code: `http://127.0.0.1:32862`). `autostart = true`
 starts the VM at host boot instead, as configured on mini.
 
 `agent-vm-public-key` prints the outbound SSH public key for manually adding to
@@ -160,19 +159,11 @@ The host enables forwarding and NAT, serves guest DNS on the bridge address, and
 logs DNS queries and new outbound TCP/UDP connections. This logging is audit
 visibility, not an outbound allowlist; the guest can reach the LAN and internet.
 
-OpenCode is optional (`opencode.enable`, default `false`) and enabled only on mini.
+OpenCode is optional (`opencode.enable`, default `false`) and disabled on both hosts.
 When enabled, its package, guest service, firewall port, and host proxy are included.
 It listens on guest `10.0.101.2:32859`. A host-local socat proxy forwards
-`127.0.0.1:32860` to it. On mini, Caddy exposes
-`https://opencode.local.doreto.com.br` with Authentik forward authentication.
-
-Both deployments also run `paseo-server --no-relay` with its bundled web interface
-on guest port `6767`. The host proxy listens on `127.0.0.1:32861` (on lapdog, open
-`http://127.0.0.1:32861`). On mini, Caddy exposes
-`https://paseo.local.doreto.com.br` with the same authentication. Paseo accepts that
-hostname through DNS-rebinding protection and trusts the host bridge address for
-forwarded requests. Its state lives in the persistent guest home at
-`/home/agent/.paseo`.
+`127.0.0.1:32860` to it. With `caddy.enable`, Caddy exposes the configured OpenCode
+hostname with Authentik forward authentication.
 
 t3code is optional (`t3code.enable`, default `false`) and enabled on both hosts.
 The `agent-vm-t3code.service` guest unit runs `t3 serve --no-browser` as `agent`,
@@ -211,8 +202,8 @@ uses only VM-owned persistent storage.
 The guest trusts `hosts/mini/home-caddy.crt` so Git, curl, and Forgejo CLI can use
 local HTTPS services. Home Manager configures Git, CLI tools, agent skills,
 Playwright CLI, and Forgejo CLI; the system includes SSH, GitHub CLI, and common
-maintenance tools. OpenCode and t3code use login shells, while Paseo's explicit PATH
-includes the guest's Nix and Home Manager profiles.
+maintenance tools. OpenCode and t3code use login shells to include the guest's Nix
+and Home Manager profiles.
 
 Pi is optional (`pi.enable`, default `false`). Enabling it installs
 `llm-agents.pi` in the guest user's Home Manager profile without starting a
@@ -265,7 +256,7 @@ This is a reference implementation, not a general-purpose VM framework.
 For another **Agent VM deployment**, reuse this directory's host and guest
 modules, with deployment settings matching the new guest output name. For a
 different workload, follow the organization and selectively adapt infrastructure.
-Agent users, outbound Git keys, project sharing, OpenCode, Paseo, and the agent
+Agent users, outbound Git keys, project sharing, OpenCode, t3code, and the agent
 Home Manager setup are workload choices, not requirements for every VM. The helper
 command names currently assume one Agent VM per host.
 
@@ -334,7 +325,6 @@ The new namespace is `dog.services.agent-vm`, and the guest flake output is
 `nixosConfigurations.agent-vm`. Commands use `agent-vm` in place of
 `opencode-agent-vm`. The guest SSH-material mount moves to `/run/agent-vm/ssh`;
 the guest setup service updates the persistent user's SSH symlinks automatically.
-OpenCode/Paseo ports and public URLs do not change.
 
 For rollback, stop the new VM and its virtiofs daemons before moving
 `/var/lib/agent-vm` back to the old path. Restore the old host generation, remove

@@ -87,7 +87,6 @@
 
   dog.programs = {
     cli-tools.enable = true;
-    emacs.enable = true;
     firefox = {
       enable = true;
       plasma-integration = true;
@@ -95,16 +94,6 @@
     ghostty.enable = true;
     git.enable = true;
     plasma-fix-taskbar-icons.enable = true;
-
-    opencode = {
-      enable = true;
-      extraWritablePaths = [
-        "~/projects/"
-      ];
-      extraReadOnlyPaths = [
-        "/var/run/postgresql"
-      ];
-    };
   };
 
   services.podman = {

@@ -20,10 +20,6 @@
       url = "../../modules/flakes/pi-web-access";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    paseo-src = {
-      url = "github:getpaseo/paseo/v0.11.4";
-      flake = false;
-    };
     git-pages = {
       url = "../../modules/flakes/git-pages";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -35,10 +31,6 @@
     home-manager = {
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-    doomemacs = {
-      url = "git+https://github.com/doomemacs/doomemacs?submodules=1";
-      flake = false;
     };
     nextcloud-org-notes = {
       url = "github:DiogoDoreto/nextcloud-org-notes";
@@ -98,9 +90,6 @@
             denon = final.callPackage ./packages/denon.nix { };
           };
           orgnotes = inputs.nextcloud-org-notes.packages.${system}.default;
-          paseo = final.callPackage (inputs.paseo-src.outPath + "/nix/package.nix") {
-            npmDepsHash = "sha256-nBFW6cm/4LO3q9BAsZSjBoNQN1i1PshCfcKbup0G/Lg=";
-          };
         })
       ];
       pkgs = import nixpkgs {
