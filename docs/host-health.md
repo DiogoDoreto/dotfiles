@@ -6,7 +6,10 @@
   `https://grafana.local.doreto.com.br` (Caddy internal CA + Authentik).
   Trust the existing `home-caddy.crt` on clients. No Grafana firewall opening.
 - Provisioned Prometheus datasource UID `victoriametrics` connects **server-side**
-  to `http://127.0.0.1:8428`, with a 30s scrape interval. No plugin required.
+  to `http://127.0.0.1:8428`, with a 30s scrape interval. Grafana 13 ships
+  Prometheus separately: `declarativePlugins` installs the pinned
+  `pkgs.grafanaPlugins.prometheus`. Provisioning the datasource alone does not
+  install its plugin; automatic plugin downloads remain disabled.
 - Immutable dashboards: `/d/host-health-fleet` and `/d/host-health-detail`, in
   **Host health**. Homepage links to fleet; series data links drill into a host.
   Source: `hosts/mini/services/grafana/`. Edit `generate.py`, regenerate JSON,
@@ -150,7 +153,27 @@ parses every dashboard expression using promtool, and exercises synthetic
 counter/gauge, missing/failed scrape, collector failure, service missing/stopped,
 filesystem/error/inode, and GPU success/command-failure/missing cases. It writes
 scratch fixtures only under `.private/tmp`. This does not substitute for VM or
-Grafana end-to-end testing. Validate generated scrape YAML with pinned VM
+Grafana end-to-end testing.
+
+Also run the datasource runtime regression test. It starts disposable Grafana
+with the evaluated configuration, a writable home matching NixOS, and a local
+metrics stub; it asserts that the Prometheus plugin loads and a Viewer receives
+numeric data through `/api/ds/query`. Merely seeing a provisioned datasource or
+querying VictoriaMetrics directly does **not** test this path.
+
+```sh
+# Build only the service unit/configuration and plugin artifacts, not the system.
+nix build --no-link './hosts/mini#nixosConfigurations.dogdot.config.systemd.units."grafana.service".unit'
+package=$(nix eval --raw ./hosts/mini#nixosConfigurations.dogdot.config.services.grafana.package)
+config=$(nix eval --raw ./hosts/mini#nixosConfigurations.dogdot.config.systemd.services.grafana.serviceConfig.ExecStart | awk '{print $NF}')
+plugins=$(nix build --no-link --print-out-paths ./hosts/mini#nixosConfigurations.dogdot.config.services.grafana.settings.paths.plugins)
+python3 hosts/mini/services/grafana/test-runtime.py "$package" "$config" "$plugins"
+```
+
+If every panel is Unknown, first check Grafana logs for
+`Could not find plugin definition for data source` / `datasource_type=prometheus`.
+A missing plugin can coexist with healthy scrapes, a provisioned datasource, and
+fully working PromQL. The runtime test catches this failure. Validate generated scrape YAML with pinned VM
 `-dryRun -promscrape.config=<file>` and generated Caddyfile with pinned Caddy
 `adapt`/`validate`. For non-root validation, redirect only log/storage paths into
 scratch space and disable local CA trust installation; never run a production

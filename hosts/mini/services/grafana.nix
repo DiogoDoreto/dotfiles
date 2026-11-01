@@ -40,6 +40,9 @@ in
   services.grafana = {
     enable = true;
     openFirewall = false;
+    # Grafana 13 distributes Prometheus separately; provisioning a datasource
+    # does not install its plugin. Keep it pinned instead of downloading at boot.
+    declarativePlugins = [ pkgs.grafanaPlugins.prometheus ];
     settings = {
       server = {
         http_addr = "127.0.0.1";
