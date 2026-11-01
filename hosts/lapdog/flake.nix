@@ -29,6 +29,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     llm-agents.url = "github:numtide/llm-agents.nix";
+    pi-web-access = {
+      url = "../../modules/flakes/pi-web-access";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     paseo-src = {
       url = "github:getpaseo/paseo/v0.11.4";
       flake = false;
@@ -60,6 +64,7 @@
         inputs.nur.overlays.default
 
         inputs.my-kwtype.overlays.default
+        inputs.pi-web-access.overlays.default
 
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;

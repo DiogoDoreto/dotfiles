@@ -498,6 +498,22 @@
         "type": "github"
       }
     },
+    "pi-web-access": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "../../modules/flakes/pi-web-access",
+        "type": "path"
+      },
+      "original": {
+        "path": "../../modules/flakes/pi-web-access",
+        "type": "path"
+      },
+      "parent": []
+    },
     "root": {
       "inputs": {
         "doomemacs": "doomemacs",
@@ -513,7 +529,8 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_4",
         "nur": "nur",
-        "paseo-src": "paseo-src"
+        "paseo-src": "paseo-src",
+        "pi-web-access": "pi-web-access"
       }
     },
     "spectrum": {

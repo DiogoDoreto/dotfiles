@@ -16,6 +16,10 @@
       url = "../../modules/flakes/kwtype";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    pi-web-access = {
+      url = "../../modules/flakes/pi-web-access";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     paseo-src = {
       url = "github:getpaseo/paseo/v0.11.4";
       flake = false;
@@ -59,6 +63,7 @@
       overlays = [
         inputs.nur.overlays.default
         inputs.my-kwtype.overlays.default
+        inputs.pi-web-access.overlays.default
         (final: prev: {
           calibre = prev.calibre.override { speechSupport = false; };
           # https://github.com/NixOS/nixpkgs/pull/540681

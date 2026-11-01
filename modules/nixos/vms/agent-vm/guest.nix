@@ -219,6 +219,9 @@ in
           ++ optional cfg.pi.enable llm-agents.pi
           ++ optional cfg.t3code.enable t3code;
       };
+      home.file.".pi/agent/extensions/pi-web-access" = mkIf cfg.pi.enable {
+        source = pkgs.pi-web-access;
+      };
       targets.genericLinux.enable = true;
       dog.programs = {
         agent-skills.enable = true;

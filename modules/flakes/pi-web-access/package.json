@@ -1,0 +1,23 @@
+{
+  "name": "pi-web-access",
+  "version": "0.46.0",
+  "type": "module",
+  "license": "MIT",
+  "pi": {
+    "extensions": [
+      "./dist"
+    ],
+    "video": "https://github.com/nicobailon/pi-web-access/raw/refs/heads/main/pi-web-fetch-demo.mp4"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@mozilla/readability": "^0.6.0",
+    "defuddle": "0.19.3",
+    "linkedom": "^0.16.0",
+    "p-limit": "^6.1.0",
+    "promise.try": "^2.0.1",
+    "turndown": "^7.2.0",
+    "undici": "^8.11.2",
+    "unpdf": "^1.6.2"
+  }
+}

@@ -216,8 +216,18 @@ includes the guest's Nix and Home Manager profiles.
 
 Pi is optional (`pi.enable`, default `false`). Enabling it installs
 `llm-agents.pi` in the guest user's Home Manager profile without starting a
-service or opening ports. Lapdog enables it in its guest deployment; run it with
+service or opening ports. Both lapdog and mini enable it; run it with
 `agent-vm-ssh -t pi`.
+
+Enabling Pi also installs the pinned `pi-web-access` extension from
+`modules/flakes/pi-web-access/`. Home Manager links the Nix-built package into
+`~/.pi/agent/extensions/pi-web-access`; its npm dependencies are locked and built
+into the Nix store, so no runtime `pi install` or npm downloads are needed.
+Pi's settings, authentication, sessions, and optional `web-search.json` provider
+configuration remain writable and are not managed by this module. Keyless search
+works by default; keep optional provider credentials out of the repository and
+Nix store. Remove any existing npm/git installation of this plugin to avoid
+loading it twice. Restart Pi after deploying an updated package.
 
 t3code is optional (`t3code.enable`, default `false`). Both deployments install
 `llm-agents.t3code` in the guest user's Home Manager profile, with upstream's
