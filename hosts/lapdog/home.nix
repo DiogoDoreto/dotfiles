@@ -30,7 +30,7 @@
       wl-clipboard
 
       ## Media apps to enable when needed
-      # bambu-studio
+      bambu-studio
       # blender
       # freecad
       # kdePackages.kdenlive
