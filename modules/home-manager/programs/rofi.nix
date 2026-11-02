@@ -45,9 +45,9 @@ in
 
     programs.rofi = {
       enable = true;
-      font = "VictorMono Nerd Font 12";
-      terminal = "wezterm";
-      extraConfig = {
+      settings = {
+        font = "VictorMono Nerd Font 12";
+        terminal = "wezterm";
         show-icons = true;
         combi-hide-mode-prefix = true;
       };
