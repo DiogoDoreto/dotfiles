@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  inputs,
   ...
 }:
 
@@ -44,10 +43,13 @@ in
               pactl = "${pkgs.pulseaudio}/bin/pactl";
               sink = "\$(${pactl} get-default-sink)";
               xrandr = getExe pkgs.xrandr;
+              dunstctl = "${pkgs.dunst}/bin/dunstctl";
               lockscreen = pkgs.writeShellScript "lockscreen.sh" ''
+                ${dunstctl} set-paused true
+                trap '${dunstctl} set-paused false' EXIT
                 DIMENSION="$(${xrandr} --query | grep Screen | sed -r 's/^.*current ([0-9]+) x ([0-9]+).*$/\1x\2/')"
                 ${pkgs.imagemagick}/bin/magick ${wallpaper} -resize "$DIMENSION^" -gravity SouthWest -extent "$DIMENSION" RGB:- | \
-                  i3lock -e --raw "$DIMENSION:rgb" --image /dev/stdin --color=000000
+                  i3lock -n -e --raw "$DIMENSION:rgb" --image /dev/stdin --color=000000
               '';
             in
             mkOptionDefault {
