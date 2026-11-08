@@ -66,6 +66,45 @@ class Grouping(unittest.TestCase):
         self.assertIn("**DIFF:** 0 B", text)
         self.assertIn("(+1, -1)", text)
 
+    def test_hide_only_equal_display_versions_with_exact_zero_delta(self):
+        shared = store(1, "quiet-1")
+        before = {shared: 10, store(2, "quiet-1"): 100,
+                  store(3, "sized-1"): 100, store(4, "upgrade-1"): 100,
+                  store(5, "multiple-1"): 100, store(6, "removed-1"): 0}
+        after = {shared: 10, store(7, "quiet-1"): 100,
+                 store(8, "sized-1"): 101, store(9, "upgrade-2"): 100,
+                 store(10, "multiple-1"): 50, store(11, "multiple-1"): 50,
+                 store(12, "added-1"): 0}
+        data = report_data()
+        data.update(before=sorted(before), after=sorted(after), nar_sizes=before | after,
+                    groups=r.grouped(before, after), changes=r.differences(set(before), set(after)))
+        original = json.dumps(data, sort_keys=True)
+        for bounded in (False, True):
+            text = r.render(data, bounded=bounded)
+            self.assertNotIn(r.code("quiet"), text)
+            self.assertIn("1 same-version, zero-size-delta rebuilds omitted", text)
+            for name in ("sized", "upgrade", "multiple", "added", "removed"):
+                self.assertIn(r.code(name), text)
+            self.assertIn("changed: **3**", text)
+        budget = len(text.encode()) - 1
+        preview = r.render(data, budget=budget)
+        self.assertNotIn(r.code("quiet"), preview)
+        self.assertIn("1 same-version, zero-size-delta rebuilds omitted", preview)
+        self.assertIn("of 5 grouped rows shown", preview)
+        self.assertLessEqual(len(preview.encode()), budget)
+        self.assertEqual(json.dumps(data, sort_keys=True), original)
+
+    def test_only_rebuilds_omitted_is_not_an_identical_closure(self):
+        before, after = {store(1, "app-1"): 100}, {store(2, "app-1"): 100}
+        data = report_data()
+        data.update(before=list(before), after=list(after), nar_sizes=before | after,
+                    groups=r.grouped(before, after))
+        text = r.render(data)
+        self.assertIn("1 same-version, zero-size-delta rebuilds omitted", text)
+        self.assertNotIn("No system closure changes", text)
+        self.assertNotIn("### Changed", text)
+        self.assertIn("(+1, -1)", text)
+
     def test_size_format(self):
         for value, expected in ((0, "0 B"), (100, "+100 B"), (-1024, "-1 KiB"),
                                 (1024**2, "+1 MiB"), (1024**3, "+1 GiB")):

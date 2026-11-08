@@ -369,7 +369,7 @@ class Summary(Temporary):
 
     def test_small_budget_preserves_tables_and_reports_row_count(self):
         self.data["groups"] = {
-            key: [dict(name=f"{key}{i}", before=[], after=[], delta=0) for i in range(100)]
+            key: [dict(name=f"{key}{i}", before=[], after=[], delta=1) for i in range(100)]
             for key in r.GROUPS}
         body = r.render(self.data, budget=2000)
         shown = sum(line.startswith("| <code>") for line in body.splitlines())

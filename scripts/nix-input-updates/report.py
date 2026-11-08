@@ -185,6 +185,15 @@ def render(data, bounded=True, artifact_available=True, budget=SUMMARY_LIMIT):
             return full
     before, after = set(data["before"]), set(data["after"])
     sizes = data["nar_sizes"]
+    # Presentation only: keep all groups and exact paths in the JSON audit data.
+    groups = {key: list(data["groups"][key]) for key in GROUPS}
+    visible = []
+    for row in groups["changed"]:
+        shared = set(row["before"]) & set(row["after"])
+        if row["delta"] != 0 or versions(row["before"], shared) != versions(row["after"], shared):
+            visible.append(row)
+    omitted = len(groups["changed"]) - len(visible)
+    groups["changed"] = visible
     old_size, new_size = sum(sizes[p] for p in before), sum(sizes[p] for p in after)
     artifact = ("Full report: Actions artifact " + code("host-package-report-" + data["host"] + "-" + str(data["attempt"]))
                 + " (instance retention applies)." if artifact_available else
@@ -197,14 +206,17 @@ def render(data, bounded=True, artifact_available=True, budget=SUMMARY_LIMIT):
              f"**PATHS:** {len(before)} → {len(after)} (+{len(after - before)}, -{len(before - after)})  ",
              f"**SIZE:** {size(old_size)} → {size(new_size)}  ",
              f"**DIFF:** {size(new_size - old_size, signed=True)}", "",
-             " · ".join(f"{key}: **{len(data['groups'][key])}**" for key in GROUPS), ""]
+             " · ".join(f"{key}: **{len(groups[key])}**" for key in GROUPS), ""]
     if before == after:
         lines.append("No system closure changes.")
-    total = sum(map(len, data["groups"].values()))
+    if omitted:
+        lines.extend([f"{omitted} same-version, zero-size-delta rebuilds omitted; "
+                      "exact changes remain in report.json.", ""])
+    total = sum(map(len, groups.values()))
 
     def notice(shown):
         return (f"Preview limited by Forgejo's 1 MiB per-step summary budget: {shown} of {total} grouped rows shown; "
-                "report.md contains every group. See report.json for exact changed paths and both complete closures.")
+                "report.md contains every non-omitted group. See report.json for exact changed paths and both complete closures.")
 
     used = len(("\n".join(lines) + "\n").encode("utf-8"))
     shown = 0
@@ -213,7 +225,7 @@ def render(data, bounded=True, artifact_available=True, budget=SUMMARY_LIMIT):
         heading = [f"### {key.title()}", "", "| Name | Before → After | NAR size delta |",
                    "| --- | --- | ---: |"]
         started = False
-        for row in data["groups"][key]:
+        for row in groups[key]:
             shared = set(row["before"]) & set(row["after"])
             text = versions(row["before"], shared) + " → " + versions(row["after"], shared)
             addition = ([] if started else heading) + [

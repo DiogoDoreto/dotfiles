@@ -77,6 +77,11 @@ versions/outputs are displayed together rather than asserted to be upgrades.
 
 - Rows show before/after version or output labels, multiplicity (`×2`, etc.),
   shared paths collapsed to `<unchanged>`, and net NAR size delta.
+- Changed rows with identical displayed before/after labels (including multiplicity)
+  and an exact zero-byte delta are omitted from Markdown. A note counts these
+  same-version rebuild groups; section counts include only visible groups.
+  Additions/removals, version or multiplicity changes, and nonzero byte deltas
+  remain visible. Filtering does not change JSON audit data or closure totals.
 - Versionless names (such as units) display `<none>`.
 - PATHS shows unique before/after path counts and added/removed counts.
 - SIZE shows the sum of each unique path's NAR size on each side; DIFF is its
@@ -93,7 +98,7 @@ The run uploads `host-package-report-<host>-<attempt>` containing:
 - `report.json`: schema version **2**, host/run/PR/commit provenance, both complete
   sorted path inventories, a `nar_sizes` mapping in bytes, exact `changes`, and
   `groups` with full before/after paths and integer-byte deltas.
-- `report.md`: all grouped rows, without truncation. Exact changed paths and
+- `report.md`: all non-omitted grouped rows, without truncation. Exact changed paths and
   complete inventories are available only in `report.json`, not repeated in Markdown.
 
 The exact-path audit categories remain additions, removals, version changes and
