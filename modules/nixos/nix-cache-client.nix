@@ -21,6 +21,8 @@ in
     '';
 
     nix.settings = lib.mkIf (cfg.publicKey != null) {
+      # Fall back sooner when Chungus is offline (applies to all substituters).
+      download-attempts = 2;
       substituters = [ "https://nix-cache.local.doreto.com.br" ];
       trusted-public-keys = [ cfg.publicKey ];
     };

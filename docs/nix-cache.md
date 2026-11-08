@@ -54,6 +54,10 @@ Mini and Lapdog already trust the local Caddy CA. Existing upstream substituters
 and trusted keys are preserved. Chungus uses its existing store directly and
 does not configure itself as a client of this endpoint.
 
+The shared client module sets `download-attempts = 2` (instead of Nix's default
+of five) so an offline Chungus delays fallback less. This is a global Nix
+setting and applies to downloads from all substituters, not just this cache.
+
 ## Verify after deployment
 
 On Lapdog, check DNS, HTTPS, and cache metadata:
