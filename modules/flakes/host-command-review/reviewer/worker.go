@@ -56,24 +56,32 @@ func (w Worker) Publish(ctx context.Context) error {
 	if e != nil {
 		return e
 	}
+	var failures []error
 	for _, record := range rs {
+		if ctx.Err() != nil {
+			return errors.Join(append(failures, ctx.Err())...)
+		}
 		if record.Snapshot.SessionID != w.Controller.SessionID() {
 			continue
 		}
 		// The ONLY outbound host data source is the durable release allowlist.
 		b, e := w.Controller.StatusBytes(record.Snapshot.SessionID, record.Snapshot.RequestID)
 		if e != nil {
-			return e
+			failures = append(failures, e)
+			continue
 		}
 		reply, e := contracts.ParseReply(bytes.NewReader(b))
 		if e != nil {
-			return e
+			failures = append(failures, e)
+			continue
 		}
 		if _, e = w.Exchange.Call(ctx, transport.Request{Version: 1, Operation: "publish", SessionID: reply.SessionID, Reply: &reply}); e != nil {
-			return e
+			failures = append(failures, e)
 		}
 	}
-	return nil
+	// One record's refusal must not starve later statuses/releases. Preserve all
+	// errors for the caller; retries still send only durable host-approved data.
+	return errors.Join(failures...)
 }
 
 // Run renews independently of pulls/publications. Any lost renewal ends this

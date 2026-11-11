@@ -3,6 +3,7 @@
 const bootstrap = location.hash.slice(1);
 history.replaceState(null, '', '/');
 let auth = '', csrf = '', selected = '', current = null, leaseUntil = 0, busy = false;
+let stale = false, bindingView = null, offerChanged = () => {};
 const status = document.querySelector('#status');
 const detail = document.querySelector('#detail');
 function node(tag, text, parent) {
@@ -35,7 +36,8 @@ function field(label, value, parent, multiline = false) {
   const l = node('label', label, parent); const n = node(multiline ? 'textarea' : 'input', undefined, l); n.value = value; return n;
 }
 async function apply(action, extra = {}) {
-  if (busy || !current) return;
+  if (busy || !current || stale) return;
+  if (Date.now() >= current.binding.expires_unix * 1000) { status.textContent = 'Review binding expired. Refresh to renew it; unfinished edits are preserved.'; return; }
   if ((action === 'run' || action === 'run_root') && Date.now() >= leaseUntil) { status.textContent = 'Browser lease expired. Reconnect and review again.'; return; }
   busy = true;
   // Copy the exact host-provided binding, never build an approval in the browser.
@@ -45,11 +47,11 @@ async function apply(action, extra = {}) {
   finally { busy = false; }
 }
 function render(r) {
-  current = r; detail.replaceChildren();
+  current = r; stale = false; offerChanged = () => {}; detail.replaceChildren();
   node('h2', `${r.phase} · ${r.snapshot_id}`, detail);
   node('h3', 'Untrusted guest reason', detail); node('pre', r.reason, detail);
   node('h3', 'Complete frozen execution specification and approval binding', detail);
-  node('pre', JSON.stringify({spec: r.spec, binding: r.binding}, null, 2), detail);
+  bindingView = node('pre', JSON.stringify({spec: r.spec, binding: r.binding}, null, 2), detail);
   node('p', 'bash --noprofile --norc /proc/self/fd/3; immutable script FD3, never script argv; stdin /dev/null; no PTY. Environment and live cwd are shown above. Root prompts occur in KDE, never enter a password here.', detail);
   const locked = ['starting', 'running'].includes(r.phase);
   if (locked) node('strong', 'Read-only while authenticating/executing. Cancellation requests stop the process tree; they cannot undo side effects. Output stays held.', detail);
@@ -91,6 +93,7 @@ function renderHeld(original) {
   const release = button('Release reviewed immutable artifact to guest', () => {
     if (candidate && confirm('Disclose this complete reviewed artifact, including executed metadata, to the guest? This cannot be undone.')) apply('release', {artifact: candidate});
   }, detail, true);
+  offerChanged = () => { candidate = null; release.disabled = true; preview.textContent = 'Review binding renewed: preview again before confirming release. Redactions are preserved.'; };
   for (const input of [script, cwd, out, err]) input.addEventListener('input', () => { candidate = null; release.disabled = true; preview.textContent = 'Changed: preview again.'; });
   button('Preview whole export and explicit redaction markers', () => {
     candidate = structuredClone(original); const fields = new Set(candidate.redacted_fields);
@@ -103,18 +106,39 @@ function renderHeld(original) {
   }, detail);
   button('Withhold — keep all result data host-private', () => { status.textContent = 'Still held. No release operation sent.'; }, detail);
 }
+// Only nonce/expiry are disposable offers. Epoch, revision, digest, phase,
+// complete spec and held artifact still identify the state being reviewed.
+function sameReview(a, b) {
+  const state = r => JSON.stringify({...r, binding: {...r.binding, nonce: undefined, expires_unix: undefined}});
+  return state(a) === state(b);
+}
+function renewOffer(next) {
+  if (JSON.stringify(current.binding) !== JSON.stringify(next.binding)) {
+    current = next;
+    bindingView.textContent = JSON.stringify({spec: next.spec, binding: next.binding}, null, 2);
+    // Keep existing DOM/drafts and dirty flags, but never carry a disclosure
+    // preview across an offer rotation. Run always asks for fresh confirmation.
+    offerChanged();
+  }
+}
+function selectReview(r) {
+  if (selected === r.snapshot_id && current && !stale && sameReview(current, r)) renewOffer(r);
+  else render(r);
+  selected = r.snapshot_id;
+}
 async function refresh(force = false) {
   try {
     const v = await api('view'); const list = document.querySelector('#list'); list.replaceChildren();
-    for (const r of v.requests || []) button(`${r.phase}: ${r.reason || r.snapshot_id}`, () => { selected = r.snapshot_id; render(r); }, list);
+    for (const r of v.requests || []) button(`${r.phase}: ${r.reason || r.snapshot_id}`, () => selectReview(r), list);
     const next = (v.requests || []).find(r => r.snapshot_id === selected);
-    // Safe polling never overwrites unsaved edits or output redactions. If host
-    // state changed, disable stale forms and require explicit fresh selection.
+    // Safe polling never overwrites unsaved edits or output redactions. Only
+    // substantive changes require discarding the form via explicit selection.
     if (force && next) render(next);
-    else if (next && current && JSON.stringify(next) !== JSON.stringify(current)) {
+    else if (current && (!next || !sameReview(next, current))) {
+      stale = true;
       for (const control of detail.querySelectorAll('button,input,textarea,select')) control.disabled = true;
       status.textContent = 'Host state changed. Select the request again and review the new state.';
-    }
+    } else if (next && current && !stale) renewOffer(next);
   } catch (e) { status.textContent = e.message; }
 }
 document.querySelector('#refresh').addEventListener('click', () => refresh());

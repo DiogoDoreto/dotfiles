@@ -139,7 +139,12 @@ then review the new host spec before run). Defaults belong to host admission:
 120 seconds, maximum 1800; one command, four-hour session maximum. Distinct dog
 and root run actions; no prompt or password in browser. Starting/running shows
 read-only metadata plus explicit stop request. Polling never silently overwrites
-unsaved review; changed host state disables stale forms until reselected.
+unsaved review. Nonce/expiry-only offer renewal updates the host-provided binding
+in place without discarding command drafts, redactions, or the unsaved-command run
+interlock. Selecting the same unchanged request also preserves drafts. Expired
+bindings cannot be submitted; a renewed release offer requires a fresh complete
+preview and confirmation. Revision, epoch, digest, phase, spec or held artifact
+changes disable stale forms until explicit reselection and fresh review.
 
 **All output is held initially; no skip-output-review option exists.** Successful
 execution/polling never releases. Held results expose host-private stdout/stderr,

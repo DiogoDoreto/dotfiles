@@ -433,6 +433,9 @@ func (s *Store) Exchange(ctx context.Context, q transport.Request) (transport.Re
 }
 
 // This only prevents accidental coarse regressions. It is not host approval.
+// Active may return to pending after a known authentication denial/cancellation.
+// The host alone retains spent nonces and requires a fresh approval to retry;
+// no authentication outcome or capability is disclosed in this coarse view.
 func coarseTransition(from, to contracts.CoarseStatus) bool {
 	if from == to {
 		return true
@@ -441,7 +444,7 @@ func coarseTransition(from, to contracts.CoarseStatus) bool {
 	case contracts.Pending:
 		return true
 	case contracts.Active:
-		return to != contracts.Pending
+		return true
 	case contracts.Held:
 		return to == contracts.Released || to == contracts.Uncertain
 	}

@@ -15,16 +15,19 @@ class Element {
 function harness() {
   const elements = Object.fromEntries(['status','detail','list','refresh','end'].map(id => [`#${id}`,new Element('div')]));
   const calls = [], history = [];
+  const view = {requests:[]};
+  let now = Date.now();
+  class Clock extends Date { static now() { return now; } }
   const context = vm.createContext({
     document: {querySelector: s => elements[s], createElement: tag => new Element(tag), addEventListener() {}, visibilityState:'visible'},
     location: {hash:'#fragment-secret'}, history: {replaceState: (...args) => history.push(args)},
     fetch: async (url, options) => {
       calls.push({url, options});
-      return {ok:true,json:async () => url.endsWith('bootstrap') ? {auth:'auth-secret',csrf:'csrf-secret'} : url.endsWith('heartbeat') ? {lease_seconds:10} : {requests:[]}};
-    }, structuredClone, TextEncoder, TextDecoder, atob, btoa, confirm:()=>true, setInterval() {}, Date, JSON, Uint8Array,
+      return {ok:true,json:async () => url.endsWith('bootstrap') ? {auth:'auth-secret',csrf:'csrf-secret'} : url.endsWith('heartbeat') ? {lease_seconds:10} : structuredClone(view)};
+    }, structuredClone, TextEncoder, TextDecoder, atob, btoa, confirm:()=>true, setInterval() {}, Date: Clock, JSON, Uint8Array,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'assets/app.js'),'utf8'), context);
-  return {context,elements,calls,history,run:code=>vm.runInContext(code,context)};
+  return {context,elements,calls,history,view,advance:ms=>{now+=ms;},now:()=>now,run:code=>vm.runInContext(code,context)};
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function all(e) { return e.querySelectorAll(); }
@@ -69,4 +72,83 @@ test('held result requires whole-export preview; edits are marked; withhold send
   assert.equal(op.artifact.execution_digest,'original-digest');
   assert.equal(op.artifact.executed.script,'[REDACTED]');assert.equal(op.artifact.stdout,btoa('safe'));
   assert.deepEqual(op.artifact.redacted_fields,['executed.script','stdout']);
+});
+
+function review(phase='reviewing') {
+  return {snapshot_id:'id',phase,reason:'guest',spec:{script:'original',cwd:'/home/dog',user:'dog',timeout_seconds:120},
+    binding:{version:1,session_id:'session',snapshot_id:'id',revision:1,digest:'digest',epoch:1,nonce:'old',expires_unix:Math.floor(Date.now()/1000)+30},
+    ...(phase==='output_held' ? {held:{executed:{script:'secret',cwd:'/secret'},stdout:'/w==',stderr:'c2VjcmV0',redacted_fields:[],execution_digest:'digest'}} : {})};
+}
+async function select(h,r) {
+  h.view.requests=[r]; await h.run('refresh()'); await button(h.elements['#list'],r.phase+':').emit('click');
+}
+async function rotate(h) {
+  h.view.requests[0].binding.nonce='renewed';
+  h.view.requests[0].binding.expires_unix=Math.floor(h.now()/1000)+30;
+  await h.run('refresh()');
+}
+function lastOperation(h) { return JSON.parse(h.calls.filter(c=>c.url.endsWith('/operation')).at(-1).options.body); }
+
+test('polling binding expiry/rotation preserves command drafts, Save and dirty run interlock',async()=>{
+  const h=harness(); await tick(); await select(h,review()); const d=h.elements['#detail'];
+  const script=input(d,'Script');script.value='unfinished draft';await script.emit('input');
+  // Cross the actual 30-second expiry while a draft is still unfinished.
+  h.advance(31000);
+  await h.run('refresh()'); assert.equal(button(d,'Save edited').disabled,false);
+  await rotate(h);
+  assert.equal(input(d,'Script'),script);assert.equal(script.value,'unfinished draft');
+  assert.equal(button(d,'Run as dog').disabled,true);assert.equal(button(d,'Save edited').disabled,false);
+  await button(h.elements['#list'],'reviewing:').emit('click');assert.equal(input(d,'Script'),script);
+  await button(d,'Save edited').emit('click');
+  const op=lastOperation(h);assert.equal(op.binding.nonce,'renewed');assert.equal(op.proposal.script,'unfinished draft');assert.equal(op.action,'edit');
+});
+
+test('expired run sends nothing; rotated unchanged command requires explicit run confirmation',async()=>{
+  const h=harness();await tick();await select(h,review());const d=h.elements['#detail'];
+  h.advance(31000);
+  let confirmations=0;h.context.confirm=()=>{confirmations++;return true;};
+  await button(d,'Run as dog').emit('click'); assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  await rotate(h);await h.run('heartbeat()');assert.equal(button(d,'Run as dog').disabled,false);
+  h.context.confirm=()=>{confirmations++;return false;};await button(d,'Run as dog').emit('click');
+  assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  h.context.confirm=()=>{confirmations++;return true;};await button(d,'Run as dog').emit('click');
+  assert.equal(lastOperation(h).binding.nonce,'renewed');assert.equal(lastOperation(h).action,'run');assert.ok(confirmations>=2);
+});
+
+test('held redactions survive expiry/rotation; renewed offer requires new preview and confirmation',async()=>{
+  const h=harness();await tick();await select(h,review('output_held'));const d=h.elements['#detail'];
+  const err=input(d,'Export stderr');err.value='safe';await err.emit('input');
+  const script=input(d,'Export executed script (replacement must be nonempty)');script.value='redacted';await script.emit('input');
+  await button(d,'Preview whole').emit('click');const release=button(d,'Release reviewed');assert.equal(release.disabled,false);
+  h.advance(31000);
+  await h.run('refresh()');assert.equal(err.value,'safe');
+  await rotate(h);assert.equal(input(d,'Export stderr'),err);assert.equal(err.value,'safe');assert.equal(script.value,'redacted');
+  assert.equal(release.disabled,true);assert.equal(button(d,'Preview whole').disabled,false);
+  await button(h.elements['#list'],'output_held:').emit('click');assert.equal(input(d,'Export stderr'),err);
+  await button(d,'Preview whole').emit('click');assert.equal(release.disabled,false);
+  h.context.confirm=()=>false;await release.emit('click');assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  h.context.confirm=()=>true;await release.emit('click');const op=lastOperation(h);
+  assert.equal(op.binding.nonce,'renewed');assert.equal(op.artifact.stderr,btoa('safe'));assert.equal(op.artifact.stdout,'/w==');
+  assert.deepEqual(op.artifact.redacted_fields,['executed.script','stderr']);
+});
+
+test('substantive command/authority changes invalidate stale forms instead of adopting bindings',async()=>{
+  for(const change of [r=>r.binding.revision++,r=>r.binding.epoch++,r=>r.binding.digest='different',r=>r.spec.script='new command',r=>r.phase='starting']) {
+    const h=harness();await tick();await select(h,review());const d=h.elements['#detail'];
+    input(d,'Script').value='draft';await input(d,'Script').emit('input');
+    change(h.view.requests[0]);await rotate(h);
+    assert.equal(input(d,'Script').value,'draft');assert.equal(button(d,'Run as dog').disabled,true);assert.equal(button(d,'Save edited').disabled,true);
+    // Even programmatic invocation must not send a stale operation.
+    await h.run(`apply('run')`);assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  }
+});
+
+test('real held artifact changes invalidate preview/release and require explicit fresh review',async()=>{
+  const h=harness();await tick();await select(h,review('output_held'));const d=h.elements['#detail'];
+  const out=input(d,'Export stdout');out.value='draft';await out.emit('input');await button(d,'Preview whole').emit('click');
+  h.view.requests[0].held.stderr=btoa('new private data');await rotate(h);
+  assert.equal(out.value,'draft');assert.equal(button(d,'Release reviewed').disabled,true);assert.equal(button(d,'Preview whole').disabled,true);
+  await h.run(`apply('release', {artifact:{}})`);assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  await button(h.elements['#list'],'output_held:').emit('click');
+  assert.equal(input(d,'Export stderr').value,'new private data');assert.equal(button(d,'Release reviewed').disabled,true);
 });

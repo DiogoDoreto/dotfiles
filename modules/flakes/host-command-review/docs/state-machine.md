@@ -67,7 +67,10 @@ outcomes are `ambiguous`; unknown raw output must never be implicitly released.
 
 Guest coarse view: reviewing/approved -> pending; starting/running -> active;
 output_held -> held; output_released -> released; denied -> rejected; stopped ->
-cancelled; ambiguous -> uncertain. Before release no exit status, edits, shell,
+cancelled; ambiguous -> uncertain. A known authentication denial/cancellation may
+therefore publish active -> pending. The guest accepts this coarse transition
+without restoring any host capability: the old nonce remains spent and a retry
+requires a fresh explicit host approval. Before release no exit status, edits, shell,
 root authentication outcome, execution timestamps or output. Phase transition
 timing is not a secrecy guarantee; only the fields are deliberately restricted.
 

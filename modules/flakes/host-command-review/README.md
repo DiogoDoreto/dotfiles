@@ -92,5 +92,8 @@ Component READMEs provide focused tests; integration coverage includes a complet
 fake-SSH → guest → host → authenticated web → mock executor → held → redacted
 release lifecycle, unchanged publication retries, stale revisions/epochs/nonces,
 release metadata tampering, browser loss at consumption, cancellation, active
-shutdown/join, closed guest routes and malicious/blocked/oversized SSH peers.
+shutdown/join, auth-cancel active-to-pending publication with spent nonce retention,
+non-starving per-record publication errors, closed guest routes and
+malicious/blocked/oversized SSH peers. The dependency-free DOM polling tests cover
+binding expiry/rotation without draft loss and substantive-state invalidation.
 These tests deliberately do not run privileged payloads or real transient units.

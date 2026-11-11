@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"host-command-review/contracts"
 	"host-command-review/execution"
@@ -370,5 +371,150 @@ func TestSSHBoundsAndBinding(t *testing.T) {
 		if !strings.Contains(args, required) {
 			t.Fatal(required)
 		}
+	}
+}
+
+// Publish a real active guest status while the fake executor is blocked in auth.
+// Denial must return to pending without restoring the consumed host capability.
+func TestAuthCancelledPublicationAndOtherRelease(t *testing.T) {
+	c, g, w, a, b := setup(t)
+	ctx := context.Background()
+	q := submit(t, c, g, "4")
+	other := submit(t, c, g, "5")
+	if e := w.Cycle(ctx); e != nil {
+		t.Fatal(e)
+	}
+	find := func(requestID string) web.RequestView {
+		t.Helper()
+		for _, v := range b.view().Requests {
+			r, e := c.View(v.SnapshotID)
+			if e != nil {
+				t.Fatal(e)
+			}
+			if r.Snapshot.RequestID == requestID {
+				return v
+			}
+		}
+		t.Fatal("missing review")
+		return web.RequestView{}
+	}
+	v := find(q.RequestID)
+	root := *q.Proposal
+	root.User = contracts.Root
+	b.op(web.Operation{Action: "edit", Binding: v.Binding, Proposal: &root}, 200)
+	v = find(q.RequestID)
+	entered, finishAuth := make(chan struct{}), make(chan struct{})
+	a.Execute = func(ctx context.Context, _ execution.Config, spec contracts.ExecutionSpec) execution.Report {
+		if spec.User == contracts.Root {
+			close(entered)
+			select {
+			case <-finishAuth:
+				return execution.Report{AuthCancelled: true}
+			case <-ctx.Done():
+				return execution.Report{Result: execution.Result{Uncertain: true}}
+			}
+		}
+		return execution.Report{Ready: true, Result: execution.Result{Started: true, Stdout: []byte("held output"), Stderr: []byte{}, Exit: contracts.ExitInfo{Kind: "exited", Code: 0}}}
+	}
+	b.op(web.Operation{Action: "run_root", Binding: v.Binding}, 200)
+	<-entered
+	if e := w.Publish(ctx); e != nil {
+		t.Fatal(e)
+	}
+	if r := get(t, g, q); r.Status != contracts.Active {
+		t.Fatalf("auth status %s", r.Status)
+	}
+	close(finishAuth)
+	waitPhase(t, c, v.SnapshotID, contracts.Reviewing)
+	if e := w.Publish(ctx); e != nil {
+		t.Fatalf("auth retry publication: %v", e)
+	}
+	if r := get(t, g, q); r.Status != contracts.Pending || r.Artifact != nil {
+		t.Fatal("auth retry did not remain coarse pending")
+	}
+	record, e := c.View(v.SnapshotID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if record.Approval != nil || len(record.Spent) != 1 || record.Spent[0] != v.Binding {
+		t.Fatal("consumed approval was restored")
+	}
+	b.op(web.Operation{Action: "run_root", Binding: v.Binding}, 409)
+	fresh := find(q.RequestID)
+	if fresh.Binding.Nonce == v.Binding.Nonce {
+		t.Fatal("retry did not require new offer")
+	}
+	otherView := find(other.RequestID)
+	b.op(web.Operation{Action: "run", Binding: otherView.Binding}, 200)
+	waitPhase(t, c, otherView.SnapshotID, contracts.OutputHeld)
+	otherView = find(other.RequestID)
+	b.op(web.Operation{Action: "release", Binding: otherView.Binding, Artifact: otherView.Held}, 200)
+	for range 2 {
+		if e := w.Publish(ctx); e != nil {
+			t.Fatal(e)
+		}
+	}
+	if r := get(t, g, other); r.Status != contracts.Released || r.Artifact == nil {
+		t.Fatal("other request release starved")
+	}
+	if r := get(t, g, q); r.Status != contracts.Pending {
+		t.Fatal("publication changed auth retry state")
+	}
+}
+
+type failPublication struct {
+	Exchange
+	requestID string
+}
+
+func (f failPublication) Call(ctx context.Context, q transport.Request) (transport.Response, error) {
+	if q.Operation == "publish" && q.Reply.RequestID == f.requestID {
+		return transport.Response{}, ErrTransport
+	}
+	return f.Exchange.Call(ctx, q)
+}
+func TestPublishContinuesAfterRecordError(t *testing.T) {
+	c, g, w, a, b := setup(t)
+	submit(t, c, g, "6")
+	submit(t, c, g, "7")
+	if e := w.Cycle(context.Background()); e != nil {
+		t.Fatal(e)
+	}
+	records, e := c.List()
+	if e != nil {
+		t.Fatal(e)
+	}
+	a.Execute = func(context.Context, execution.Config, contracts.ExecutionSpec) execution.Report {
+		return execution.Report{Ready: true, Result: execution.Result{Started: true, Stdout: []byte("reviewed"), Stderr: []byte{}, Exit: contracts.ExitInfo{Kind: "exited", Code: 0}}}
+	}
+	for _, v := range b.view().Requests {
+		if v.SnapshotID == records[0].Snapshot.SnapshotID {
+			b.op(web.Operation{Action: "reject", Binding: v.Binding}, 200)
+		} else {
+			b.op(web.Operation{Action: "run", Binding: v.Binding}, 200)
+			waitPhase(t, c, v.SnapshotID, contracts.OutputHeld)
+		}
+	}
+	for _, v := range b.view().Requests {
+		if v.Phase == contracts.OutputHeld {
+			b.op(web.Operation{Action: "release", Binding: v.Binding, Artifact: v.Held}, 200)
+		}
+	}
+	original := w.Exchange
+	w.Exchange = failPublication{original, records[0].Snapshot.RequestID}
+	if e := w.Publish(context.Background()); !errors.Is(e, ErrTransport) {
+		t.Fatalf("publication error lost: %v", e)
+	}
+	q := contracts.Request{Version: 1, SessionID: c.SessionID(), RequestID: records[1].Snapshot.RequestID}
+	if r := get(t, g, q); r.Status != contracts.Released || r.Artifact == nil {
+		t.Fatal("later record release starved by first publication error")
+	}
+	w.Exchange = original
+	if e := w.Publish(context.Background()); e != nil {
+		t.Fatal(e)
+	}
+	q.RequestID = records[0].Snapshot.RequestID
+	if r := get(t, g, q); r.Status != contracts.Rejected {
+		t.Fatal("failed publication did not recover on next pass")
 	}
 }
