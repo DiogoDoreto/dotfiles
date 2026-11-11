@@ -17,17 +17,25 @@ import (
 
 const maxFile = 8 << 20
 
+// History storage is independent of the outstanding-work admission limit.
+// Include peak temporary-file bytes in the budget; never evict history to fit.
+const MaxStorageBytes int64 = 2 << 30
+const maxDirectoryNameBytes = 16 << 20
+
+var ErrStorageFull = errors.New("host history storage byte budget reached")
+
 // Fault is a test seam invoked immediately before durability boundaries. Any
 // error poisons this handle: uncertain writes must never authorize a launch.
 type Fault func(stage string) error
 
 type Store struct {
-	mu       sync.Mutex
-	root     *os.File
-	dirs     map[string]*os.File
-	lock     *os.File
-	fault    Fault
-	poisoned bool
+	mu              sync.Mutex
+	root            *os.File
+	dirs            map[string]*os.File
+	lock            *os.File
+	fault           Fault
+	poisoned        bool
+	maxStorageBytes int64
 }
 
 func checkFD(fd int, dir bool) error {
@@ -88,7 +96,7 @@ func OpenStore(path string, fault Fault) (*Store, error) {
 		syscall.Close(fd)
 		return nil, err
 	}
-	s := &Store{root: os.NewFile(uintptr(fd), path), dirs: map[string]*os.File{}, fault: fault}
+	s := &Store{root: os.NewFile(uintptr(fd), path), dirs: map[string]*os.File{}, fault: fault, maxStorageBytes: MaxStorageBytes}
 	fail := func(e error) (*Store, error) { s.Close(); return nil, e }
 	for _, name := range []string{"records", "snapshots", "raw", "releases"} {
 		e := syscall.Mkdirat(fd, name, 0700)
@@ -210,6 +218,15 @@ func (s *Store) put(dir, id string, v any, immutable bool) (err error) {
 	if len(b) > maxFile {
 		return errors.New("oversize store file")
 	}
+	used, e := s.storageBytes()
+	if e != nil {
+		return e
+	}
+	// Reserve the full new file while the old version still exists. Fail before
+	// creating a temporary file, without poisoning an otherwise healthy store.
+	if int64(len(b)+len(id)+len(".json")) > s.maxStorageBytes-used {
+		return ErrStorageFull
+	}
 	d := s.dirs[dir]
 	tmp := ".tmp-" + randomID()
 	fd, e := syscall.Openat(int(d.Fd()), tmp, syscall.O_WRONLY|syscall.O_CREAT|syscall.O_EXCL|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0600)
@@ -287,12 +304,23 @@ func (s *Store) names(dir string) ([]string, error) {
 	}
 	f := os.NewFile(uintptr(fd), dir)
 	defer f.Close()
-	names, e := f.Readdirnames(4097)
-	if e != nil && e != io.EOF {
-		return nil, e
-	}
-	if len(names) > 4096 {
-		return nil, errors.New("store directory capacity exceeded")
+	var names []string
+	nameBytes := 0
+	for {
+		batch, err := f.Readdirnames(256)
+		for _, name := range batch {
+			nameBytes += len(name) + 1
+			if nameBytes > maxDirectoryNameBytes {
+				return nil, errors.New("store directory name byte budget exceeded")
+			}
+			names = append(names, name)
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 	var ids []string
 	cleaned := false
@@ -316,6 +344,40 @@ func (s *Store) names(dir string) ([]string, error) {
 	}
 	return ids, nil
 }
+
+// storageBytes checks anchored private inodes without loading captures/history
+// into memory. Call under the store lock, before any write. Names also count so
+// zero-byte files cannot evade the aggregate storage accounting.
+func (s *Store) storageBytes() (int64, error) {
+	var total int64
+	for _, dir := range []string{"records", "snapshots", "raw", "releases"} {
+		ids, err := s.names(dir)
+		if err != nil {
+			return 0, err
+		}
+		for _, id := range ids {
+			fd, err := syscall.Openat(int(s.dirs[dir].Fd()), id+".json", syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
+			if err != nil {
+				return 0, err
+			}
+			err = checkFD(fd, false)
+			var st syscall.Stat_t
+			if err == nil {
+				err = syscall.Fstat(fd, &st)
+			}
+			syscall.Close(fd)
+			if err != nil {
+				return 0, err
+			}
+			if st.Size > maxFile {
+				return 0, errors.New("oversize store file")
+			}
+			total += st.Size + int64(len(id)+len(".json"))
+		}
+	}
+	return total, nil
+}
+
 func (s *Store) remove(dir, id string) error {
 	if !validID(id) {
 		return errors.New("bad ID")

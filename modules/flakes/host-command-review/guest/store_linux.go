@@ -20,8 +20,9 @@ import (
 )
 
 // One atomic database gives cross-record transactions without an index or a
-// host-store dependency. Eight maximum-size released records fit this bound.
-const MaxStateBytes = 72 << 20
+// host-store dependency. Retained history has an aggregate byte budget independent
+// of per-session outstanding-work limits. It never silently evicts publications.
+const MaxStateBytes = 900 << 20
 
 type Store struct {
 	Dir string
@@ -151,16 +152,24 @@ func lock(ctx context.Context, f *os.File) error {
 	}
 }
 func validateDB(d database) error {
-	if d.Version != 1 || d.Sessions == nil || d.Records == nil || len(d.Sessions) > transport.MaxSessions || len(d.Records) > transport.MaxRecords {
+	if d.Version != 1 || d.Sessions == nil || d.Records == nil {
 		return fmt.Errorf("invalid database")
 	}
 	sessions := map[string]bool{}
 	records := map[string]bool{}
+	pending := map[string]int{}
+	liveSessions := 0
 	for _, v := range d.Sessions {
 		if !transport.ValidID(v.ID) || sessions[v.ID] || v.Boot == "" || v.Start < 0 || v.Until < v.Start || v.Until-v.Start > int64(contracts.MaxSessionSeconds)*int64(time.Second) || v.CreatedUnix <= 0 {
 			return fmt.Errorf("invalid session")
 		}
 		sessions[v.ID] = true
+		if !v.Closed {
+			liveSessions++
+		}
+	}
+	if liveSessions > transport.MaxLiveSessions {
+		return fmt.Errorf("too many live sessions")
 	}
 	for _, v := range d.Records {
 		k := v.Request.SessionID + v.Request.RequestID
@@ -168,6 +177,12 @@ func validateDB(d database) error {
 			return fmt.Errorf("invalid record")
 		}
 		records[k] = true
+		if !terminal(v.Reply.Status) {
+			pending[v.Request.SessionID]++
+			if pending[v.Request.SessionID] > transport.MaxPendingPerSession {
+				return fmt.Errorf("too many pending requests in session")
+			}
+		}
 	}
 	return nil
 }
@@ -189,7 +204,14 @@ func (s *Store) transaction(ctx context.Context, fn func(*database, string, int6
 	d := database{Version: 1, Sessions: []session{}, Records: []record{}}
 	f, err := openPrivate(dir, "state.json", syscall.O_RDONLY)
 	if err == nil {
-		err = transport.DecodeStrict(f, MaxStateBytes, &d)
+		var info os.FileInfo
+		info, err = f.Stat()
+		if err == nil && info.Size() > MaxStateBytes {
+			err = fmt.Errorf("state exceeds bound")
+		}
+		if err == nil {
+			err = transport.DecodeStrict(f, MaxStateBytes, &d)
+		}
 		f.Close()
 	} else if errors.Is(err, os.ErrNotExist) {
 		err = nil
@@ -322,7 +344,13 @@ func (s *Store) Handle(ctx context.Context, q contracts.Request) (contracts.Repl
 			out = reply(q, "no_reviewer")
 			return nil
 		}
-		if len(d.Records) >= transport.MaxRecords {
+		pending := 0
+		for _, r := range d.Records {
+			if r.Request.SessionID == q.SessionID && !terminal(r.Reply.Status) {
+				pending++
+			}
+		}
+		if pending >= transport.MaxPendingPerSession {
 			out = reply(q, "queue_full")
 			return nil
 		}
@@ -361,7 +389,13 @@ func (s *Store) Exchange(ctx context.Context, q transport.Request) (transport.Re
 					return fail("conflict")
 				}
 			} else {
-				if len(d.Sessions) >= transport.MaxSessions {
+				liveSessions := 0
+				for _, v := range d.Sessions {
+					if live(v, boot, now) {
+						liveSessions++
+					}
+				}
+				if liveSessions >= transport.MaxLiveSessions {
 					return fail("queue_full")
 				}
 				d.Sessions = append(d.Sessions, session{ID: q.SessionID, Label: q.Label, Boot: boot, Start: now, Until: now + int64(transport.LeaseSeconds)*int64(time.Second), CreatedUnix: time.Now().Unix()})

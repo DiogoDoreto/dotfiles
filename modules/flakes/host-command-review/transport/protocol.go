@@ -14,9 +14,9 @@ import (
 const (
 	Version                = 1
 	MaxRequestBytes        = contracts.MaxArtifactBytes + (64 << 10)
-	MaxResponseBytes       = 8*contracts.MaxRequestBytes + (64 << 10)
-	MaxRecords             = 8
-	MaxSessions            = 16
+	MaxResponseBytes       = MaxPendingPerSession*contracts.MaxRequestBytes + (64 << 10)
+	MaxPendingPerSession   = 100
+	MaxLiveSessions        = 16
 	LeaseSeconds           = 15
 	ExchangeTimeoutSeconds = 10
 )
@@ -74,7 +74,7 @@ func (r Request) Validate() error {
 	return nil
 }
 func (r Response) Validate() error {
-	if r.Version != Version || !ValidID(r.SessionID) || r.Items == nil || len(r.Items) > MaxRecords || r.LeaseSeconds < 0 || r.LeaseSeconds > LeaseSeconds {
+	if r.Version != Version || !ValidID(r.SessionID) || r.Items == nil || len(r.Items) > MaxPendingPerSession || r.LeaseSeconds < 0 || r.LeaseSeconds > LeaseSeconds {
 		return fmt.Errorf("invalid response")
 	}
 	switch r.Error {

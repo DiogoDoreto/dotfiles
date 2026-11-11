@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -131,11 +132,93 @@ func TestBootAndHardExpiry(t *testing.T) {
 		})
 	}
 }
+func TestCompletedHistoryDoesNotConsumeAdmissionSlots(t *testing.T) {
+	s := store(t)
+	announce(t, s)
+	for i := 0; i < 100; i++ {
+		q := proposal(fmt.Sprintf("%064x", i))
+		if out := handle(t, s, q); out.Error != "" {
+			t.Fatal(out)
+		}
+		out := reply(q, "")
+		out.Status = contracts.Rejected
+		if r := exchange(t, s, "publish", &out); r.Error != "" {
+			t.Fatal(r)
+		}
+	}
+	if out := handle(t, s, proposal(rid)); out.Error != "" {
+		t.Fatalf("completed history blocked fresh request: %+v", out)
+	}
+	q := proposal(fmt.Sprintf("%064x", 0))
+	q.Operation, q.Proposal = contracts.Check, nil
+	if out := handle(t, s, q); out.Status != contracts.Rejected {
+		t.Fatalf("completed history was lost: %+v", out)
+	}
+}
+
+func TestAdmissionLimitIsPerSession(t *testing.T) {
+	s := store(t)
+	announce(t, s)
+	for i := 0; i < 100; i++ {
+		if out := handle(t, s, proposal(fmt.Sprintf("%064x", i))); out.Error != "" {
+			t.Fatal(out)
+		}
+	}
+	other := strings.Repeat("c", 64)
+	v, err := s.Exchange(context.Background(), transport.Request{Version: 1, Operation: "announce", SessionID: other, Label: "lapdog"})
+	if err != nil || v.Error != "" {
+		t.Fatalf("announce: %+v %v", v, err)
+	}
+	q := proposal(rid)
+	q.SessionID = other
+	if out := handle(t, s, q); out.Error != "" {
+		t.Fatalf("another session consumed admission slots: %+v", out)
+	}
+}
+
+func TestClosedRoutesDoNotConsumeLiveRouteSlots(t *testing.T) {
+	s := store(t)
+	for i := 0; i < transport.MaxLiveSessions+1; i++ {
+		id := fmt.Sprintf("%064x", i)
+		for _, op := range []string{"announce", "close"} {
+			q := transport.Request{Version: 1, Operation: op, SessionID: id}
+			if op == "announce" {
+				q.Label = "lapdog"
+			}
+			out, err := s.Exchange(context.Background(), q)
+			if err != nil || out.Error != "" {
+				t.Fatalf("%s route %d: %+v %v", op, i, out, err)
+			}
+		}
+	}
+	out, err := s.Exchange(context.Background(), transport.Request{Version: 1, Operation: "announce", SessionID: fmt.Sprintf("%064x", 0), Label: "lapdog"})
+	if err != nil || out.Error != "session_expired" {
+		t.Fatalf("closed route tombstone lost: %+v %v", out, err)
+	}
+}
+
+func TestLiveRouteLimitStillApplies(t *testing.T) {
+	s := store(t)
+	s.now = func() (string, int64, error) { return "boot", int64(time.Second), nil }
+	for i := 0; i <= transport.MaxLiveSessions; i++ {
+		out, err := s.Exchange(context.Background(), transport.Request{Version: 1, Operation: "announce", SessionID: fmt.Sprintf("%064x", i), Label: "lapdog"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if i < transport.MaxLiveSessions && out.Error != "" {
+			t.Fatal(out)
+		}
+		if i == transport.MaxLiveSessions && out.Error != "queue_full" {
+			t.Fatal(out)
+		}
+	}
+}
+
 func TestBoundedAdmissionAndImmutablePublication(t *testing.T) {
 	s := store(t)
 	announce(t, s)
-	for i := 0; i < transport.MaxRecords; i++ {
-		q := proposal(strings.Repeat(string(rune('0'+i)), 64))
+	for i := 0; i < 100; i++ {
+		q := proposal(fmt.Sprintf("%064x", i))
 		if out := handle(t, s, q); out.Error != "" {
 			t.Fatal(out)
 		}

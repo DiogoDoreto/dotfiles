@@ -20,7 +20,7 @@ import (
 
 var ErrGuard = errors.New("host authority guard failed")
 var ErrConflict = errors.New("request conflict")
-var ErrFull = errors.New("ledger capacity reached")
+var ErrFull = errors.New("session outstanding-work capacity reached")
 
 func randomID() string {
 	var b [32]byte
@@ -51,11 +51,11 @@ func (systemClock) BootElapsed() (time.Duration, error) {
 }
 
 type Config struct {
-	Shell        string
-	MaxRecords   int
-	BrowserLease time.Duration
-	ApprovalTTL  time.Duration
-	Clock        Clock
+	Shell                string
+	MaxPendingPerSession int
+	BrowserLease         time.Duration
+	ApprovalTTL          time.Duration
+	Clock                Clock
 }
 type Record struct {
 	Version         int                         `json:"version"`
@@ -138,10 +138,10 @@ func NewController(s *Store, cfg Config) (c *Controller, err error) {
 	if cfg.Clock == nil {
 		cfg.Clock = systemClock{}
 	}
-	if cfg.MaxRecords == 0 {
-		cfg.MaxRecords = 256
+	if cfg.MaxPendingPerSession == 0 {
+		cfg.MaxPendingPerSession = 100
 	}
-	if cfg.MaxRecords < 1 || cfg.MaxRecords > 1024 {
+	if cfg.MaxPendingPerSession < 1 || cfg.MaxPendingPerSession > 1024 {
 		return nil, ErrGuard
 	}
 	if cfg.BrowserLease == 0 {
@@ -219,9 +219,6 @@ func (c *Controller) records() ([]Record, error) {
 	ids, e := c.store.names("records")
 	if e != nil {
 		return nil, e
-	}
-	if len(ids) > c.cfg.MaxRecords {
-		return nil, ErrFull
 	}
 	rs := make([]Record, 0, len(ids))
 	for _, id := range ids {
@@ -360,7 +357,17 @@ func (c *Controller) Import(req contracts.Request) (out Record, err error) {
 				return nil
 			}
 		}
-		if len(rs) >= c.cfg.MaxRecords {
+		pending := 0
+		for _, r := range rs {
+			if r.Snapshot.SessionID != c.session {
+				continue
+			}
+			switch r.Phase {
+			case contracts.Reviewing, contracts.Approved, contracts.Starting, contracts.Running, contracts.OutputHeld:
+				pending++
+			}
+		}
+		if pending >= c.cfg.MaxPendingPerSession {
 			return ErrFull
 		}
 		spec, e := contracts.Freeze(*req.Proposal, c.cfg.Shell)

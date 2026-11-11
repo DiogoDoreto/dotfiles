@@ -1,7 +1,9 @@
 package transport
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"host-command-review/contracts"
 	"strings"
 	"testing"
@@ -52,6 +54,28 @@ func TestResponseSessionBindingAndBounds(t *testing.T) {
 		t.Fatal("error with data")
 	}
 }
+func TestResponseCapacity100LargeProposals(t *testing.T) {
+	sid := strings.Repeat("a", 64)
+	r := Response{Version: Version, SessionID: sid, LeaseSeconds: LeaseSeconds, Items: []Item{}}
+	for i := 0; i < 100; i++ {
+		q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: fmt.Sprintf("%064x", i), Proposal: &contracts.Proposal{Script: strings.Repeat("\"", 65536), Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
+		r.Items = append(r.Items, Item{Request: q})
+	}
+	b, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = ParseResponse(bytes.NewReader(b)); err != nil {
+		t.Fatalf("100 large proposals rejected: %v", err)
+	}
+	extra := r.Items[0]
+	extra.Request.RequestID = strings.Repeat("f", 64)
+	r.Items = append(r.Items, extra)
+	if r.Validate() == nil {
+		t.Fatal("101 proposals accepted")
+	}
+}
+
 func FuzzEnvelope(f *testing.F) {
 	f.Add(`{"version":1,"operation":"pull","session_id":"` + strings.Repeat("a", 64) + `"}`)
 	f.Add(`null`)

@@ -47,15 +47,21 @@ fsync. This is not SQL or an exactly-once execution claim.
 
 Hard bounds (deliberately conservative initial policy):
 
-* **8 total request records**, including terminal records/releases/tombstones;
-  new requests fail `queue_full`, never silently evict. A duplicate does not consume
-  another slot. At most **16 session records**. These small bounds intentionally
-  favor bounded disk/memory over throughput; revisit before long-running use.
-* State JSON **72 MiB**; maximum eight 4 MiB captures plus base64, worst-case
-  escaped original/reviewed script metadata and bookkeeping fit. Reads, including
-  corrupt oversized files, are bounded. Atomic replacement needs space for both
-  old and new state plus scratch; budget about **144 MiB**, not just capture size.
-  Whole-state parsing/encoding uses bounded but nontrivial memory and I/O.
+* **100 nonterminal requests per session**. Only outstanding work consumes
+  admission slots; released/rejected/cancelled/uncertain history does not. A full
+  session returns `queue_full` without blocking other sessions. A duplicate does
+  not consume another slot. At most **16 live routes**; closed/expired session
+  tombstones do not consume route slots. Retained history is never silently evicted.
+* State JSON has a separate aggregate **900 MiB** byte cap, independent of request
+  and route admission counts. Retained releases/proposals/tombstones all count
+  against this storage budget. Exhausting it fails the transaction explicitly;
+  per-session admission slots are not a reservation of storage capacity.
+  Oversized files are rejected by size before reading, with bounded parsing
+  as a second check. Atomic replacement needs space for both old and new state
+  plus scratch; budget about **1800 MiB**, not just capture size. Whole-state
+  parsing/encoding can use substantially more RAM than the encoded file size and
+  rewrites the database on each transaction; this is a capacity bound, not a
+  throughput or low-memory guarantee.
 * Guest session-based retention is seven days, not extended by polling. Closed
   sessions and their records are removed under the lock after retention. Expired
   IDs cannot be announced again while their tombstones exist. The host **must
@@ -136,7 +142,7 @@ Only `pull` returns items. `lease_seconds` is the remaining lease rounded up,
 ```
 
 Pull returns **all nonterminal records**, including already acknowledged ones,
-at most eight, in insertion order. There is no destructive dequeue or cursor.
+at most 100 for the requested session, in insertion order. There is no destructive dequeue or cursor.
 Host validates and snapshots/deduplicates each `(session_id, request_id)` in its
 own store before publication of `pending`. Then it publishes only host-ledger
 coarse status and, after explicit host release, the immutable release artifact.
@@ -150,7 +156,7 @@ exit nonzero. `publish` and `pull` on expired routes fail; terminal releases rem
 available to MCP locally after close, subject to guest retention.
 
 Byte caps are exported: request **8 MiB + 64 KiB** (one release), response
-**8 * 512 KiB + 64 KiB** (eight proposals). These are independent of foundation
+**100 * 512 KiB + 64 KiB** (100 proposals). These are independent of foundation
 `MaxRequestBytes` (512 KiB) and `MaxArtifactBytes` (8 MiB). Host should construct
 and validate requests before encoding, cap encoded bytes, parse responses with
 `ParseResponse`, and never trust guest counts/advertised lengths. A guest
@@ -248,5 +254,5 @@ stdin open: both actual binaries exited nonzero with no stdout at approximately
 Not validated: real Pi native-client integration, actual pinned-key SSH transport,
 power-loss/fsync fault injection at every boundary, uncooperative guest/root DoS,
 network-filesystem semantics, host/browser/execution/lifetime integration,
-polkit/systemd, or Nix deployment. Eight retained records and sixteen sessions are
+polkit/systemd, or Nix deployment. 100 outstanding requests per session and sixteen live routes are
 an explicit initial backpressure policy, not a production throughput claim.

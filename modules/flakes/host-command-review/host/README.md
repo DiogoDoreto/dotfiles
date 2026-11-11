@@ -23,7 +23,11 @@ configuration. Nothing was activated; do not advertise a live-certified reviewer
   `Import`. No guest path is opened. Identical `(session,request)` submissions
   return the same snapshot; changed proposal is `ErrConflict`. Explicitly map
   local errors to coarse transport replies; do not send error strings to guest.
-  `ErrFull` means queue_full, never silently drop accepted work.
+  `ErrFull` means the current session's outstanding-work queue is full, never
+  silently drop accepted work. Defaults to 100 requests (`MaxPendingPerSession`,
+  configurable 1..1024). Reviewing, approved, starting, running and output-held
+  requests count; released/denied/stopped/ambiguous history and previous sessions
+  do not. Duplicate lookup/conflict detection still precedes admission checks.
 * Only an authenticated browser adapter may call `Heartbeat`, `Disconnect`,
   `Edit`, `Approve`, `Reject`, `Release`, or read `List`, `View`, `Held`. These
   methods do not authenticate HTTP callers. Heartbeat defaults to a two-second
@@ -95,12 +99,24 @@ it ambiguous, **never retries**. Private JSON uses our exact canonical encoding
 and validates semantic invariants and immutable snapshot reference. Corrupt or
 incompatible records block execution globally; repair offline, never skip them.
 
-Defaults: 256 ledger entries (configurable 1..1024); each file at most 8MiB,
-request/spec at contract limits; directory enumeration capped at 4096 entries.
-All imports are bounded by ledger count. Recovery removes unreferenced immutable
-files/temporary files, and refuses unexpected entries. No endless guest polling
-can create extra artifacts. Unexpected disk exhaustion/write errors fail closed.
-A pathological directory exceeding recovery cap requires offline repair.
+Admission and retained history have separate limits. Defaults: 100 outstanding
+requests in the current session; each file at most 8 MiB; request/spec at contract
+limits. There is no global 256-record admission cap. The private history store
+has a separate **2 GiB aggregate encoded-file/name byte budget** across records,
+snapshots, raw captures and releases. Before writing, the store reserves the full
+new file while any previous version still exists, including atomic-replacement
+peak bytes. Budget exhaustion returns `ErrStorageFull` before writing and does
+not poison a healthy handle or silently evict retained data. Real filesystem
+metadata/locks also need disk space; this is not a filesystem quota or a promise
+that the disk cannot fill. Increasing retained history increases scan cost.
+
+Directory enumeration reads batches and has a separate **16 MiB name-byte budget
+per directory**, rather than the old 4096-entry ceiling. Oversized/pathological
+metadata and unexpected entries fail closed. Recovery removes unreferenced
+immutable/temporary files. Retention cleanup and reads remain available when the
+write-byte budget is exhausted; recovery that needs to persist state may still
+fail if there is no room for its write. No endless guest polling can create extra
+artifacts. Unexpected disk exhaustion/uncertain write errors fail closed.
 
 Call `Sweep(false)` periodically; polling does not run it implicitly. Raw is
 removed within 24h of import after crash, ledger/release/snapshot after seven days

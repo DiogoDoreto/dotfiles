@@ -116,8 +116,18 @@ publication; it never grants a new approval or reconnects an expired route.
   offline/suspended machines catch up on wake/start. A stopped/disabled timer or
   corrupt/poisoned store can prevent cleanup and must be investigated; no promise
   of deleting bytes on a powered-off disk. Filesystem deletion is not secure erase.
-* Queue bounds are deliberately small: eight guest retained requests, sixteen
-  guest routes and 256 host ledger entries by default. Backpressure is explicit,
+* Queue bounds are explicit: 100 nonterminal guest requests per session and
+  sixteen live guest routes. Terminal request history and closed-route tombstones
+  do not consume admission slots; their seven-day retention is unchanged. The
+  host also limits outstanding work to 100 requests in the current session;
+  released/denied/stopped/ambiguous history and previous sessions do not consume
+  those slots. Host history has a separate 2 GiB encoded-file/name byte budget,
+  including temporary-write peak bytes, plus a 16 MiB name-byte budget per private
+  directory (see host storage documentation). The guest's independent aggregate
+  whole-state JSON cap is 900 MiB; exhaustion fails the
+  transaction, rather than silently evicting history. Allow about 1800 MiB for
+  atomic replacement and additional RAM for parsing/encoding (see guest storage
+  documentation). Backpressure is explicit,
   not silent loss. Retention does not extend on polling. Disk corruption/fullness
   fails closed. Do not remove lock inodes or edit the live store to clear a queue.
 
