@@ -1,0 +1,122 @@
+# Host controller / authoritative ledger
+
+Implemented with Go stdlib only, Linux-local files and flock. This is a local
+trusted API, **not an authenticated web backend or an SSH protocol**. Nothing is
+activated/installed; command entrypoints are disabled without trusted build-time
+configuration. Do not advertise this work as a deployed secure reviewer.
+
+## Integration API
+
+* `OpenStore(absolutePrivatePath, nil)` creates/opens a private store. Do not put
+  it in a project/VM share. Documented roots `/home/dog/projects` and
+  `/var/lib/agent-vm` are rejected; other bind mounts/exports require deployment
+  audit. Default intended path is
+  `/home/dog/.local/state/agent-host-review`. Audit actual host mount/export and
+  ancestor ownership at deployment; code cannot discover every VM export.
+* `NewController(store, Config{Shell: fixedStoreBash})` obtains the singleton
+  reviewer lock, generates a fresh session ID and epoch, recovers previous
+  intents as ambiguous, revokes old approvals, sweeps orphans/retention. It never
+  resumes an old session or launches on recovery. Keep the Store alive until all
+  execution goroutines are reaped. `SessionID()` is routing only.
+* Guest worker/integration adapter passes a validated `contracts.Request` to
+  `Import`. No guest path is opened. Identical `(session,request)` submissions
+  return the same snapshot; changed proposal is `ErrConflict`. Explicitly map
+  local errors to coarse transport replies; do not send error strings to guest.
+  `ErrFull` means queue_full, never silently drop accepted work.
+* Only an authenticated browser adapter may call `Heartbeat`, `Disconnect`,
+  `Edit`, `Approve`, `Reject`, `Release`, or read `List`, `View`, `Held`. These
+  methods do not authenticate HTTP callers. Heartbeat defaults to a two-second
+  lease; browser adapter should renew every 500ms, with a deliberate disconnect
+  callback. Missing/expired lease blocks approval, consumption and release.
+  Lease lapse revokes approvals even if a later heartbeat reconnects.
+* `Approve(id, revision, digest)` returns a HOST-ONLY binding. Never serialize it
+  into guest data. TTL defaults to 30 seconds (maximum configurable 60 seconds).
+  `Consume(binding)` performs ALL authority/concurrency checks and spends the
+  nonce as part of the single durable `starting` record. A failure never returns
+  an executable spec. Starting includes root authentication and reserves the
+  global single-command slot. Edits increment revision and revoke approval.
+* Preferred integration: `Run(ctx, binding, execution.Config)` consumes, executes,
+  and reconciles synchronously. Run in a controlled goroutine if desired. **Never
+  automatically retry any error.** The alternative `Consume`/`Reconcile` APIs
+  exist for a trusted custom runner adapter, not UI/guest event injection.
+* `Cancel(session, request)` serializes with consumption. Its `stop=true` means
+  stop REQUESTED, not stopped. With `Run`, it also cancels the matching context;
+  a custom runner adapter must send its own stop. A cancellation racing normal
+  completion may return normal exit; lost/missing framed status is ambiguous.
+* `Reconcile` accepts only trusted runner events. Auth cancellation returns to
+  reviewing, preserving spent binding; approval must be fresh. At most 64 spent
+  attempts per request. Uncertain transport/stop/submission becomes terminal
+  ambiguous. Do not infer execution status from a guest message or a reusable PID.
+* `Held` returns original private execution artifact. `Release` checks a fully
+  reviewed artifact against original; only script/cwd/stdout/stderr may change,
+  with explicit markers. Immutable release is published before record reference.
+  `StatusBytes` is the ONLY guest output path: coarse status before release,
+  identical artifact bytes thereafter. Polling never releases or extends age.
+* `Invalidate()` is the required suspend hook: call before suspend and before
+  admitting requests after resume. It revokes approvals and browser lease.
+  It also cancels managed executions if the suspend-inclusive session cap has
+  elapsed. Integration must fail closed until its suspend/liveness monitor is wired.
+  Default clock compares suspend-inclusive `/proc/uptime` with Go monotonic/wall
+  time; discrepancies >1s also invalidate. This is defense in depth, not a claim
+  to detect every sub-second suspend. Four-hour session cap uses both clocks.
+* `End()` first permanently blocks new work, revokes approval and cancels managed
+  runs. It returns an error until all starting/running records have been
+  reconciled: await running goroutines, then call again. Successful clean end
+  deletes raw artifacts immediately, retains releases, releases reviewer lock.
+  `CloseUnclean()` is fatal shutdown: cancels managed contexts, releases singleton
+  lock even on a poisoned Store; next controller recovers ambiguously.
+
+## Private layout / durability
+
+`store.lock` and `reviewer.lock` are stable inodes; never remove/rename them.
+`snapshots/ID.json`, `records/ID.json`, `raw/ID.json`, `releases/ID.json` use only
+host random IDs. Raw artifacts are separate from release publication. Routing
+session state/capabilities are memory-only and never revived on restart; no
+browser credential is stored in the ledger. Snapshot includes original guest
+request/session/proposal and host ID/import time. Editable spec/digest are separate.
+
+Ancestors are walked using `openat` with O_NOFOLLOW directory FDs, requiring
+root/current-UID ownership and no group/world write. Private final directories
+are current-UID owned 0700, files 0600 with no unexpected hardlinks. This refuses
+`/tmp` even for tests. No network filesystem support. Cooperating readers/writers
+share exclusive flock plus per-handle mutex; flock is advisory, not a sandbox
+against dog/root. Dog/root already possess arbitrary command authority.
+
+Whole-record commit: fresh same-directory 0600 file, write, fsync file, close,
+rename, fsync directory. Immutable publication: write/fsync/close, no-clobber hard
+link via directory-FD anchored `/proc/self/fd`, fsync directory, unlink temporary,
+fsync again. Immutable publication precedes authoritative reference; orphans are
+safe and reclaimed at recovery/sweep. There is no multi-file transaction.
+
+Any uncertain write poisons the handle: stop using it and reopen for recovery.
+A dir-fsync failure after rename may leave spent starting intent; recovery marks
+it ambiguous, **never retries**. Private JSON uses our exact canonical encoding
+and validates semantic invariants and immutable snapshot reference. Corrupt or
+incompatible records block execution globally; repair offline, never skip them.
+
+Defaults: 256 ledger entries (configurable 1..1024); each file at most 8MiB,
+request/spec at contract limits; directory enumeration capped at 4096 entries.
+All imports are bounded by ledger count. Recovery removes unreferenced immutable
+files/temporary files, and refuses unexpected entries. No endless guest polling
+can create extra artifacts. Unexpected disk exhaustion/write errors fail closed.
+A pathological directory exceeding recovery cap requires offline repair.
+
+Call `Sweep(false)` periodically; polling does not run it implicitly. Raw is
+removed within 24h of import after crash, ledger/release/snapshot after seven days
+of import (shorter retention than measuring from completion). Active intents are
+not GC'd. Backward wall clock expires private data conservatively. Clean end
+removes raw immediately, not published releases. Orphan publication has no guest
+allowlist entry. Filesystem fsync semantics still need validation on lapdog.
+
+## Validation and outstanding integration
+
+`go test -race ./host` covers concurrent cancel/consume, one-command admission,
+nonce spending, denial/no replay, dedupe/conflict, revision changes, browser
+leases, explicit/clock suspend, expiry, recovery, private paths, corruption,
+release/redaction, clean/age cleanup and injection before every write/fsync/close/
+rename/link/temp-unlink boundary. No privileged commands or units are activated.
+
+Integration still owns guest SSH envelope exchange and lease advertisement,
+authenticated web Backend adapter, manual host launcher, actual host path/export
+audit, reliable suspend hooks, periodic retention scheduling, and shutdown
+orchestration. See `../execution/README.md` for execution and live acceptance gates.
