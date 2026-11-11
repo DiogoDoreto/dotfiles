@@ -41,7 +41,9 @@ func desktop(ctx context.Context) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, loginctl, "show-session", id, "--property=Name,Active,Remote,Type,Class,Desktop")
+	cmd := exec.CommandContext(ctx, loginctl, "show-session", id,
+		"--property=Name", "--property=Active", "--property=Remote",
+		"--property=Type", "--property=Class", "--property=Desktop")
 	cmd.WaitDelay = time.Second
 	b, e := cmd.Output()
 	if e != nil {

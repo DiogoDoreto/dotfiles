@@ -123,7 +123,10 @@ func TestDesktopAdmission(t *testing.T) {
 		{"agent", "yes", "no", "KDE", false}, {"dog", "no", "no", "KDE", false},
 		{"dog", "yes", "yes", "KDE", false}, {"dog", "yes", "no", "GNOME", false},
 	} {
-		loginctl = executable(t, "printf 'Name="+tt.name+"\\nActive="+tt.active+"\\nRemote="+tt.remote+"\\nType=wayland\\nClass=user\\nDesktop="+tt.desktop+"\\n'")
+		// Match loginctl's successful-but-empty result when no requested property
+		// name matches (including a comma-separated list passed as one name).
+		loginctl = executable(t, `[ "$*" = "show-session test-session --property=Name --property=Active --property=Remote --property=Type --property=Class --property=Desktop" ] || exit 0
+`+"printf 'Name="+tt.name+"\\nActive="+tt.active+"\\nRemote="+tt.remote+"\\nType=wayland\\nClass=user\\nDesktop="+tt.desktop+"\\n'")
 		if err := desktop(context.Background()); (err == nil) != tt.allowed {
 			t.Fatalf("%+v: %v", tt, err)
 		}
