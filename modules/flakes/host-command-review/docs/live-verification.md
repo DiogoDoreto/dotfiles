@@ -318,32 +318,44 @@ flake check, probe-module rerun or fuzz run was performed by the agent during
 these fixes; earlier packaging checks remain a separate record. The user handled
 builds/deployment, with guest-path observations as recorded above.
 
-## Paused next test: authentication timeout — NOT PERFORMED
+## 11. Authentication timeout — observed, conservatively uncertain
 
-A fresh root request was submitted successfully, but the user paused testing to
-commit code and write this record **before approving it**:
+The user resumed this test after the initial verification-record commit
+`b556412`. The fresh marker-only root request was:
 
 ```text
 session_id: 4b2a3788b16e0a497480d1770664b85bc5f6fcc7e4dd0ba4416c1ef2868badf7
 request_id: f5bd3fb57a920d7df5b303aa7a0294975ac704eed2d90a5bfc508f9f55bbc2d8
-last observed guest status: pending
+observed final guest status: uncertain
 ```
 
 Script: `printf 'AUTH-TIMEOUT-TEST-PAYLOAD-RAN\n'`, root, cwd `/`, 30-second
-execution timeout. Proposed procedure: approve, leave the KDE prompt unanswered,
-keep the browser visible, wait about 90 seconds for the separate 60-second auth
-timeout plus bounded reaping, then inspect prompt disappearance/status/output.
-Do not infer this test passed from submission. If the reviewer session has ended,
-use a fresh session/request with deliberate review; never automatically replay.
+execution timeout. The procedure was to approve, leave the KDE prompt unanswered,
+keep the browser visible and allow time for the separate 60-second authentication
+timeout plus bounded reaping.
+
+**User-observed:** KDE's prompt timed out after 60 seconds; the reviewer status
+became `ambiguous`. **Guest-confirmed:** a subsequent `get` returned only
+`uncertain`, with no artifact, output or private diagnostic information.
+
+**Result:** prompt timeout and conservative terminal handling were observed for
+this attempt. A distinct reliable authentication-timeout classification was not
+established. No captured-output inspection or independent payload/process/unit
+absence check was reported; coarse status alone is not proof that no payload
+executed or that all descendants/transport processes were reaped. Do not retry
+this consumed request. Reviewer-death/delayed-authentication races remain separate
+untested gates.
 
 ## Remaining acceptance work
 
 None of the ten broad [probe acceptance gates](../probe/FINDINGS.md#live-lapdog-desktop-acceptance-gates--all-pending)
 has complete signoff. The evidence above covers selected parts only. Still pending:
 
-- Authentication timeout; wrong credentials/absent agent; wrong caller/session/
-  target/program/argv and malformed manifest rejection; explicit runtime action-ID
-  observation and no internal text-agent fallback.
+- Complete authentication-timeout cleanup/no-payload evidence (the 60-second
+  prompt timeout and terminal uncertain result were observed); wrong credentials/
+  absent agent; wrong caller/session/target/program/argv and malformed manifest
+  rejection; explicit runtime action-ID observation and no internal text-agent
+  fallback.
 - Direct systemd FD3/stdin/stdout/stderr and clean environment checks; payload
   126/127 and signal/failure classification; start/collection/bus races.
 - Cancellation/timeout of process trees including setsid/TERM-resistant children,
