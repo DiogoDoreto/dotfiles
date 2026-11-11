@@ -3,7 +3,7 @@
 const bootstrap = location.hash.slice(1);
 history.replaceState(null, '', '/');
 let auth = '', csrf = '', selected = '', current = null, leaseUntil = 0, busy = false;
-let stale = false, bindingView = null, offerChanged = () => {};
+let stale = false, bindingView = null;
 const status = document.querySelector('#status');
 const detail = document.querySelector('#detail');
 function node(tag, text, parent) {
@@ -47,7 +47,7 @@ async function apply(action, extra = {}) {
   finally { busy = false; }
 }
 function render(r) {
-  current = r; stale = false; offerChanged = () => {}; detail.replaceChildren();
+  current = r; stale = false; detail.replaceChildren();
   node('h2', `${r.phase} · ${r.snapshot_id}`, detail);
   node('h3', 'Untrusted guest reason', detail); node('pre', r.reason, detail);
   node('h3', 'Complete frozen execution specification and approval binding', detail);
@@ -89,13 +89,27 @@ function renderHeld(original) {
   let outEdited = false, errEdited = false;
   out.addEventListener('input', () => { outEdited = true; }); err.addEventListener('input', () => { errEdited = true; });
   const preview = node('pre', 'Preview the complete export before releasing.', detail);
-  let candidate = null;
+  let candidate = null, confirmation = null;
+  const confirmationView = node('section', undefined, detail);
+  function clearConfirmation() { confirmation = null; confirmationView.replaceChildren(); }
   const release = button('Release reviewed immutable artifact to guest', () => {
-    if (candidate && confirm('Disclose this complete reviewed artifact, including executed metadata, to the guest? This cannot be undone.')) apply('release', {artifact: candidate});
+    if (!candidate || stale || busy) return;
+    clearConfirmation();
+    // In-page confirmation keeps heartbeat/polling live. Freeze the exact
+    // previewed bytes; a nonce renewal alone does not change the disclosure.
+    confirmation = structuredClone(candidate);
+    node('strong', 'Disclose this complete reviewed artifact, including executed metadata, to the guest? This cannot be undone.', confirmationView);
+    node('pre', JSON.stringify(confirmation, null, 2), confirmationView);
+    const frozen = confirmation;
+    button('Confirm release to guest', () => {
+      if (confirmation !== frozen || stale || busy) return;
+      return apply('release', {artifact: structuredClone(frozen)});
+    }, confirmationView);
+    button('Cancel release confirmation', clearConfirmation, confirmationView);
   }, detail, true);
-  offerChanged = () => { candidate = null; release.disabled = true; preview.textContent = 'Review binding renewed: preview again before confirming release. Redactions are preserved.'; };
-  for (const input of [script, cwd, out, err]) input.addEventListener('input', () => { candidate = null; release.disabled = true; preview.textContent = 'Changed: preview again.'; });
+  for (const input of [script, cwd, out, err]) input.addEventListener('input', () => { candidate = null; clearConfirmation(); release.disabled = true; preview.textContent = 'Changed: preview again.'; });
   button('Preview whole export and explicit redaction markers', () => {
+    clearConfirmation();
     candidate = structuredClone(original); const fields = new Set(candidate.redacted_fields);
     if (script.value !== original.executed.script) { candidate.executed.script = script.value; fields.add('executed.script'); }
     if (cwd.value !== original.executed.cwd) { candidate.executed.cwd = cwd.value; fields.add('executed.cwd'); }
@@ -116,9 +130,9 @@ function renewOffer(next) {
   if (JSON.stringify(current.binding) !== JSON.stringify(next.binding)) {
     current = next;
     bindingView.textContent = JSON.stringify({spec: next.spec, binding: next.binding}, null, 2);
-    // Keep existing DOM/drafts and dirty flags, but never carry a disclosure
-    // preview across an offer rotation. Run always asks for fresh confirmation.
-    offerChanged();
+    // Only called for the same substantive review: preserve drafts, preview
+    // and in-page confirmation. Operations still use the latest exact binding;
+    // expiry, epoch/state changes and single-use checks remain host-enforced.
   }
 }
 function selectReview(r) {

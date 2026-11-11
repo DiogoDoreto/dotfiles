@@ -67,6 +67,7 @@ test('held result requires whole-export preview; edits are marked; withhold send
   const out=input(d,'Export stdout');out.value='safe';await out.emit('input');
   await button(d,'Preview whole').emit('click');assert.equal(release.disabled,false);
   await release.emit('click');
+  await button(d,'Confirm release to guest').emit('click');
   const op=JSON.parse(h.calls.find(c=>c.url.endsWith('/operation')).options.body);
   assert.equal(op.action,'release');assert.equal(op.binding.nonce,'original');
   assert.equal(op.artifact.execution_digest,'original-digest');
@@ -115,7 +116,7 @@ test('expired run sends nothing; rotated unchanged command requires explicit run
   assert.equal(lastOperation(h).binding.nonce,'renewed');assert.equal(lastOperation(h).action,'run');assert.ok(confirmations>=2);
 });
 
-test('held redactions survive expiry/rotation; renewed offer requires new preview and confirmation',async()=>{
+test('held redactions and preview survive offer renewal; release requires explicit confirmation',async()=>{
   const h=harness();await tick();await select(h,review('output_held'));const d=h.elements['#detail'];
   const err=input(d,'Export stderr');err.value='safe';await err.emit('input');
   const script=input(d,'Export executed script (replacement must be nonempty)');script.value='redacted';await script.emit('input');
@@ -123,13 +124,48 @@ test('held redactions survive expiry/rotation; renewed offer requires new previe
   h.advance(31000);
   await h.run('refresh()');assert.equal(err.value,'safe');
   await rotate(h);assert.equal(input(d,'Export stderr'),err);assert.equal(err.value,'safe');assert.equal(script.value,'redacted');
-  assert.equal(release.disabled,true);assert.equal(button(d,'Preview whole').disabled,false);
+  assert.equal(release.disabled,false);assert.equal(button(d,'Preview whole').disabled,false);
   await button(h.elements['#list'],'output_held:').emit('click');assert.equal(input(d,'Export stderr'),err);
-  await button(d,'Preview whole').emit('click');assert.equal(release.disabled,false);
-  h.context.confirm=()=>false;await release.emit('click');assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
-  h.context.confirm=()=>true;await release.emit('click');const op=lastOperation(h);
+  await release.emit('click');assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  await button(d,'Cancel release confirmation').emit('click');
+  await release.emit('click');await button(d,'Confirm release to guest').emit('click');const op=lastOperation(h);
   assert.equal(op.binding.nonce,'renewed');assert.equal(op.artifact.stderr,btoa('safe'));assert.equal(op.artifact.stdout,'/w==');
   assert.deepEqual(op.artifact.redacted_fields,['executed.script','stderr']);
+});
+
+test('release confirmation is non-modal, survives renewal and keeps redactions and heartbeat',async()=>{
+  const h=harness();await tick();await select(h,review('output_held'));const d=h.elements['#detail'];
+  h.context.confirm=()=>{throw new Error('release must not block browser heartbeats with a modal');};
+  const out=input(d,'Export stdout');out.value='[REDACTED]';await out.emit('input');
+  await button(d,'Preview whole').emit('click');await button(d,'Release reviewed').emit('click');
+  const confirm=button(d,'Confirm release to guest');
+  assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  h.advance(31000);await rotate(h);await h.run('heartbeat()');
+  assert.equal(button(d,'Confirm release to guest'),confirm);assert.equal(out.value,'[REDACTED]');
+  await confirm.emit('click');const op=lastOperation(h);
+  assert.equal(op.binding.nonce,'renewed');assert.equal(op.artifact.stdout,btoa('[REDACTED]'));
+  assert.deepEqual(op.artifact.redacted_fields,['stdout']);
+});
+
+test('editing after opening release confirmation invalidates that confirmation',async()=>{
+  const h=harness();await tick();await select(h,review('output_held'));const d=h.elements['#detail'];
+  await button(d,'Preview whole').emit('click');await button(d,'Release reviewed').emit('click');
+  const confirm=button(d,'Confirm release to guest');const out=input(d,'Export stdout');
+  out.value='new draft';await out.emit('input');await confirm.emit('click');
+  assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  assert.equal(button(d,'Release reviewed').disabled,true);
+});
+
+test('authority or held-artifact changes block an already-open release confirmation',async()=>{
+  for(const change of [r=>r.binding.epoch++,r=>r.binding.revision++,r=>r.held.stderr=btoa('changed')]) {
+    const h=harness();await tick();await select(h,review('output_held'));const d=h.elements['#detail'];
+    const out=input(d,'Export stdout');out.value='safe';await out.emit('input');
+    await button(d,'Preview whole').emit('click');await button(d,'Release reviewed').emit('click');
+    const confirm=button(d,'Confirm release to guest');
+    change(h.view.requests[0]);await rotate(h);
+    assert.equal(confirm.disabled,true);assert.equal(out.value,'safe');
+    await confirm.emit('click');assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+  }
 });
 
 test('substantive command/authority changes invalidate stale forms instead of adopting bindings',async()=>{

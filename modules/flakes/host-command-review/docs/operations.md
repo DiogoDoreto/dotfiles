@@ -71,7 +71,11 @@ if another attempt is appropriate, knowing side effects may already have occurre
 
 All results are held. Review the entire executed metadata and output, explicitly
 mark script/cwd/stdout/stderr redactions, preview the complete export, and confirm
-release. Other metadata cannot be redacted in v1; withhold if sensitive. Repeated
+release using the in-page confirmation (not a blocking browser dialog). Keep the
+tab visible so browser heartbeats continue. Nonce/expiry-only offer renewal preserves
+redaction drafts, the preview and confirmation; edits invalidate the preview and
+confirmation, and substantive artifact/authority changes block release until a
+fresh review. Other metadata cannot be redacted in v1; withhold if sensitive. Repeated
 SSH/MCP checks return identical published bytes and never run anything. Guest
 status is coarse before release; execution errors and private diagnostics are not
 forwarded. Guest timing still leaks coarse lifecycle timing.
