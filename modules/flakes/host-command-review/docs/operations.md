@@ -2,12 +2,15 @@
 
 ## Status and deployment boundary
 
-Integrated application and Nix packages, **not live desktop certified**. No host or
-VM generation was activated, no actual pkexec authentication or transient service
-was run, and no real browser was exercised here. Build/check results below are
-not evidence that those runtime boundaries work. All deployment is manual.
-Nothing in mini, Caddy or T3 is changed. There is no reviewer autostart. The only
-scheduled job is cleanup-only maintenance (no listener/SSH/session advertisement).
+Integrated application and Nix packages, **not fully live desktop certified**.
+The original isolated implementation work did not activate a host/VM generation,
+run actual pkexec authentication/transient services, or exercise a real browser.
+Subsequent user-deployed lapdog verification has exercised selected live paths;
+see the [live verification record](live-verification.md) for evidence, discovered
+bugs, fixes and remaining gates. Build/check results below are not evidence that
+runtime boundaries work. All deployment is manual. Nothing in mini, Caddy or T3
+is changed. There is no reviewer autostart. The only scheduled job is cleanup-only
+maintenance (no listener/SSH/session advertisement).
 
 ## Before first use (human, on lapdog)
 
@@ -165,8 +168,10 @@ full-size MCP releases independently.
 
 ## Pending live gates — do not call this ready for deployment
 
-All ten gates in [probe/FINDINGS.md](../probe/FINDINGS.md#live-lapdog-desktop-acceptance-gates--all-pending)
-remain pending. In particular:
+None of the ten broad gates in [probe/FINDINGS.md](../probe/FINDINGS.md#live-lapdog-desktop-acceptance-gates--all-pending)
+has complete signoff. Selected portions have live evidence in the
+[live verification record](live-verification.md); do not treat the probe's original
+"all pending" heading as the current per-test record. In particular:
 
 1. Real wrapper/action selection and effective rule order; every adjacent root
    command gets a new KDE prompt; wrong caller/session/target/argv rejection,
@@ -180,8 +185,9 @@ remain pending. In particular:
    fragment URL handling by desktop opener, auth loss/reconnection and live suspend
    before/after both start gates; filesystem mount/export and fsync acceptance.
 5. Host/guest deployed-generation paths, dog UID, private permissions and timer
-   operation on the real machine. Pin enrollment and a real pinned-key SSH roundtrip
-   were not performed in this isolated implementation environment.
+   operation on the real machine. Pin enrollment and real pinned-key SSH exchanges
+   were subsequently exercised on lapdog (see live record); timer scheduling was
+   observed, but actual cleanup operation and complete deployment checks remain.
 
 Independent code review must also inspect these joins and the explicit live gates;
 passing mock/unit tests is not a substitute.
@@ -207,8 +213,10 @@ Passed in the isolated implementation environment:
 * Native Pi smoke script above with pinned Pi 1.5.0 and the deployment's guest
   package. Cleanup calendar syntax also validated with `systemd-analyze calendar`.
 
-Full NixOS toplevel closures were not built; these were targeted package builds
-and full host-flake evaluation checks. No deployment/activation, real pinned-key
-network exchange, browser session, root payload, GUI authentication or transient
-systemd unit was run. Those are genuine remaining runtime gates, not evidence
-provided by the fake execution backend.
+In the original isolated implementation environment, full NixOS toplevel closures
+were not built; these were targeted package builds and full host-flake evaluation
+checks. That work did not run deployment/activation, a real pinned-key exchange,
+browser session, root payload, GUI authentication or transient systemd unit.
+Subsequent live evidence is recorded separately in
+[live-verification.md](live-verification.md), with incomplete gates identified;
+the fake execution backend does not certify those runtime boundaries.
