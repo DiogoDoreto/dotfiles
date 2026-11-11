@@ -1,0 +1,41 @@
+// Run against a freshly started dev.cjs with playwright-cli run-code --filename=web/browser-check.js
+async page => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const check = (ok, message) => { if (!ok) throw new Error(message); };
+  await page.goto('about:blank');
+  await page.goto('http://127.0.0.1:4173/#demo');
+  await page.getByRole('button', {name:/Find out why/}).click();
+  const script = page.getByLabel('Script', {exact:true});
+  await script.fill('printf "reviewed command\\n"');
+  check(await page.getByRole('button', {name:'Run as dog',exact:true}).isDisabled(), 'Dirty command must not run');
+  await page.getByRole('button', {name:/Save edited/}).click();
+  await page.waitForFunction(() => document.querySelector('#detail textarea').value.startsWith('printf') && [...document.querySelectorAll('#detail button')].some(b => b.textContent === 'Run as dog' && !b.disabled));
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', {name:'Run as dog',exact:true}).click();
+  await page.getByRole('button', {name:'Stop command',exact:true}).waitFor();
+  await page.waitForFunction(() => [...document.querySelectorAll('#list button')].some(b => b.textContent.startsWith('Find out why') && b.textContent.includes('Review output')), {timeout:15000});
+  await page.getByRole('button', {name:/Find out why/}).click();
+  const stdout = page.getByLabel('Export stdout', {exact:true});
+  await stdout.fill('Safe summary: no failed services.');
+  await page.getByRole('button', {name:/Preview whole/}).click();
+  check((await page.locator('.export-preview').innerText()).includes('Safe summary'), 'Preview must show readable output');
+  check(!(await page.locator('.export-preview').innerText()).includes('execution_digest'), 'No raw JSON metadata');
+  await page.getByRole('button', {name:/Release reviewed/}).click();
+  await page.getByRole('button', {name:'Confirm release to guest',exact:true}).click();
+  await page.waitForFunction(() => document.querySelector('#detail .eyebrow').textContent === 'Released');
+  await page.getByRole('button', {name:/Restart the backup/}).click();
+  check(await page.getByRole('button', {name:/Run as root/}).isVisible(), 'Root must have a distinct action');
+  await page.getByRole('button', {name:/Check disk usage/}).click();
+  await page.setViewportSize({width:390,height:844});
+  check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile must not overflow horizontally');
+  await page.getByLabel('Export stderr', {exact:true}).fill('[private path removed]');
+  await page.getByRole('button', {name:/Preview whole/}).click();
+  await page.getByRole('button', {name:/Withhold/}).click();
+  check(await page.getByRole('button', {name:/Release reviewed/}).isDisabled(), 'Withhold invalidates release');
+  check(!errors.length, errors.join('\n'));
+  await page.setViewportSize({width:1440,height:1000});
+  const result = 'PASS: edit/run/held/redact/preview/release, root action, mobile layout, withhold, no browser errors';
+  await page.evaluate(result => { window.__reviewCheck = result; }, result);
+  return result;
+}

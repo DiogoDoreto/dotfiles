@@ -10,6 +10,44 @@ Normative shared contracts remain in [`../contracts`](../contracts),
 [`state-machine.md`](../docs/state-machine.md), and
 [`storage-and-workers.md`](../docs/storage-and-workers.md).
 
+## Design sandbox (no host access)
+
+From `modules/flakes/host-command-review`:
+
+```sh
+node web/dev.cjs
+# Open http://127.0.0.1:4173/#demo
+# Optional port: node web/dev.cjs 4174
+```
+
+This dependency-free, loopback-only Node server serves the **real bundled UI**
+against an in-memory fake API. A conspicuous sandbox banner is injected only by
+this runner; production has no demo switch, mock routes or mock imports. Nothing
+executes, no real credentials are used, and restarting resets the fixtures.
+Do not expose this development server to a network or use it as a real reviewer.
+It deliberately does not implement the authoritative backend's security guards.
+
+Fixtures include ordinary/root commands, held output with a private path, an
+uncertain outcome and completed work. Editing updates the revision; running
+simulates starting → running → held output. Reject, stop, release and end-session
+mutate only memory. Refresh the page freely in this sandbox (unlike production).
+Change fixtures in `dev.cjs` to explore long reasons, errors or larger output.
+
+For repeatable real-browser flow checks, start a **fresh** sandbox, then:
+
+```sh
+playwright-cli -s=review open http://127.0.0.1:4173/#demo
+playwright-cli -s=review run-code --filename=web/browser-check.js
+# If the CLI returns early at the run confirmation, the script continues.
+playwright-cli -s=review eval 'window.__reviewCheck'
+playwright-cli -s=review close
+```
+
+The script throws on failures and sets `window.__reviewCheck` to PASS only after
+edit/run/held/redact/preview/release, distinct root action, mobile overflow and
+withhold checks complete. Playwright is optional and is not a production or Go
+test dependency. See [design notes](DESIGN.md) for choices and further opportunities.
+
 ## Integration API
 
 ```go
@@ -133,9 +171,11 @@ HTTP cookies and their Secure-over-HTTP policy ambiguities.
 ## UI/output policy
 
 Prominent lapdog, arbitrary authority and guest-writable/live-filesystem warnings.
-Request reasons are untrusted. Full frozen execution policy, revision/digest/epoch/
-nonce/expiry are shown; command text, cwd, user and timeout can be edited (save
-then review the new host spec before run). Defaults belong to host admission:
+Request reasons are untrusted and serve as request titles. Actionable requests
+are separated from collapsed recent activity. Frozen execution policy is shown
+as labeled fields in a disclosure; opaque IDs, hashes and approval capabilities
+remain internal, not user-facing descriptors. Command text, cwd, user and timeout
+can be edited (save then review the new host spec before run). Defaults belong to host admission:
 120 seconds, maximum 1800; one command, four-hour session maximum. Distinct dog
 and root run actions; no prompt or password in browser. Starting/running shows
 read-only metadata plus explicit stop request. Polling never silently overwrites
@@ -148,14 +188,18 @@ changes disable stale forms until explicit reselection and fresh review.
 
 **All output is held initially; no skip-output-review option exists.** Successful
 execution/polling never releases. Held results expose host-private stdout/stderr,
-executed metadata, exit/truncation and original digest for review. Editable text
+executed metadata and exit/truncation for review; original identity/digest are
+preserved internally without displaying meaningless hashes. Editable text
 redactions are explicitly marked, and a whole-export preview is required before
 the release button enables, followed by confirmation. Editing invalidates preview.
 Withhold sends nothing and retains held state; end-session cleanup is backend duty.
 Output display is UTF-8: untouched base64 streams preserve exact original bytes;
 editing replaces the whole stream with UTF-8, explicitly marked as a redaction.
-The complete preview includes wire base64 and all metadata so nothing is silently
-omitted. A host-adapter refusal always wins over UI affordances.
+The complete preview shows decoded streams, byte counts, redaction markers and
+all execution/exit/capture metadata as labeled content, not raw JSON or base64.
+Transport IDs, revision and digest are retained unchanged in the release payload.
+Invalid UTF-8 is visibly replacement-decoded as documented beside the editors;
+untouched byte streams still retain their exact originals. A host-adapter refusal always wins over UI affordances.
 
 ## Validation
 
@@ -178,10 +222,10 @@ Node's built-in test runner supplies a minimal DOM harness for fragment removal,
 plain text, edit/run interlock, root starting readonly state and release preview/
 redaction/withhold behavior. It is **not a real browser** or an extra dependency.
 
-No browser binary or Playwright/Puppeteer installation was available. Real browser
-CSP enforcement, actual browser-origin/Fetch Metadata behavior, history/back-button,
-multi-tab/visibility/throttling/disconnect, file/extension attacks and KDE prompts
-were **not tested**. Before deployment run these in a local browser harness, along
-with real adapter tests for durable nonce/cancel races, suspend/resume, root auth,
-supervisor cleanup, publication and raw-vs-guest isolation. No platform preview,
-browser/server preview, package installation or deployment was performed.
+The mock UI was exercised in Chromium using `browser-check.js`, including desktop
+and 390px mobile layouts and ordinary edit/run/disclosure flows. This does **not**
+verify production bootstrap/auth, actual browser-origin/Fetch Metadata behavior,
+history/back-button, multi-tab/visibility/throttling/disconnect, file/extension
+attacks or KDE prompts. Before deployment test these against the real reviewer,
+along with adapter tests for durable nonce/cancel races, suspend/resume, root auth,
+supervisor cleanup, publication and raw-vs-guest isolation. No deployment was performed.

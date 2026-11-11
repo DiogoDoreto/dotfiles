@@ -7,6 +7,7 @@ const path = require('node:path');
 class Element {
   constructor(tag) { this.tag = tag; this.children = []; this.events = {}; this.textContent = ''; this.value = ''; this.disabled = false; }
   append(n) { this.children.push(n); }
+  setAttribute(name, value) { this[name] = value; }
   replaceChildren(...nodes) { this.children = nodes; }
   addEventListener(event, fn) { (this.events[event] ||= []).push(fn); }
   querySelectorAll() { return this.children.flatMap(n => [n, ...n.querySelectorAll()]); }
@@ -48,7 +49,7 @@ test('hostile reason/script are plain text; unsaved edit disables approval', asy
   const h=harness();await tick();
   h.run(`render({snapshot_id:'id',phase:'reviewing',reason:'<img src=x onerror=alert(1)>',spec:{script:'<script>alert(1)</script>',cwd:'/home/dog',user:'dog',timeout_seconds:120},binding:{nonce:'original'}})`);
   const detail=h.elements['#detail'];
-  assert.ok(all(detail).some(n=>n.tag==='pre' && n.textContent==='<img src=x onerror=alert(1)>'));
+  assert.ok(all(detail).some(n=>n.tag==='h2' && n.textContent==='<img src=x onerror=alert(1)>'));
   assert.equal(input(detail,'Script').value,'<script>alert(1)</script>');
   const run=button(detail,'Run as dog');assert.equal(run.disabled,false);
   input(detail,'Script').value='changed';await input(detail,'Script').emit('input');assert.equal(run.disabled,true);
@@ -56,7 +57,7 @@ test('hostile reason/script are plain text; unsaved edit disables approval', asy
 test('authentication interval is read only except explicit cancellation', async()=>{
   const h=harness();await tick();h.run(`render({snapshot_id:'id',phase:'starting',reason:'root',spec:{user:'root'},binding:{}})`);
   const d=h.elements['#detail'];assert.equal(all(d).filter(n=>n.tag==='textarea'||n.tag==='input'||n.tag==='select').length,0);
-  assert.deepEqual(all(d).filter(n=>n.tag==='button').map(n=>n.textContent),['Cancel / request process-tree stop']);
+  assert.deepEqual(all(d).filter(n=>n.tag==='button').map(n=>n.textContent),['Stop command']);
 });
 test('held result requires whole-export preview; edits are marked; withhold sends nothing',async()=>{
   const h=harness();await tick();
@@ -75,13 +76,38 @@ test('held result requires whole-export preview; edits are marked; withhold send
   assert.deepEqual(op.artifact.redacted_fields,['executed.script','stdout']);
 });
 
+test('queue is reason-led, hides completed work and preserves focusable nodes across polling', async()=>{
+  const h=harness();await tick();
+  const active=review(), completed={...review('released'),snapshot_id:'done',reason:'Completed task'};
+  h.view.requests=[active,completed];await h.run('refresh()');
+  const list=h.elements['#list'];const item=button(list,'guest');
+  assert.ok(all(list).some(n=>n.tag==='details'));
+  assert.ok(!all(list).some(n=>n.textContent.includes('digest')));
+  await h.run('refresh()');assert.equal(button(list,'guest'),item);
+  // A preserved button must select the latest state, not its creation-time closure.
+  h.view.requests[0].spec.script='latest command';await h.run('refresh()');await item.emit('click');
+  assert.equal(input(h.elements['#detail'],'Script').value,'latest command');
+});
+
+test('readable export preview contains content and policy but no raw JSON or identity hashes', async()=>{
+  const h=harness();await tick();await select(h,review('output_held'));
+  const d=h.elements['#detail'];await button(d,'Preview whole').emit('click');
+  const text=all(d).map(n=>n.textContent).join('\n');
+  assert.ok(text.includes('What the guest will receive'));
+  assert.ok(text.includes('secret'));assert.ok(text.includes('Directory'));
+  assert.ok(!text.includes('execution_digest'));assert.ok(!text.includes('"stdout":'));
+  await button(d,'Release reviewed').emit('click');await button(d,'Withhold').emit('click');
+  assert.equal(button(d,'Release reviewed').disabled,true);
+  assert.ok(!all(d).some(n=>n.tag==='button'&&n.textContent==='Confirm release to guest'));
+});
+
 function review(phase='reviewing') {
   return {snapshot_id:'id',phase,reason:'guest',spec:{script:'original',cwd:'/home/dog',user:'dog',timeout_seconds:120},
     binding:{version:1,session_id:'session',snapshot_id:'id',revision:1,digest:'digest',epoch:1,nonce:'old',expires_unix:Math.floor(Date.now()/1000)+30},
     ...(phase==='output_held' ? {held:{executed:{script:'secret',cwd:'/secret'},stdout:'/w==',stderr:'c2VjcmV0',redacted_fields:[],execution_digest:'digest'}} : {})};
 }
 async function select(h,r) {
-  h.view.requests=[r]; await h.run('refresh()'); await button(h.elements['#list'],r.phase+':').emit('click');
+  h.view.requests=[r]; await h.run('refresh()'); await button(h.elements['#list'],r.reason).emit('click');
 }
 async function rotate(h) {
   h.view.requests[0].binding.nonce='renewed';
@@ -99,7 +125,7 @@ test('polling binding expiry/rotation preserves command drafts, Save and dirty r
   await rotate(h);
   assert.equal(input(d,'Script'),script);assert.equal(script.value,'unfinished draft');
   assert.equal(button(d,'Run as dog').disabled,true);assert.equal(button(d,'Save edited').disabled,false);
-  await button(h.elements['#list'],'reviewing:').emit('click');assert.equal(input(d,'Script'),script);
+  await button(h.elements['#list'],'guest').emit('click');assert.equal(input(d,'Script'),script);
   await button(d,'Save edited').emit('click');
   const op=lastOperation(h);assert.equal(op.binding.nonce,'renewed');assert.equal(op.proposal.script,'unfinished draft');assert.equal(op.action,'edit');
 });
@@ -125,7 +151,7 @@ test('held redactions and preview survive offer renewal; release requires explic
   await h.run('refresh()');assert.equal(err.value,'safe');
   await rotate(h);assert.equal(input(d,'Export stderr'),err);assert.equal(err.value,'safe');assert.equal(script.value,'redacted');
   assert.equal(release.disabled,false);assert.equal(button(d,'Preview whole').disabled,false);
-  await button(h.elements['#list'],'output_held:').emit('click');assert.equal(input(d,'Export stderr'),err);
+  await button(h.elements['#list'],'guest').emit('click');assert.equal(input(d,'Export stderr'),err);
   await release.emit('click');assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
   await button(d,'Cancel release confirmation').emit('click');
   await release.emit('click');await button(d,'Confirm release to guest').emit('click');const op=lastOperation(h);
@@ -185,6 +211,6 @@ test('real held artifact changes invalidate preview/release and require explicit
   h.view.requests[0].held.stderr=btoa('new private data');await rotate(h);
   assert.equal(out.value,'draft');assert.equal(button(d,'Release reviewed').disabled,true);assert.equal(button(d,'Preview whole').disabled,true);
   await h.run(`apply('release', {artifact:{}})`);assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
-  await button(h.elements['#list'],'output_held:').emit('click');
+  await button(h.elements['#list'],'guest').emit('click');
   assert.equal(input(d,'Export stderr').value,'new private data');assert.equal(button(d,'Release reviewed').disabled,true);
 });
