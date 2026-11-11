@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "operation": "submit",
+  "session_id": "1111111111111111111111111111111111111111111111111111111111111111",
+  "request_id": "2222222222222222222222222222222222222222222222222222222222222222",
+  "proposal": {
+    "script": "printf '%s\\n' 'review me <not HTML>'",
+    "cwd": "/home/dog/projects/example",
+    "user": "dog",
+    "timeout_seconds": 120
+  }
+}
