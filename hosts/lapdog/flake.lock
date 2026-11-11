@@ -219,6 +219,22 @@
         "type": "github"
       }
     },
+    "host-command-review": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "../../modules/flakes/host-command-review",
+        "type": "path"
+      },
+      "original": {
+        "path": "../../modules/flakes/host-command-review",
+        "type": "path"
+      },
+      "parent": []
+    },
     "import-tree": {
       "locked": {
         "lastModified": 1763762820,
@@ -503,6 +519,7 @@
         "forgejo-cli": "forgejo-cli",
         "handy": "handy",
         "home-manager": "home-manager",
+        "host-command-review": "host-command-review",
         "linux-systems": "linux-systems",
         "llama-cpp": "llama-cpp",
         "llm-agents": "llm-agents",

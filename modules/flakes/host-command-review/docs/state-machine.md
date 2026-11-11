@@ -1,7 +1,8 @@
 # Host authority, state machine and recovery
 
-This is a normative worker contract, not implemented orchestration. `Next` checks
-only the table's edges. The host worker must implement **all guards below**.
+This is the normative unreleased v1 policy. `Next` checks only table edges;
+`host` and `reviewer` implement authority and orchestration. Live desktop gates
+remain pending (see operations.md and probe/FINDINGS.md).
 
 ## Session lifetime
 
@@ -93,8 +94,12 @@ a cached grant, or guest-supplied pkexec arguments.
 
 Freeze script bytes, cwd string, user dog/root, resolved fixed bash path, clean
 closed environment, timeout (default 120 seconds, maximum 1800), stop grace (5),
-and combined capture limit (4 MiB). Execute bash with `--noprofile --norc -c SCRIPT`,
-stdin `/dev/null`, no PTY, no startup files and no inherited environment. The fixed
+and combined capture limit (4 MiB). Execute bash with
+`--noprofile --norc /proc/self/fd/3`, immutable unlinked script file on FD3,
+NEVER script text in argv/environment, stdin `/dev/null`, no PTY, no startup
+files and no inherited environment. This amends unreleased v1's earlier `-c`
+wording; `$0` and `BASH_SOURCE` identify `/proc/self/fd/3`. Digest struct encoding
+is unchanged: the fixed invocation is version policy, not a guest field. The fixed
 PATH and cwd still reference **live mutable filesystem content**. A script can
 read/source live files and itself start interactive or networked software; the
 runner's lack of terminal does not make arbitrary scripts safe. Snapshots freeze

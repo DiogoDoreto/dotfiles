@@ -9,8 +9,8 @@ execute by another mechanism. Tests do not establish real systemd/polkit behavio
 ## Trusted packaging configuration
 
 Both `cmd/host-command-root-runner` and `cmd/host-command-unit-helper` have EMPTY
-build-time defaults. They exit 70 without validated configuration. Future Nix
-packaging must inject these Go linker strings consistently into both binaries:
+build-time defaults. They exit 70 without validated configuration. The integrated
+Nix packaging injects these Go linker strings consistently into both binaries:
 
 ```
 -X main.shell=/nix/store/.../bin/bash
@@ -28,9 +28,9 @@ directories must already exist private 0700, root/dog owned respectively; helper
 walks all ancestors with O_NOFOLLOW and rejects writable-by-others ancestors.
 Anonymous script files are created directory-relative 0600 and immediately
 unlinked; fd3 alone is inherited by bash. Runtime setup belongs to packaging /
-manual launcher, not a privileged mkdir on guest-supplied input. Circular exact
-store references for runner/helper may need a single-output package and a build
-wrapper design; neither mutable symlinks nor development binaries are accepted.
+manual launcher, not a privileged mkdir on guest-supplied input. The integrated
+single-output Nix package injects its own exact output paths for runner/helper;
+neither mutable symlinks nor development binaries are accepted.
 
 Runner verifies actual executable equals trusted store path and real/effective
 UID. Root mode requires real/effective root plus exact `PKEXEC_UID` equal to
@@ -48,8 +48,7 @@ pkexec --disable-internal-agent FIXED_RUNNER --approved-sha256 DIGEST
 Packaging MUST install and inspect the dedicated action
 `br.com.doreto.host-command-review.execute`, bound to EXACT store runner path and
 argv1 `--approved-sha256`, active/local dog → root, `auth_admin`, never `_keep`.
-See `../probe/FINDINGS.md` for policy XML/rule sketch. No policy/Nix activation is
-included here. Code alone cannot prove which polkit action won rule ordering or
+See `../probe/FINDINGS.md` for policy XML/rule sketch. Integration includes lapdog policy/Nix wiring, but no activation was performed. Code alone cannot prove which polkit action won rule ordering or
 prevent a mispackaged generic-action fallback. This is a hard live release gate.
 One pkexec child per consumed command, including adjacent identical requests.
 Auth lifetime is 60 seconds; pipe writing is bounded too, including large
@@ -115,17 +114,14 @@ reserved exit convention (runner voluntarily uses only0/70). Pre-ready127 is
 ambiguous, not proven auth denial. After READY, missing terminal is execution
 loss. After terminal, a failing runner/CLI also conservatively becomes uncertain.
 
-### Explicit approved-policy discrepancy requiring integration review
+### Unreleased v1 invocation policy amendment
 
-Task requires script-FD execution/no script in argv. This implementation uses
-`bash --noprofile --norc /proc/self/fd/3`. Existing shared v1 contract comments and
-state-machine docs instead specify `bash ... -c SCRIPT`. Shared contracts were
-expressly outside this worker's ownership and were not edited; the digest layout
-is unchanged. Integration owner must reconcile that normative text/policy before
-shipping, and decide whether existing protocol-version guidance requires a new
-version. Script-file execution has observable `$0`/BASH_SOURCE/positional semantic
-differences. Do not silently label it the old argv policy or claim byte freezing
-also freezes mutable filesystem semantics.
+Integration reconciles contracts, UI and state-machine documentation in favor of
+`bash --noprofile --norc /proc/self/fd/3`: immutable unlinked script FD3, never
+script text in argv or environment. v1 has not shipped; its fixed invocation
+policy is amended without changing digest struct encoding or protocol number.
+`$0`/`BASH_SOURCE` identify `/proc/self/fd/3`; this is not `bash -c` semantics.
+Byte freezing does not freeze mutable filesystem semantics.
 
 ## Tests / limitations
 
@@ -150,5 +146,6 @@ reviewer/runner/helper death before/after both gates; independent runtime after
 SIGKILL; setsid/TERM-resistant descendants; output FD retention/flooding; process
 argv/unit metadata/journal audit; user-manager analogue. Need exact deployed
 paths, shell fd behavior, private runtime setup and filesystem fsync acceptance.
-Integration also owns authenticated UI adapter, guest transport wiring, session
-shutdown/reaping and suspend hooks. Do not activate until these are satisfied.
+Integration now supplies the authenticated UI adapter, guest transport wiring,
+joined session shutdown, sleep monitoring and retention scheduling. See
+`../docs/operations.md`; actual desktop/suspend semantics remain live gates.

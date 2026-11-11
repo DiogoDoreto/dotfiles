@@ -1,125 +1,96 @@
-# Host command review — foundation only
+# Manual lapdog host-command reviewer — integrated, not live-certified
 
-This directory is a **Go standard-library-only contract library**, not a usable
-reviewer. There are no entry points, SSH/MCP/HTTP transports, store, root helper,
-polkit policy, service, UI, or deployment changes. Nothing can execute a command.
-No new flake/package is supplied until there is a binary worth packaging; later
-packaging belongs here, not in a host configuration. No mini changes or activation.
+The Agent VM proposes commands through native Pi MCP. A **manually started**
+foreground `agent-host-review` in dog's local active Plasma session pulls proposals
+using strict-pinned SSH, imports immutable host snapshots, and opens an authenticated
+loopback web reviewer. Only that host reviewer can approve execution or release
+results. Guest root controls all guest data; routing IDs are not credentials.
 
-The intended deployment is **lapdog only**, manually started by `dog` from a local
-Plasma session as `agent-host-review`. The Agent VM can propose/check/cancel;
-only the host reviewer can authorize execution or release results. Guest root
-controls all guest data. A session ID routes requests; it never authenticates them.
+The application seams are connected and tested with fake SSH subprocesses, real
+HTTP, the actual guest queue and host ledger, and a mock execution backend.
+Immutable Nix packages and lapdog host/guest wiring are included. **This is not
+approval to activate or a claim that real desktop execution is certified.** All
+systemd/polkit/KDE/browser acceptance gates remain pending; see
+[operations](docs/operations.md), [execution](execution/README.md) and
+[the feasibility proof](probe/FINDINGS.md). No deployment was performed.
 
-## Files and ownership boundaries
+## Components and authority
 
-| File / future package | Responsibility |
+| Component | Responsibility |
 | --- | --- |
-| `contracts/types.go` | v1 proposal, fixed remote request, frozen execution, approval binding and digest |
-| `contracts/parse.go` | bounded, exact, closed JSON parsers; no I/O other than supplied reader |
-| `contracts/snapshot.go` | immutable host import and provenance; separate from editable execution spec |
-| `contracts/result.go` | deliberately coarse reply and explicit immutable release artifact |
-| `contracts/state.go` | host phase transition **shape**, not authorization or persistence |
-| `contracts/testdata/` | executable v1 wire fixtures (not authority-bearing credentials) |
-| `docs/state-machine.md` | guards, crash recovery, lifetimes and output policy |
-| `docs/storage-and-workers.md` | proposed file transaction model and worker seams |
-| future `internal/guest`, `cmd/agent-host-review-mcp` | MCP adapter, bounded guest queue; no execution authority |
-| future `internal/host`, `cmd/agent-host-review` | pinned SSH pull, snapshots, authoritative ledger and session orchestration |
-| future `internal/web` | `net/http` authenticated loopback UI and `embed` assets |
-| future `internal/execution`, dedicated root supervisor entry point | noninteractive execution; privilege boundary depends on separate root probe |
+| `contracts/` | Strict closed v1 JSON, proposal, snapshot, frozen spec/digest, approval, coarse reply and immutable release |
+| `guest/`, `transport/`, `cmd/host-review-{mcp,exchange}` | Bounded guest queue, 15-second host-renewed routing leases, fixed bounded JSON exchange, official Go MCP SDK stdio; no execution authority |
+| `host/` | Host-private snapshots/ledger, revisions/epochs/nonces, durable consume before launch, one command, crash ambiguity, explicit release and retention |
+| `execution/`, `cmd/host-command-{root-runner,unit-helper}` | Fresh two-stage start gates, private framed stdio and leases, pkexec for root, systemd transient services, FD3 script, bounded capture/cleanup |
+| `web/` | Authenticated loopback HTTP + embedded plain-text UI, browser liveness, full execution/release preview, no frontend dependency |
+| `reviewer/` | Backend adapter and strict SSH client/worker; this is the only join between host authority, browser and untrusted guest |
+| `cmd/agent-host-review` | Manual foreground launcher, trusted runtime config, local Plasma checks, deliberate pin enrollment, sleep monitor, retention timer and shutdown/reaping |
+| `flake.nix` | `packages.x86_64-linux.{host,guest}`, `lib.mkHost`; immutable runner/helper/tool paths and UID injected at build time |
+| `hosts/lapdog/{reviewer-host.nix,vms/agent-vm/reviewer-guest.nix}` (repository root) | Dedicated noncached polkit action/rules and root runtime; guest package and Pi-owned named MCP entry merge |
 
-These names are seams, not precreated empty packages. Do not put transport,
-credentials, or command execution in `contracts`. Keep the concurrent root probe
-in its own subdirectory; this foundation makes no claims that it has validated
-pkexec/systemd behavior.
+No reviewer autostart, public listener, Caddy route, T3 plugin, persistent privileged
+helper, sudo fallback, or mini change. The SSH maintenance key is reused, but **not**
+the maintenance helper's disabled host-key checking. A separate deliberately
+enrolled pin file is required. All scripts/cwd/env and output remain host-private
+until an explicit immutable reviewed release; transport errors are fixed coarse
+codes, never raw host diagnostics.
 
-## v1 protocol rules
+## Fixed unreleased v1 policy
 
-* One bounded JSON value per invocation, then EOF; stdout contains JSON only,
-  diagnostics on stderr. Enforce read/write deadlines as well as byte limits.
-* `ParseRequest`: at most 512 KiB (including worst-case JSON escaping of a
-  64 KiB script and 4 KiB cwd); `ParseReply`: at most 8 MiB (base64 expansion of
-  4 MiB capture plus bounded execution metadata). Script at most 64 KiB.
-* Exact snake_case, except the closed environment's `PATH`, `HOME`, `LANG`.
-  Reject unknown/missing/case-aliased/duplicate fields (including escaped aliases),
-  null anywhere, trailing values, malformed Unicode, fractional/exponent integers,
-  integer overflow, unknown versions and invalid semantic values. Optional means
-  **absent**, not null. Empty output is `""`; empty redaction list is `[]`.
-* `submit` requires proposal; `check`/`cancel` forbid proposal. Adapter defaults
-  missing MCP timeout to 120 seconds **before** encoding this complete contract.
-  v1 remote requests always include timeout. Maximum is 1800 seconds.
-* IDs/nonces are 32 CSPRNG bytes encoded as 64 lowercase hex characters. Generate
-  host IDs using `crypto/rand`, never from guest paths or timestamps. Request IDs
-  are untrusted guest choices: `(session_id, request_id)` retries with identical
-  contents return the existing result; changed contents must yield `conflict`,
-  not overwrite a snapshot. Replaying an expired session must not enqueue work.
-* Host revision starts at 1; every review edit increments it. It is **not** a guest
-  revision. Approval binds session, host snapshot ID, revision, epoch, spec digest,
-  expiry and one-use nonce. No approval or nonce is sent to the guest.
-* `Freeze` and `Digest` validate shape/policy only. They neither approve nor resolve
-  the supplied shell, authenticate a user, check filesystem permissions, or verify
-  reviewer liveness. Only the host can freeze trusted review input. Resolve bash
-  to its `/nix/store/.../bin/bash` path on the host before freeze. The guest cannot
-  choose a shell or environment. Runtime must use the frozen path, not PATH lookup.
-* Digest algorithm is the documented Go struct encoding in `types.go`, pinned by
-  a golden test; do not reserialize with another language's defaults. Shell argv,
-  stdin policy, no PTY, and clean environment are immutable v1 policy. Protocol
-  changes that alter execution or canonicalization require a new version.
-* `Artifact.ExecutionDigest` identifies the original spec. When metadata is not
-  redacted it must match `Executed.Digest()`. Marked redactions intentionally make
-  that check unavailable: this is **not** cryptographic proof of execution. v1
-  supports only script/cwd/stdout/stderr redaction; a replacement script must be
-  nonempty and a replacement cwd must remain an absolute clean path (for example
-  `/[REDACTED]`). This keeps the typed artifact structurally valid. A more flexible
-  redaction format requires a new version; never silently omit metadata.
+* Four-hour session maximum including suspend; one execution including root auth.
+* Default runtime 120 seconds, maximum 1800; five-second service TERM/KILL grace.
+* Fixed store bash `--noprofile --norc /proc/self/fd/3`, unlinked immutable script
+  FD3, stdin `/dev/null`, no PTY/startup files/inherited environment. This explicitly
+  amends unreleased v1's former `-c` wording; digest encoding is unchanged.
+* Combined 4-MiB stdout/stderr retention, concurrent drain/discard after cap.
+* Exact current snapshot/revision/digest/epoch/nonce and browser lease checked
+  before durable nonce consumption; retries and recovery **never reexecute**.
+* Raw capture deleted on clean end; crash raw expires after 24 hours; ledger and
+  released artifacts after seven days. Recovery/startup, active-session periodic
+  sweep and a cleanup-only 15-minute timer enforce age policy. No reviewer session
+  is autostarted; see operations for offline/cleanup failure limitations.
+* Byte freezing is not a filesystem snapshot or sandbox. Reviewed arbitrary root
+  commands can defeat their own systemd limits; no malicious-root containment.
 
-A parser's validation error may contain guest-controlled field names: keep it on
-host diagnostics, escape it for a browser, and never return it as a guest process
-error. Replies expose only fixed coarse error codes. No raw stdout/stderr, exit
-info, reviewed edits or executed metadata before explicit release. Queue backpressure
-must reject (`queue_full`); do not accept silently and drop later.
+Exact JSON bounds, canonical digest encoding and parsers are documented in source
+and component READMEs. IDs/nonces are random 32-byte lowercase hex; guest IDs are
+untrusted data, never host paths. Before release, guest status carries no executed
+metadata, output, exit info, host errors or approval capabilities. Redaction is
+limited to script/cwd/stdout/stderr with explicit markers; sensitive non-redactable
+metadata means withhold the entire artifact.
 
-## Dependencies and MCP decision
+## Dependencies
 
-Go replaces the earlier Python direction. Foundation has **zero external Go
-modules**, no frontend toolchain, no framework and no SQLite driver. Use
-`net/http`, `encoding/json`, `os/exec`, `embed`, `crypto/rand`, and Linux flock
-(`syscall.Flock`) when those boundaries are implemented. [The file-store
-proposal](docs/storage-and-workers.md) deliberately trades SQL transactions for a
-single-writer, whole-record replacement protocol; it is not a completed store.
-
-**MCP SDK assessed, not imported:** the official
-[`modelcontextprotocol/go-sdk`](https://github.com/modelcontextprotocol/go-sdk)
-provides stdio transport, initialization/version negotiation, tool schemas,
-JSON-RPC handling and cancellation. These are real benefits over maintaining a
-home-grown MCP stack. However, the upstream `main`
-[README](https://github.com/modelcontextprotocol/go-sdk/blob/main/README.md) and
-[go.mod](https://github.com/modelcontextprotocol/go-sdk/blob/main/go.mod) inspected
-for this foundation show Go 1.25 and a substantially wider module graph, including
-JSON Schema, URI templates, JWT, OAuth, segmentio encoding/asm, and x/* packages.
-That is a module-level inventory, **not a claim all are linked into a stdio binary**.
-There is no MCP implementation here to justify that surface today.
-
-Decision: **defer adding an SDK, do not build an ad-hoc transport in its place**.
-The guest worker should assess a pinned official stable release using
-`go list -deps` and its actual stdio imports, compatibility with Pi native MCP,
-security fixes and closure size. Prefer the official SDK if avoiding protocol
-maintenance outweighs the measured dependencies; explicitly document that decision
-and version/toolchain increase before importing it. No third-party SDK is selected.
-MCP tool parameters map into these contracts; SSH request JSON is not MCP JSON-RPC.
+Go 1.25+; tested using Go 1.26.10. Host, transport and execution use the standard
+library. Only `guest/mcpstdio` imports the official MCP SDK, pinned to v1.8.0;
+[guest/README.md](guest/README.md) records the dependency assessment and actual
+import graph. No custom MCP stack, SQLite/CGO, web framework, frontend package
+manager, or handwritten D-Bus. Nix `buildGoModule` pins the vendor hash.
 
 ## Validation
 
+From this directory, using `nix shell nixpkgs#go --command ...` if needed:
+
 ```sh
-cd modules/flakes/host-command-review
 go test ./...
 go test -race ./...
 go vet ./...
-go test ./contracts -run '^$' -fuzz FuzzRequest -fuzztime 5s
+(cd probe && go test ./... && go test -race ./... && go vet ./...)
+node --check web/assets/app.js
+node --test web/assets_test.cjs
 ```
 
-Go 1.23+ is the source baseline (tested with available Go 1.26.10); there is no
-`go.sum` because there are no external modules. With no Go on PATH:
-`nix shell nixpkgs#go --command ...`. No Nix files or host inputs are changed.
-These tests cover contracts, not real SSH isolation, browser defenses, atomic
-persistence, execution, polkit or systemd. Later workers must add those tests.
+From the repository root:
+
+```sh
+make format-nix
+nix flake check ./hosts/lapdog/
+nix build --no-link ./modules/flakes/host-command-review#host ./modules/flakes/host-command-review#guest
+```
+
+Component READMEs provide focused tests; integration coverage includes a complete
+fake-SSH → guest → host → authenticated web → mock executor → held → redacted
+release lifecycle, unchanged publication retries, stale revisions/epochs/nonces,
+release metadata tampering, browser loss at consumption, cancellation, active
+shutdown/join, closed guest routes and malicious/blocked/oversized SSH peers.
+These tests deliberately do not run privileged payloads or real transient units.

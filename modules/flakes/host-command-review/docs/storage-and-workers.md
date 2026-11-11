@@ -1,4 +1,9 @@
-# Proposed stdlib file store and implementation seams
+# File store design and implementation seams
+
+Historical design below: `host/`, `guest/`, `reviewer/`, `web/` and the manual
+launcher now implement these seams. References to future/unimplemented work
+record the original design stage, not current integration status. See
+[operations](operations.md) and component READMEs for current behavior and gates.
 
 **Proposed deviation from the earlier SQLite direction:** use Linux-local private
 files, atomic replacement and `flock`, avoiding SQLite/CGO or a pure-Go SQL driver.

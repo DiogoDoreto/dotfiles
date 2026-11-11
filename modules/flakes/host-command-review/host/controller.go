@@ -129,6 +129,7 @@ type Controller struct {
 	ended               bool
 	reviewer            *os.File
 	executions          map[string]context.CancelFunc
+	offers              map[string]reviewOffer
 }
 
 // NewController takes the singleton reviewer lock and recovers dead-session
@@ -176,7 +177,7 @@ func NewController(s *Store, cfg Config) (c *Controller, err error) {
 		return nil, e
 	}
 	now := cfg.Clock.Now()
-	c = &Controller{store: s, cfg: cfg, session: randomID(), epoch: 1, started: now, last: now, bootStart: boot, lastBoot: boot, reviewer: f, executions: map[string]context.CancelFunc{}}
+	c = &Controller{store: s, cfg: cfg, session: randomID(), epoch: 1, started: now, last: now, bootStart: boot, lastBoot: boot, reviewer: f, executions: map[string]context.CancelFunc{}, offers: map[string]reviewOffer{}}
 	err = s.withLock(func() error {
 		// Clean interrupted immutable hard-link publications before checking
 		// their expected single-link final inode in records/snapshots.
@@ -299,11 +300,17 @@ func (c *Controller) guard(browser bool) error {
 // Heartbeat is called ONLY by an authenticated browser session. No routing ID
 // can authenticate it. Disconnect revokes even an otherwise unexpired lease.
 func (c *Controller) Heartbeat() error {
+	return c.HeartbeatUntil(c.cfg.Clock.Now().Add(c.cfg.BrowserLease))
+}
+func (c *Controller) HeartbeatUntil(deadline time.Time) error {
 	return c.store.withLock(func() error {
 		if e := c.guard(false); e != nil {
 			return e
 		}
 		c.lease = c.cfg.Clock.Now().Add(c.cfg.BrowserLease)
+		if deadline.Before(c.lease) {
+			c.lease = deadline
+		}
 		return nil
 	})
 }
@@ -653,7 +660,10 @@ func (c *Controller) Sweep(cleanEnd bool) error {
 			if cleanEnd && active {
 				return fmt.Errorf("stop and reconcile execution before clean end")
 			}
-			if !active && (cleanEnd && r.Snapshot.SessionID == c.session || age < 0 || age >= contracts.CrashRawRetentionSeconds) {
+			// A clean end (including idle cleanup after recovery) has no route
+			// capable of reviewing a dead session's private capture. Remove those
+			// leftovers too, rather than retaining secrets until the age limit.
+			if !active && (cleanEnd || age < 0 || age >= contracts.CrashRawRetentionSeconds) {
 				if e = c.store.remove("raw", r.Snapshot.SnapshotID); e != nil {
 					return e
 				}
@@ -700,6 +710,23 @@ func (c *Controller) End() error {
 	}
 	c.store.mu.Unlock()
 	if e := c.Invalidate(); e != nil {
+		return e
+	}
+	if e := c.store.withLock(func() error {
+		rs, e := c.records()
+		if e != nil {
+			return e
+		}
+		for _, r := range rs {
+			if r.Snapshot.SessionID == c.session && r.Phase == contracts.Reviewing {
+				r.Phase = contracts.Stopped
+				if e = c.save(r); e != nil {
+					return e
+				}
+			}
+		}
+		return nil
+	}); e != nil {
 		return e
 	}
 	if e := c.Sweep(true); e != nil {
@@ -767,6 +794,18 @@ func (c *Controller) Run(ctx context.Context, a contracts.ApprovalBinding, cfg e
 	if e != nil {
 		return e
 	}
+	return c.RunConsumed(ctx, a, spec, cfg)
+}
+
+// RunConsumed reconciles a spec already durably consumed by the trusted UI adapter.
+// It is not a guest API. Call exactly once, even when the context is cancelled.
+func (c *Controller) RunConsumed(ctx context.Context, a contracts.ApprovalBinding, spec contracts.ExecutionSpec, cfg execution.Config) error {
+	return c.RunConsumedWithExecutor(ctx, a, spec, cfg, execution.Execute)
+}
+
+// RunConsumedWithExecutor is a trusted in-process test seam, never wire input.
+func (c *Controller) RunConsumedWithExecutor(ctx context.Context, a contracts.ApprovalBinding, spec contracts.ExecutionSpec, cfg execution.Config, execute func(context.Context, execution.Config, contracts.ExecutionSpec) execution.Report) error {
+	var e error
 	runCtx, cancel := context.WithTimeout(ctx, time.Duration(spec.TimeoutSeconds)*time.Second+execution.AuthTimeout+30*time.Second)
 	defer cancel()
 	var sessionTimer *time.Timer
@@ -779,6 +818,9 @@ func (c *Controller) Run(ctx context.Context, a contracts.ApprovalBinding, cfg e
 		r, e := c.load(a.SnapshotID)
 		if e != nil {
 			return e
+		}
+		if r.Phase != contracts.Starting || r.Spec != spec || len(r.Spent) == 0 || r.Spent[len(r.Spent)-1] != a || c.executions[a.SnapshotID] != nil {
+			return ErrGuard
 		}
 		c.executions[a.SnapshotID] = cancel
 		boot, e := c.cfg.Clock.BootElapsed()
@@ -805,7 +847,7 @@ func (c *Controller) Run(ctx context.Context, a contracts.ApprovalBinding, cfg e
 		return e
 	}
 	defer func() { c.store.mu.Lock(); delete(c.executions, a.SnapshotID); c.store.mu.Unlock() }()
-	report := execution.Execute(runCtx, cfg, spec)
+	report := execute(runCtx, cfg, spec)
 	if report.AuthCancelled {
 		return c.Reconcile(a.SnapshotID, contracts.AuthDenied, nil)
 	}

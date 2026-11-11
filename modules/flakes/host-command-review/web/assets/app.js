@@ -50,7 +50,7 @@ function render(r) {
   node('h3', 'Untrusted guest reason', detail); node('pre', r.reason, detail);
   node('h3', 'Complete frozen execution specification and approval binding', detail);
   node('pre', JSON.stringify({spec: r.spec, binding: r.binding}, null, 2), detail);
-  node('p', 'bash --noprofile --norc -c SCRIPT; stdin /dev/null; no PTY. Environment and live cwd are shown above. Root prompts occur in KDE, never enter a password here.', detail);
+  node('p', 'bash --noprofile --norc /proc/self/fd/3; immutable script FD3, never script argv; stdin /dev/null; no PTY. Environment and live cwd are shown above. Root prompts occur in KDE, never enter a password here.', detail);
   const locked = ['starting', 'running'].includes(r.phase);
   if (locked) node('strong', 'Read-only while authenticating/executing. Cancellation requests stop the process tree; they cannot undo side effects. Output stays held.', detail);
   if (['reviewing', 'approved'].includes(r.phase)) {

@@ -33,6 +33,10 @@
       url = "../../modules/flakes/pi-web-access";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    host-command-review = {
+      url = "../../modules/flakes/host-command-review";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     linux-systems.url = "github:nix-systems/x86_64-linux";
     handy = {
       url = "github:cjpais/Handy";
@@ -167,6 +171,7 @@
             inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-yoga
             inputs.musnix.nixosModules.musnix
             ./vms/agent-vm/host.nix
+            ./reviewer-host.nix
             {
               home-manager.sharedModules = [
                 inputs.handy.homeManagerModules.default
@@ -180,6 +185,7 @@
           inherit system specialArgs;
           modules = nixos-modules ++ [
             ./vms/agent-vm/guest.nix
+            ./vms/agent-vm/reviewer-guest.nix
           ];
         };
       };

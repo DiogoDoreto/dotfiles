@@ -1,9 +1,10 @@
 # Host controller / authoritative ledger
 
 Implemented with Go stdlib only, Linux-local files and flock. This is a local
-trusted API, **not an authenticated web backend or an SSH protocol**. Nothing is
-activated/installed; command entrypoints are disabled without trusted build-time
-configuration. Do not advertise this work as a deployed secure reviewer.
+trusted API, **not itself an authenticated web backend or an SSH protocol**.
+`../reviewer` and the manual launcher now connect those seams; see
+[operations](../docs/operations.md). Entrypoints refuse missing trusted build-time
+configuration. Nothing was activated; do not advertise a live-certified reviewer.
 
 ## Integration API
 
@@ -116,7 +117,8 @@ leases, explicit/clock suspend, expiry, recovery, private paths, corruption,
 release/redaction, clean/age cleanup and injection before every write/fsync/close/
 rename/link/temp-unlink boundary. No privileged commands or units are activated.
 
-Integration still owns guest SSH envelope exchange and lease advertisement,
-authenticated web Backend adapter, manual host launcher, actual host path/export
-audit, reliable suspend hooks, periodic retention scheduling, and shutdown
-orchestration. See `../execution/README.md` for execution and live acceptance gates.
+`../reviewer` now implements guest SSH exchange/lease advertisement and the web
+Backend adapter. `cmd/agent-host-review` owns manual startup, sleep monitoring,
+periodic retention and joined shutdown; lapdog also schedules cleanup-only idle GC.
+Actual host path/export/fsync audit, sleep signal delivery and desktop execution
+remain live gates. See `../docs/operations.md` and `../execution/README.md`.

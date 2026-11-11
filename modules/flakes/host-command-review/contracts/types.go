@@ -67,7 +67,9 @@ type Request struct {
 
 // ExecutionSpec is the complete reviewed execution input. Do not add runtime
 // defaults after approval. Shell is a resolved immutable Nix store bash path.
-// Its argv is fixed by v1: --noprofile --norc -c SCRIPT; stdin is /dev/null.
+// Its argv is fixed by unreleased v1: --noprofile --norc /proc/self/fd/3.
+// Script bytes are an immutable unlinked file inherited on FD3, NEVER argv or env.
+// stdin is /dev/null. $0/BASH_SOURCE name /proc/self/fd/3, not a -c invocation.
 type ExecutionSpec struct {
 	Version          int         `json:"version"`
 	Script           string      `json:"script"`

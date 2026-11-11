@@ -1,8 +1,10 @@
 # lapdog loopback reviewer
 
 Host-private stdlib `net/http` + `embed` implementation. No frontend dependencies,
-execution, persistent storage, root helper, guest transport, Nix changes or runnable
-entry point. This package must **not** be exposed in the Agent VM or reverse-proxied.
+execution or persistent storage inside this package. `../reviewer` now supplies
+the authoritative adapter and `cmd/agent-host-review` supplies the manual entrypoint;
+see [operations](../docs/operations.md) for Nix wiring and pending live gates.
+This package must **not** be exposed in the Agent VM or reverse-proxied.
 The foundation root README predates this work; this package implements its web seam.
 Normative shared contracts remain in [`../contracts`](../contracts),
 [`state-machine.md`](../docs/state-machine.md), and

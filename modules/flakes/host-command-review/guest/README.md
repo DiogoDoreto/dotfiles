@@ -1,9 +1,9 @@
 # Guest queue, fixed SSH exchange and native MCP
 
-Implemented for the **lapdog Agent VM workstream only**. No installation,
-activation, Pi configuration, Nix wiring, host execution, approval, web service or
-SSH client is provided here. The root README describes the original foundation;
-this document describes the added guest implementation.
+Implemented for the **lapdog Agent VM workstream only**. Integration now provides
+Nix wiring, native Pi owned-entry merge and a strict-pinned host SSH client;
+see [operations](../docs/operations.md). No activation was performed. The guest
+itself never executes host commands or authorizes host approvals/releases.
 
 ## Trust boundary
 
@@ -227,8 +227,8 @@ cloud.google.com/go/compute/metadata v0.3.0; these are **not** in the MCP binary
 The exchange entry point's `go list -deps` has **zero external packages** because
 MCP lives in the separate `guest/mcpstdio` package. Linux amd64 Go 1.26.10 local
 `go build -trimpath` outputs were approximately **12 MiB MCP / 4 MiB exchange**
-(unstripped); these are binary sizes, not measured Nix closure sizes. No Nix
-build or closure integration has been attempted.
+(unstripped); these are binary sizes, not measured Nix closure sizes. Integration subsequently built Nix guest/host packages and tested native Pi 1.5.0
+configuration merge/connection; closure sizes have not been measured.
 
 ## Validation and remaining work
 
