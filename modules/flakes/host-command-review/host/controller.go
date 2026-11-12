@@ -153,7 +153,7 @@ func NewController(s *Store, cfg Config) (c *Controller, err error) {
 	if cfg.BrowserLease <= 0 || cfg.BrowserLease > 5*time.Second || cfg.ApprovalTTL <= 0 || cfg.ApprovalTTL > time.Minute {
 		return nil, ErrGuard
 	}
-	if _, e := contracts.Freeze(contracts.Proposal{Script: "true", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}, cfg.Shell); e != nil {
+	if _, e := contracts.Freeze(contracts.Proposal{Reason: "Inspect host state", Script: "true", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}, cfg.Shell); e != nil {
 		return nil, e
 	}
 	fd, e := syscall.Openat(int(s.root.Fd()), "reviewer.lock", syscall.O_RDWR|syscall.O_CREAT|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0600)
@@ -401,7 +401,7 @@ func (c *Controller) Edit(id string, revision uint64, p contracts.Proposal) erro
 		if e != nil {
 			return e
 		}
-		if c.editGuard(r, revision) != nil || (r.Phase != contracts.Reviewing && r.Phase != contracts.Approved) {
+		if p.Reason != r.Snapshot.Proposal.Reason || c.editGuard(r, revision) != nil || (r.Phase != contracts.Reviewing && r.Phase != contracts.Approved) {
 			return ErrGuard
 		}
 		if r.Revision == ^uint64(0) {

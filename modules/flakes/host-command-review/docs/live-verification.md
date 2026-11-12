@@ -1,5 +1,10 @@
 # Live lapdog verification record
 
+Historical evidence below uses the former MCP `submit`/`get`/`cancel` interface.
+It does not verify the current `propose_command`/`get_command_status`/
+`request_cancellation` interface or its required reason. See
+[the current interface](command-interface.md); no new live deployment was performed.
+
 ## Scope and evidence
 
 Interactive verification on lapdog, with the human operating the local dog

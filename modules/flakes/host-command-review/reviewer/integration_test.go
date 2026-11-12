@@ -190,7 +190,7 @@ func setup(t *testing.T) (*host.Controller, *guest.Store, Worker, *Adapter, *bro
 }
 func submit(t *testing.T, c *host.Controller, g *guest.Store, n string) contracts.Request {
 	t.Helper()
-	p := contracts.Proposal{Script: "printf PRIVATE_SCRIPT", Cwd: "/private/cwd", User: contracts.Dog, TimeoutSeconds: 120}
+	p := contracts.Proposal{Reason: "PRIVATE_REASON: inspect host state\n<img src=x onerror=alert(1)>", Script: "printf PRIVATE_SCRIPT", Cwd: "/private/cwd", User: contracts.Dog, TimeoutSeconds: 120}
 	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: c.SessionID(), RequestID: strings.Repeat(n, 64), Proposal: &p}
 	r, e := g.Handle(context.Background(), q)
 	if e != nil || r.Status != contracts.Pending {
@@ -232,13 +232,27 @@ func TestSSHHostWebHeldReleaseLifecycle(t *testing.T) {
 	}
 	b.heartbeat()
 	first := b.view().Requests[0]
+	if first.Reason != q.Proposal.Reason {
+		t.Fatal("reason lost in queue/SSH/snapshot/authenticated view")
+	}
+	conflict := *q.Proposal
+	conflict.Reason += " changed"
+	changed := q
+	changed.Proposal = &conflict
+	if r, err := g.Handle(context.Background(), changed); err != nil || r.Error != "conflict" {
+		t.Fatalf("reason-only guest conflict: %+v %v", r, err)
+	}
+	if _, err := c.Import(changed); err == nil {
+		t.Fatal("host accepted reason-only conflict")
+	}
+	b.op(web.Operation{Action: "edit", Binding: first.Binding, Proposal: &conflict}, 409)
 	edited := *q.Proposal
 	edited.Script = "printf HOST_SECRET_SCRIPT"
 	edited.Cwd = "/host/secret"
 	b.op(web.Operation{Action: "edit", Binding: first.Binding, Proposal: &edited}, 200)
 	b.op(web.Operation{Action: "run", Binding: first.Binding}, 409)
 	current := b.view().Requests[0]
-	if current.Binding.Revision != 2 || current.Spec.Script != edited.Script {
+	if current.Reason != first.Reason || current.Binding.Revision != 2 || current.Spec.Script != edited.Script {
 		t.Fatal("edit not frozen")
 	}
 	var calls atomic.Int32
@@ -262,6 +276,10 @@ func TestSSHHostWebHeldReleaseLifecycle(t *testing.T) {
 	}
 	b.heartbeat()
 	v := b.view().Requests[0]
+	record, err := c.View(v.SnapshotID)
+	if err != nil || record.Snapshot.Proposal != *q.Proposal || v.Reason != q.Proposal.Reason {
+		t.Fatal("original proposal/reason changed after host editing/execution", err)
+	}
 	if v.Held == nil || v.Held.Executed.Script != edited.Script {
 		t.Fatal("whole metadata unavailable")
 	}
@@ -281,7 +299,7 @@ func TestSSHHostWebHeldReleaseLifecycle(t *testing.T) {
 	}
 	r := get(t, g, q)
 	x, _ := json.Marshal(r)
-	if r.Artifact == nil || r.Artifact.Executed.Script != "[REDACTED]" || r.Artifact.ExecutionDigest != v.Binding.Digest || bytes.Contains(x, []byte("SECRET")) {
+	if r.Artifact == nil || r.Artifact.Executed.Script != "[REDACTED]" || r.Artifact.ExecutionDigest != v.Binding.Digest || bytes.Contains(x, []byte("SECRET")) || bytes.Contains(x, []byte("PRIVATE_REASON")) || bytes.Contains(x, []byte(`"reason"`)) {
 		t.Fatal("wrong release")
 	}
 	retry, e := g.Handle(context.Background(), q)

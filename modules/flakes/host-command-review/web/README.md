@@ -1,5 +1,15 @@
 # lapdog loopback reviewer
 
+The authenticated view exposes the immutable snapshot's original `reason`, not a
+synthetic request label. The UI labels it agent-provided/untrusted and read-only,
+above editable execution fields, through all states. Plain `textContent`,
+`white-space: pre-wrap` and `overflow-wrap: anywhere` preserve lines without HTML
+interpretation or unbounded horizontal overflow. Host edits retain that reason;
+reason-only changes invalidate substantive UI review and host review offers
+without changing execution hashing. Copyable instructions use `propose_command`
+and returned IDs, never manual ID generation. See [interface/recovery and strict
+old-data compatibility](../docs/command-interface.md).
+
 Host-private stdlib `net/http` + `embed` implementation. No frontend dependencies,
 execution or persistent storage inside this package. `../reviewer` now supplies
 the authoritative adapter and `cmd/agent-host-review` supplies the manual entrypoint;

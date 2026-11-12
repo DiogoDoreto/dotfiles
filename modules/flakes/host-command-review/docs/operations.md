@@ -50,8 +50,8 @@ maintenance (no listener/SSH/session advertisement).
    only the reserved named entry in writable `~/.pi/agent/mcp.json`. It preserves
    unrelated servers and top-level settings, sets `deferred` exposure, and uses
    the immutable guest MCP executable. No whole-file symlink/template or Pi/T3
-   extension. Restart Pi or `/reload`; `pi mcp list` should connect `submit`, `get`,
-   `cancel`. Do not install a replacement `/mcp` extension. The guest queue is
+   extension. Restart Pi or `/reload`; `pi mcp list` should connect `propose_command`,
+   `get_command_status`, `request_cancellation`. Do not install a replacement `/mcp` extension. The guest queue is
    `/home/agent/.local/state/host-review-guest` (0700, agent).
 
 ## Manual session
@@ -62,9 +62,15 @@ startup and every five seconds. It opens a fresh fragment-capability URL through
 xdg-open; it does not print/log the URL. Use the **Host Command Reviewer** desktop launcher for terminal-free use. Repeated
 activation reopens the existing application (including idle state), issues a fresh
 browser bootstrap and leaves the review session unchanged. The UI displays a short
-routing code and copyable agent instructions. Give that code to the guest agent; every tool call supplies `session_id` and a
-fresh guest-chosen 64-lowercase-hex `request_id`. No reviewer means submit returns
-`rejected/no_reviewer`. There is no queue for an eventual future reviewer.
+routing code and copyable agent instructions. Give that code to the agent;
+`propose_command` takes flat `session_id`, `reason`, `script`, `cwd`, `user` and
+optional `timeout_seconds`. Retain the returned canonical `session_id` and generated
+`request_id` for `get_command_status` / `request_cancellation`; never invent IDs.
+Pending is not acceptance. Execution approval and output release are separate.
+Cancellation is not confirmation of stop or rollback. If a submission response is
+lost or ambiguous, do not blindly repeat: reconcile with the human reviewer first.
+See [interface/recovery and old-data compatibility](command-interface.md).
+No reviewer means `rejected/no_reviewer`; no queue for an eventual future reviewer.
 
 Review the full frozen script/cwd/user/environment/runtime/digest and live-filesystem
 warning. Save edits, then review the new revision. Root execution requires a fresh

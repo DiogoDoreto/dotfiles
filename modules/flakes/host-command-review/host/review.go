@@ -11,6 +11,7 @@ import (
 type reviewOffer struct {
 	Binding contracts.ApprovalBinding
 	Phase   contracts.Phase
+	Reason  string
 }
 type Review struct {
 	Record  Record
@@ -33,8 +34,8 @@ func (c *Controller) Reviews() (out []Review, err error) {
 				continue
 			}
 			offer, ok := c.offers[r.Snapshot.SnapshotID]
-			if !ok || offer.Phase != r.Phase || offer.Binding.Revision != r.Revision || offer.Binding.Epoch != c.epoch || offer.Binding.ExpiresUnix <= c.cfg.Clock.Now().Unix() {
-				offer = reviewOffer{contracts.ApprovalBinding{Version: 1, SessionID: c.session, SnapshotID: r.Snapshot.SnapshotID, Revision: r.Revision, Digest: r.Digest, Epoch: c.epoch, Nonce: randomID(), ExpiresUnix: c.cfg.Clock.Now().Add(c.cfg.ApprovalTTL).Unix()}, r.Phase}
+			if !ok || offer.Reason != r.Snapshot.Proposal.Reason || offer.Phase != r.Phase || offer.Binding.Revision != r.Revision || offer.Binding.Epoch != c.epoch || offer.Binding.ExpiresUnix <= c.cfg.Clock.Now().Unix() {
+				offer = reviewOffer{contracts.ApprovalBinding{Version: 1, SessionID: c.session, SnapshotID: r.Snapshot.SnapshotID, Revision: r.Revision, Digest: r.Digest, Epoch: c.epoch, Nonce: randomID(), ExpiresUnix: c.cfg.Clock.Now().Add(c.cfg.ApprovalTTL).Unix()}, r.Phase, r.Snapshot.Proposal.Reason}
 				c.offers[r.Snapshot.SnapshotID] = offer
 			}
 			v := Review{Record: r, Binding: offer.Binding}
@@ -72,12 +73,12 @@ func (c *Controller) ReviewAction(a contracts.ApprovalBinding, action string, p 
 			return e
 		}
 		offer, ok := c.offers[a.SnapshotID]
-		if !ok || offer.Binding != a || offer.Phase != r.Phase || a.Revision != r.Revision || a.Digest != r.Digest {
+		if !ok || offer.Reason != r.Snapshot.Proposal.Reason || offer.Binding != a || offer.Phase != r.Phase || a.Revision != r.Revision || a.Digest != r.Digest {
 			return ErrGuard
 		}
 		switch action {
 		case "edit":
-			if p == nil || r.Phase != contracts.Reviewing {
+			if p == nil || p.Reason != r.Snapshot.Proposal.Reason || r.Phase != contracts.Reviewing {
 				return ErrGuard
 			}
 			s, e := contracts.Freeze(*p, c.cfg.Shell)

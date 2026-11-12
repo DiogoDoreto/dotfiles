@@ -4,6 +4,7 @@
   "session_id": "1111111111111111111111111111111111111111111111111111111111111111",
   "request_id": "2222222222222222222222222222222222222222222222222222222222222222",
   "proposal": {
+    "reason": "Inspect host state",
     "script": "printf '%s\\n' 'review me <not HTML>'",
     "cwd": "/home/dog/projects/example",
     "user": "dog",

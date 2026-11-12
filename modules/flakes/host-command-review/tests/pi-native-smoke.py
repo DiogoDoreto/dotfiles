@@ -27,7 +27,7 @@ with tempfile.TemporaryDirectory(dir=root, prefix="pi-review-smoke-") as home:
     config = directory / "mcp.json"
     config.write_text(json.dumps(before))
     command = [pi, "mcp", "add", "host-review", "--exposure", "deferred",
-               "--description", "Propose/check/cancel lapdog host commands. Requires manual host reviewer and explicit session_id; output stays held until reviewed release.",
+               "--description", "Propose host commands with a reason via propose_command; track returned IDs with get_command_status or request_cancellation. Execution approval and output release are separate. If submission is ambiguous, do not blindly repeat; reconcile with the human reviewer.",
                "--", guest]
     for _ in range(2):
         subprocess.run(command, cwd=home, env=env, check=True, capture_output=True, timeout=20)
@@ -41,6 +41,6 @@ with tempfile.TemporaryDirectory(dir=root, prefix="pi-review-smoke-") as home:
     assert status["errors"] == [], status
     server = next(s for s in status["servers"] if s["name"] == "host-review")
     assert server["state"] == "connected", server
-    assert sorted(server["tools"]) == ["cancel", "get", "submit"], server
+    assert sorted(server["tools"]) == ["get_command_status", "propose_command", "request_cancellation"], server
     assert server["exposure"] == "deferred", server
 print("PASS: repeated owned-entry merge preserves unrelated config; native Pi connects all three tools")

@@ -14,6 +14,22 @@ systemd/polkit/KDE/browser acceptance gates remain pending; see
 [operations](docs/operations.md), [execution](execution/README.md) and
 [the feasibility proof](probe/FINDINGS.md). No deployment was performed.
 
+## Command interface
+
+Use `propose_command` with flat `session_id`, `reason`, `script`, `cwd`, `user`
+and optional `timeout_seconds`. Keep the returned canonical `session_id` and
+server-generated `request_id` for `get_command_status` / `request_cancellation`.
+Execution approval and output release are separate; pending is not acceptance.
+Each independent proposal is new, including identical payloads. If the submission
+response is lost or ambiguous, **do not blindly repeat**; reconcile with the human
+reviewer first. Cancellation is a request, not stop/rollback confirmation.
+
+The original agent-provided reason is required, immutable, at most 2048 UTF-8 bytes,
+and visible throughout host review. It is outside execution hashing and is not
+implicitly released. See [full interface, retry evidence and strict old-data
+incompatibility](docs/command-interface.md). Unreleased-v1 stores without reason
+fail closed; no migration fabricates reasons.
+
 ## Components and authority
 
 | Component | Responsibility |

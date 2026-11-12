@@ -22,7 +22,7 @@ var sid = strings.Repeat("a", 64)
 var rid = strings.Repeat("b", 64)
 
 func proposal(id string) contracts.Request {
-	return contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: id, Proposal: &contracts.Proposal{Script: "printf '<script>secret</script>\\033[31m'", Cwd: "/home/dog", User: contracts.Dog, TimeoutSeconds: 120}}
+	return contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: id, Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: "printf '<script>secret</script>\\033[31m'", Cwd: "/home/dog", User: contracts.Dog, TimeoutSeconds: 120}}
 }
 func store(t *testing.T) *Store {
 	t.Helper()

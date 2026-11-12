@@ -39,7 +39,7 @@ func application(t *testing.T) (*Application, *guest.Store, string) {
 func proposal(t *testing.T, a *Application, g *guest.Store, user contracts.User) web.RequestView {
 	t.Helper()
 	ctx := context.Background()
-	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: a.adapter.Controller.SessionID(), RequestID: strings.Repeat("a", 64), Proposal: &contracts.Proposal{Script: "true", Cwd: "/", User: user, TimeoutSeconds: 120}}
+	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: a.adapter.Controller.SessionID(), RequestID: strings.Repeat("a", 64), Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: "true", Cwd: "/", User: user, TimeoutSeconds: 120}}
 	if _, err := g.Handle(ctx, q); err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func restartActiveWork(t *testing.T, user contracts.User) {
 	if err != nil || id != oldID {
 		t.Fatal("old alias redirected", id, err)
 	}
-	out, err := g.Handle(ctx, contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: id, RequestID: strings.Repeat("b", 64), Proposal: &contracts.Proposal{Script: "true", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}})
+	out, err := g.Handle(ctx, contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: id, RequestID: strings.Repeat("b", 64), Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: "true", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}})
 	if err != nil || out.Error != "no_reviewer" {
 		t.Fatal(out, err)
 	}

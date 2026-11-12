@@ -47,7 +47,7 @@ func TestCleanupSkipsLiveReviewerAndDeletesCrashRaw(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.CloseUnclean()
-	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: c.SessionID(), RequestID: strings.Repeat("a", 64), Proposal: &contracts.Proposal{Script: "echo PRIVATE", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
+	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: c.SessionID(), RequestID: strings.Repeat("a", 64), Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: "echo PRIVATE", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
 	r, err := c.Import(q)
 	if err != nil {
 		t.Fatal(err)
@@ -151,7 +151,7 @@ func TestSleepMonitorInvalidatesAndJoinsChild(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.CloseUnclean()
-	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: c.SessionID(), RequestID: "1111111111111111111111111111111111111111111111111111111111111111", Proposal: &contracts.Proposal{Script: "true", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
+	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: c.SessionID(), RequestID: "1111111111111111111111111111111111111111111111111111111111111111", Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: "true", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
 	if _, err = c.Import(q); err != nil {
 		t.Fatal(err)
 	}

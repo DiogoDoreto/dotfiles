@@ -86,7 +86,8 @@ not host approval. The host maintains its own dedupe record and immutable copy.
 
 ## Guest worker seam
 
-* MCP tools submit/check/cancel, mapping to v1 Request and Reply. No execution,
+* MCP tools propose_command/get_command_status/request_cancellation, mapping to
+  internal v1 submit/check/cancel Request and Reply. See [interface and recovery](command-interface.md). No execution,
   root prompts, approval capabilities, or host-side listening socket in the VM.
 * Reject submissions without an active host-renewed reviewer lease. A compromised
   guest can lie, but cannot mint host approval. Expired routes cannot accumulate

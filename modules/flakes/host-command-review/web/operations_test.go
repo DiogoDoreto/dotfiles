@@ -16,7 +16,7 @@ func TestEditReleaseAndRootAreDistinct(t *testing.T) {
 	if w := operation(t, s, Operation{Action: "run_root", Binding: binding}); w.Code != 409 {
 		t.Fatal("root action accepted for dog spec", w.Code)
 	}
-	p := contracts.Proposal{Script: "true", Cwd: "/", User: contracts.Root, TimeoutSeconds: contracts.DefaultTimeoutSeconds}
+	p := contracts.Proposal{Reason: "Inspect host state", Script: "true", Cwd: "/", User: contracts.Root, TimeoutSeconds: contracts.DefaultTimeoutSeconds}
 	if w := operation(t, s, Operation{Action: "edit", Binding: binding, Proposal: &p}); w.Code != 200 {
 		t.Fatal(w.Code)
 	}

@@ -23,7 +23,7 @@ func store(t *testing.T) *guest.Store {
 	return &guest.Store{Dir: dir}
 }
 func proposal(id string) contracts.Request {
-	return contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: id, Proposal: &contracts.Proposal{Script: "echo hello", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
+	return contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: id, Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: "echo hello", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
 }
 func reply(q contracts.Request, code string) contracts.Reply {
 	return contracts.Reply{Version: 1, SessionID: q.SessionID, RequestID: q.RequestID, Status: contracts.Pending, Error: code}

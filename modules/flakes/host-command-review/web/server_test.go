@@ -44,7 +44,7 @@ func (m *mockBackend) Apply(_ context.Context, o Operation) error {
 func fixture(t *testing.T) (*Server, *mockBackend, string) {
 	t.Helper()
 	id := strings.Repeat("a", 64)
-	spec, err := contracts.Freeze(contracts.Proposal{Script: "echo '<script>secret</script>'", Cwd: "/home/dog", User: contracts.Dog, TimeoutSeconds: 120}, "/nix/store/"+strings.Repeat("a", 32)+"-bash/bin/bash")
+	spec, err := contracts.Freeze(contracts.Proposal{Reason: "Inspect host state", Script: "echo '<script>secret</script>'", Cwd: "/home/dog", User: contracts.Dog, TimeoutSeconds: 120}, "/nix/store/"+strings.Repeat("a", 32)+"-bash/bin/bash")
 	if err != nil {
 		t.Fatal(err)
 	}

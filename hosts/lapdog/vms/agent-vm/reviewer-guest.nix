@@ -11,7 +11,7 @@ in
     home.activation.host-review-mcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run ${pkgs.llm-agents.pi}/bin/pi mcp add host-review \
         --exposure deferred \
-        --description 'Propose/check/cancel lapdog host commands. Requires manual host reviewer and explicit session_id; output stays held until reviewed release.' \
+        --description 'Propose host commands with a reason via propose_command; track returned IDs with get_command_status or request_cancellation. Execution approval and output release are separate. If submission is ambiguous, do not blindly repeat; reconcile with the human reviewer.' \
         -- ${package}/bin/host-review-mcp
     '';
   };

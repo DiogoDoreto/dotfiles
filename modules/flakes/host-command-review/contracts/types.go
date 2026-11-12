@@ -17,6 +17,7 @@ const (
 	Version                  = 1
 	MaxRequestBytes          = 512 << 10 // includes worst-case JSON escaping of script/cwd
 	MaxArtifactBytes         = 8 << 20   // base64 capture plus metadata
+	MaxReasonBytes           = 2048
 	MaxScriptBytes           = 64 << 10
 	CaptureBytes             = 4 << 20
 	DefaultTimeoutSeconds    = 120
@@ -42,6 +43,7 @@ const (
 // Proposal is guest input, copied into a host-private snapshot before review.
 // It cannot set shell, environment, capture limit, or execution authority.
 type Proposal struct {
+	Reason         string `json:"reason"`
 	Script         string `json:"script"`
 	Cwd            string `json:"cwd"`
 	User           User   `json:"user"`
@@ -98,6 +100,9 @@ func CleanEnvironment(user User) Environment {
 }
 
 func Freeze(p Proposal, shell string) (ExecutionSpec, error) {
+	if err := p.Validate(); err != nil {
+		return ExecutionSpec{}, err
+	}
 	s := ExecutionSpec{Version: Version, Script: p.Script, Cwd: p.Cwd, User: p.User,
 		Shell: shell, Environment: CleanEnvironment(p.User), TimeoutSeconds: p.TimeoutSeconds,
 		StopGraceSeconds: StopGraceSeconds, CaptureBytes: CaptureBytes}
@@ -105,6 +110,13 @@ func Freeze(p Proposal, shell string) (ExecutionSpec, error) {
 }
 
 func (p Proposal) Validate() error {
+	if strings.TrimSpace(p.Reason) == "" || len(p.Reason) > MaxReasonBytes || !utf8.ValidString(p.Reason) || strings.ContainsRune(p.Reason, 0) {
+		return fmt.Errorf("reason must be nonblank UTF-8, at most %d bytes, without NUL", MaxReasonBytes)
+	}
+	return p.validateExecutionFields()
+}
+
+func (p Proposal) validateExecutionFields() error {
 	if p.Script == "" || len(p.Script) > MaxScriptBytes || !utf8.ValidString(p.Script) || strings.ContainsRune(p.Script, 0) {
 		return fmt.Errorf("script must be 1..%d bytes without NUL", MaxScriptBytes)
 	}
@@ -141,7 +153,7 @@ func (r Request) Validate() error {
 }
 
 func (s ExecutionSpec) Validate() error {
-	if err := (Proposal{Script: s.Script, Cwd: s.Cwd, User: s.User, TimeoutSeconds: s.TimeoutSeconds}).Validate(); err != nil {
+	if err := (Proposal{Script: s.Script, Cwd: s.Cwd, User: s.User, TimeoutSeconds: s.TimeoutSeconds}).validateExecutionFields(); err != nil {
 		return err
 	}
 	if s.Version != Version || len(s.Shell) > 4096 || !shellPattern.MatchString(s.Shell) || s.Environment != CleanEnvironment(s.User) || s.StopGraceSeconds != StopGraceSeconds || s.CaptureBytes != CaptureBytes {

@@ -54,7 +54,7 @@ func setup(t *testing.T) (*Controller, *fakeClock) {
 	return c, clock
 }
 func proposal() contracts.Proposal {
-	return contracts.Proposal{Script: "printf secret", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}
+	return contracts.Proposal{Reason: "Inspect host state", Script: "printf secret", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}
 }
 func imported(t *testing.T, c *Controller, n string) Record {
 	t.Helper()

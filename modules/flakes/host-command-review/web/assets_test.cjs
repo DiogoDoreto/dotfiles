@@ -239,3 +239,34 @@ test('session identity change discards drafts and bindings rather than transferr
  h.view.session_id='new';h.view.requests=[];await h.run('refresh()');
  assert.equal(d.children.length,0);assert.equal(h.run('current'),null);assert.equal(h.run('leaseUntil'),0);
 });
+
+
+test('original reason is prominent read-only multiline text in every state; reason changes invalidate review', async () => {
+  const h=harness(); await tick();
+  const reason='<img src=x onerror=alert(1)>\n'+'x'.repeat(2048);
+  for (const phase of ['reviewing','approved','starting','running','output_held','ambiguous','released','rejected','cancelled']) {
+    const r={...review(phase),reason};
+    h.context.r=r; h.run('render(r)');
+    const d=h.elements['#detail'], nodes=all(d);
+    const heading=nodes.find(n=>n.className==='original-reason');
+    assert.equal(heading.textContent,reason);
+    assert.ok(nodes.some(n=>n.textContent==='Original reason · agent-provided, untrusted text · read-only'));
+    assert.ok(!nodes.some(n=>['input','textarea'].includes(n.tag)&&n.value===reason));
+    const script=nodes.findIndex(n=>n.tag==='label'&&n.textContent==='Script');
+    if(script>=0) assert.ok(nodes.indexOf(heading)<script);
+    h.context.changed={...r,reason:reason+' changed'};
+    assert.equal(h.run('sameReview(r,changed)'),false);
+  }
+  const css=fs.readFileSync(path.join(__dirname,'assets/style.css'),'utf8');
+  assert.match(css,/\.original-reason[^}]*white-space:\s*pre-wrap/);
+  assert.match(css,/\.original-reason[^}]*overflow-wrap:\s*anywhere/);
+  assert.ok(!fs.readFileSync(path.join(__dirname,'assets/app.js'),'utf8').includes('innerHTML'));
+});
+
+test('copyable instructions use generated IDs and warn against ambiguous resubmission', async () => {
+  const h=harness(); await tick(); h.view.state='active';h.view.session_id='session';h.view.routing_code='ABCD-EFGH';
+  await h.run('refresh()');
+  const copy=h.elements['#instructions'].value;
+  for(const term of ['propose_command','reason','get_command_status','request_cancellation','server-generated request_id','do not blindly repeat']) assert.ok(copy.includes(term),term);
+  assert.ok(!copy.includes('fresh 64-lowercase-hex'));
+});

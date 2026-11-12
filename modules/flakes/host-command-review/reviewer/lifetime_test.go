@@ -115,7 +115,7 @@ func TestWorkerRenewsIndependentlyAndClosesOnExit(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("worker shutdown did not close route/join renewal")
 	}
-	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: c.SessionID(), RequestID: "8888888888888888888888888888888888888888888888888888888888888888", Proposal: &contracts.Proposal{Script: "true", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
+	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: c.SessionID(), RequestID: "8888888888888888888888888888888888888888888888888888888888888888", Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: "true", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
 	r, err := g.Handle(context.Background(), q)
 	if err != nil || r.Error != "no_reviewer" {
 		t.Fatalf("worker exit left a live route: %+v %v", r, err)

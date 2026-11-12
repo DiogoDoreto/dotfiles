@@ -93,8 +93,8 @@ function render(r) {
   current = r; stale = false; detail.replaceChildren();
   status.textContent = r.phase === 'output_held' ? 'Output is private. Review, redact if needed, then preview before release.' : ['reviewing', 'approved'].includes(r.phase) ? 'Review the command before running. Save any edits first.' : (phaseNames[r.phase] || r.phase);
   node('p', phaseNames[r.phase] || r.phase, detail).className = 'eyebrow';
-  node('h2', r.reason || 'No reason supplied by the guest', detail);
-  node('p', 'Reason supplied by the guest · untrusted text', detail).className = 'muted';
+  node('p', 'Original reason · agent-provided, untrusted text · read-only', detail).className = 'muted';
+  node('h2', r.reason, detail).className = 'original-reason';
   const advanced = node('details', undefined, detail); node('summary', 'Execution policy', advanced);
   bindingView = node('p', `Revision ${r.binding.revision || 1} · Frozen by the host`, advanced); bindingView.className = 'muted';
   policy(r.spec, advanced);
@@ -119,7 +119,7 @@ function render(r) {
       if (!script.value.trim() || !cwd.value.startsWith('/') || !Number.isInteger(Number(timeout.value)) || Number(timeout.value) < 1 || Number(timeout.value) > 1800) {
         status.textContent = 'Enter a command, an absolute directory, and a whole-number timeout between 1 and 1800 seconds.'; return;
       }
-      return apply('edit', {proposal: {script: script.value, cwd: cwd.value, user: user.value, timeout_seconds: Number(timeout.value)}});
+      return apply('edit', {proposal: {reason: r.reason, script: script.value, cwd: cwd.value, user: user.value, timeout_seconds: Number(timeout.value)}});
     }, fs, true);
     button('Reject request', () => apply('reject'), detail);
   }
@@ -227,7 +227,7 @@ async function refresh(force = false) {
  const connection = document.querySelector('#connection');
  if (connection) connection.textContent = `Browser approval: ${Date.now() < leaseUntil ? 'connected' : 'disconnected — fresh heartbeat required'} · Agent transport: ${v.transport || 'unknown'}`;
  const instructions = document.querySelector('#instructions');
- if (instructions) instructions.value = active ? `Use host-review MCP with session_id "${v.routing_code || v.session_id}" and a fresh 64-lowercase-hex request_id. Submit proposals, then get status; execution and output release require my separate host review. The code only routes requests; it grants no authority.` : '';
+ if (instructions) instructions.value = active ? `Use host-review MCP propose_command with session_id "${v.routing_code || v.session_id}", reason, script, cwd, user, and optional timeout_seconds. Keep the returned canonical session_id and server-generated request_id for get_command_status or request_cancellation. Execution approval and output release require my separate host review; pending is not acceptance. Cancellation is a request, not proof of stop or rollback. If submission is lost or ambiguous, do not blindly repeat: reconcile with me first. Each independent proposal creates a new request. The code only routes requests; it grants no authority.` : '';
  if (document.querySelector('#start')) document.querySelector('#start').disabled = active || v.state === 'cleanup_failed';
  if (document.querySelector('#restart')) document.querySelector('#restart').disabled = !active;
  document.querySelector('#end').disabled = !active;

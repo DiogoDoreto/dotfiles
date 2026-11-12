@@ -103,7 +103,7 @@ func TestBounds(t *testing.T) {
 	if r.read != MaxRequestBytes+1 {
 		t.Fatalf("read %d", r.read)
 	}
-	p := Proposal{Script: strings.Repeat("x", MaxScriptBytes), Cwd: "/", User: Dog, TimeoutSeconds: MaxTimeoutSeconds}
+	p := Proposal{Reason: "Inspect host state", Script: strings.Repeat("x", MaxScriptBytes), Cwd: "/", User: Dog, TimeoutSeconds: MaxTimeoutSeconds}
 	if err := p.Validate(); err != nil {
 		t.Fatal(err)
 	}

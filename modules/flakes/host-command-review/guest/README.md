@@ -143,7 +143,7 @@ Only `pull` returns items. `lease_seconds` is the remaining lease rounded up,
 0..15; close and errors return 0. A pull item is:
 
 ```json
-{"request":{"version":1,"operation":"submit","session_id":"<same ID>","request_id":"<guest ID>","proposal":{"script":"echo hello","cwd":"/home/dog","user":"dog","timeout_seconds":120}},"cancel_requested":false,"acknowledged":false}
+{"request":{"version":1,"operation":"submit","session_id":"<same ID>","request_id":"<guest ID>","proposal":{"reason":"Inspect host state","script":"echo hello","cwd":"/home/dog","user":"dog","timeout_seconds":120}},"cancel_requested":false,"acknowledged":false}
 ```
 
 Pull returns **all nonterminal records**, including already acknowledged ones,
@@ -172,21 +172,26 @@ response is data, never a path to open or execution instructions.
 `host-review-mcp` uses the official SDK for JSON-RPC, initialization/version
 negotiation, tools/list/call, ping, errors and request cancellation. No HTTP, OAuth
 endpoint, resource, prompt, model content, extension or Pi glue is started. Only
-`submit`, `get`, `cancel` tools are registered. Each tool takes explicit
-`session_id` (long identity or short routing code, optional grouping hyphen/case)
-and guest-chosen `request_id` (64 lowercase hex). Short codes resolve exactly,
-never by prefix; successful replies retain the canonical long session identity. A route is supplied
-by future host/Pi integration; the guest does not discover or authenticate hosts.
-`submit` additionally requires `proposal` with script, cwd, dog/root user and
-optional timeout_seconds, defaulted to **120** before contract validation. There
-is no guest shell/environment selection. `get` maps to foundation `check`.
+`propose_command`, `get_command_status`, `request_cancellation` tools are registered.
+See [the interface and recovery contract](../docs/command-interface.md) for examples,
+reason validation, retry boundaries and intentional unreleased-v1 incompatibility.
+`propose_command` takes flat `session_id`, `reason`, `script`, `cwd`, dog/root `user`
+and optional `timeout_seconds` (default **120**). It generates 32 cryptographically
+random bytes as a lowercase-hex request ID, once per call, before durable storage.
+There is no shell/environment selection. Short routing codes resolve exactly, never
+by prefix; replies contain the canonical long session identity. Status/cancellation
+use the returned `session_id` and `request_id`; status maps to foundation `check`.
 
-The same pair and exact normalized proposal deduplicate, including default-vs-
-explicit timeout; changing any proposal field gives `conflict`. New IDs after a
-mutation need new host review. `cancel` sets a sticky request bit and returns the
-current coarse reply, not a fabricated stopped outcome. Terminal cancel/get and
-submit retries return the same released artifact. MCP JSON-RPC cancellation only
-cancels the current RPC; durable queue cancellation requires the `cancel` tool.
+Internal retransmission of the same pair and exact normalized proposal deduplicates,
+including default-vs-explicit timeout and the original reason. Changed reason or
+execution fields conflict. This does **not** coalesce independent MCP calls: identical
+commands may legitimately be requested again. If a submission response is lost or
+ambiguous, do not blindly repeat; reconcile with the human reviewer first.
+`request_cancellation` sets a sticky request bit and returns the current coarse reply,
+not a fabricated stopped outcome or rollback. Terminal status/cancellation and
+internal same-ID retries return the same released artifact. MCP JSON-RPC cancellation
+only cancels the current RPC; durable queue cancellation requires
+`request_cancellation`.
 
 Each tool result has exactly one text block, the compact JSON encoding of the
 same validated reply in `structuredContent`. There are **no alternative blocks,

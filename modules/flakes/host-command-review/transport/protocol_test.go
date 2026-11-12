@@ -34,7 +34,7 @@ func TestEnvelopeClosed(t *testing.T) {
 func TestResponseSessionBindingAndBounds(t *testing.T) {
 	sid := strings.Repeat("a", 64)
 	rid := strings.Repeat("b", 64)
-	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: rid, Proposal: &contracts.Proposal{Script: "x", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
+	q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: rid, Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: "x", Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
 	r := Response{Version: 1, SessionID: sid, Items: []Item{{Request: q}}, LeaseSeconds: 15}
 	if err := r.Validate(); err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestResponseCapacity100LargeProposals(t *testing.T) {
 	sid := strings.Repeat("a", 64)
 	r := Response{Version: Version, SessionID: sid, LeaseSeconds: LeaseSeconds, Items: []Item{}}
 	for i := 0; i < 100; i++ {
-		q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: fmt.Sprintf("%064x", i), Proposal: &contracts.Proposal{Script: strings.Repeat("\"", 65536), Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
+		q := contracts.Request{Version: 1, Operation: contracts.Submit, SessionID: sid, RequestID: fmt.Sprintf("%064x", i), Proposal: &contracts.Proposal{Reason: "Inspect host state", Script: strings.Repeat("\"", 65536), Cwd: "/", User: contracts.Dog, TimeoutSeconds: 120}}
 		r.Items = append(r.Items, Item{Request: q})
 	}
 	b, err := json.Marshal(r)

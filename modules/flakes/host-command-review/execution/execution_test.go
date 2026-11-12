@@ -23,7 +23,7 @@ func config() Config {
 	return Config{Shell: testShell, SystemdRun: base + "systemd-run", Systemctl: base + "systemctl", Helper: base + "host-command-unit-helper", Runner: base + "host-command-root-runner", RuntimeDir: "/run/host-review", ExpectedUID: 1000}
 }
 func spec() contracts.ExecutionSpec {
-	s, e := contracts.Freeze(contracts.Proposal{Script: "echo secret", Cwd: "/secret/cwd", User: contracts.Dog, TimeoutSeconds: 120}, testShell)
+	s, e := contracts.Freeze(contracts.Proposal{Reason: "Inspect host state", Script: "echo secret", Cwd: "/secret/cwd", User: contracts.Dog, TimeoutSeconds: 120}, testShell)
 	if e != nil {
 		panic(e)
 	}

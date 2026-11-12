@@ -16,12 +16,27 @@ import (
 )
 
 func TestToolArgumentsClosedAndDefaults(t *testing.T) {
-	valid := `{"session_id":"` + sid + `","request_id":"` + rid + `","proposal":{"script":"echo hello","cwd":"/","user":"dog"}}`
-	q, err := toolRequest("submit", []byte(valid))
+	valid := `{"session_id":"` + sid + `","reason":"Inspect host state","script":"echo hello","cwd":"/","user":"dog"}`
+	q, err := toolRequest("propose_command", []byte(valid))
 	if err != nil || q.Proposal.TimeoutSeconds != 120 {
 		t.Fatalf("%+v %v", q, err)
 	}
+	for _, old := range []string{"submit", "get", "cancel"} {
+		if _, err := toolRequest(old, []byte(valid)); err == nil {
+			t.Fatal("old tool alias accepted", old)
+		}
+	}
+	again, err := toolRequest("propose_command", []byte(valid))
+	if err != nil || q.RequestID == again.RequestID || !transport.ValidID(q.RequestID) || !transport.ValidID(again.RequestID) {
+		t.Fatal("independent proposals must have independent random IDs", err)
+	}
 	for _, s := range []string{
+		strings.Replace(valid, `"reason":"Inspect host state"`, `"reason":" "`, 1),
+		strings.Replace(valid, `"reason":"Inspect host state"`, `"reason":"`+strings.Repeat("é", 1025)+`"`, 1),
+		strings.Replace(valid, `"reason":"Inspect host state"`, `"reason":"\ud800"`, 1),
+		strings.Replace(valid, `"reason":"Inspect host state",`, ``, 1),
+		strings.Replace(valid, `"user":"dog"`, `"user":"dog","request_id":"`+rid+`"`, 1),
+		strings.Replace(valid, `"user":"dog"`, `"user":"dog","proposal":{}`, 1),
 		strings.Replace(valid, `"script":"echo hello"`, `"script":"echo hello","scrip\u0074":"other"`, 1),
 		strings.Replace(valid, `"cwd":"/"`, `"Cwd":"/"`, 1),
 		strings.Replace(valid, `"user":"dog"`, `"user":"dog","timeout_seconds":null`, 1),
@@ -31,7 +46,7 @@ func TestToolArgumentsClosedAndDefaults(t *testing.T) {
 		strings.Replace(valid, `echo hello`, strings.Repeat("x", contracts.MaxScriptBytes+1), 1),
 		valid + `{}`, `null`,
 	} {
-		if _, err := toolRequest("submit", []byte(s)); err == nil {
+		if _, err := toolRequest("propose_command", []byte(s)); err == nil {
 			t.Fatalf("accepted %s", s[:min(80, len(s))])
 		}
 	}
@@ -53,20 +68,63 @@ func TestMCPNativeStdioReleasedDataIdentical(t *testing.T) {
 	if err != nil || len(tools.Tools) != 3 {
 		t.Fatalf("tools %v %v", tools, err)
 	}
-	args := map[string]any{"session_id": "abcdefgh", "request_id": rid, "proposal": map[string]any{"script": "echo hello", "cwd": "/", "user": "dog"}}
-	result, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "submit", Arguments: args})
+	names := map[string]bool{}
+	for _, tool := range tools.Tools {
+		names[tool.Name] = true
+		if tool.Description == "" || strings.Contains(tool.Description, "Guest") || strings.Contains(tool.Description, "Agent VM") {
+			t.Fatal("invalid model-facing description", tool)
+		}
+		data, _ := json.Marshal(tool.InputSchema)
+		var schema struct {
+			AdditionalProperties bool `json:"additionalProperties"`
+			Properties           map[string]struct {
+				Description string `json:"description"`
+			} `json:"properties"`
+		}
+		if err := json.Unmarshal(data, &schema); err != nil || schema.AdditionalProperties {
+			t.Fatal("open schema", err)
+		}
+		for field, prop := range schema.Properties {
+			if prop.Description == "" {
+				t.Fatal("missing field description", field)
+			}
+		}
+		_, hasID := schema.Properties["request_id"]
+		if hasID == (tool.Name == "propose_command") {
+			t.Fatal("request ID ownership", tool.Name)
+		}
+		if _, nested := schema.Properties["proposal"]; nested {
+			t.Fatal("nested proposal")
+		}
+	}
+	for _, name := range []string{"propose_command", "get_command_status", "request_cancellation"} {
+		if !names[name] {
+			t.Fatal("missing tool", name)
+		}
+	}
+	args := map[string]any{"session_id": "abcdefgh", "reason": "Inspect host state", "script": "echo hello", "cwd": "/", "user": "dog"}
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "propose_command", Arguments: args})
 	if err != nil || result.IsError {
 		t.Fatalf("submit %v %v", result, err)
 	}
-	if got := checkResult(t, result, contracts.Pending); got.SessionID != sid {
+	submitted := checkResult(t, result, contracts.Pending)
+	requestID := submitted.RequestID
+	second, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "propose_command", Arguments: args})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next := checkResult(t, second, contracts.Pending); next.RequestID == requestID {
+		t.Fatal("independent identical calls coalesced")
+	}
+	if got := submitted; got.SessionID != sid {
 		t.Fatal("noncanonical route", got)
 	}
 	// Hold reveals no original proposal, reviewed metadata, output or exit.
-	r := reply(proposal(rid), "")
+	r := reply(proposal(requestID), "")
 	r.Status = contracts.Held
 	exchange(t, s, "publish", &r)
-	route := map[string]any{"session_id": sid, "request_id": rid}
-	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "get", Arguments: route})
+	route := map[string]any{"session_id": sid, "request_id": requestID}
+	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "get_command_status", Arguments: route})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +140,7 @@ func TestMCPNativeStdioReleasedDataIdentical(t *testing.T) {
 	if out := exchange(t, s, "publish", &r); out.Error != "" {
 		t.Fatal(out)
 	}
-	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "get", Arguments: route})
+	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "get_command_status", Arguments: route})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +149,7 @@ func TestMCPNativeStdioReleasedDataIdentical(t *testing.T) {
 		t.Fatal("release changed")
 	}
 	first, _ := json.Marshal(result)
-	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "cancel", Arguments: route})
+	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "request_cancellation", Arguments: route})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +158,7 @@ func TestMCPNativeStdioReleasedDataIdentical(t *testing.T) {
 		t.Fatal("long-ID cancel changed release")
 	}
 	route["session_id"] = "abcd-efgh"
-	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "get", Arguments: route})
+	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "get_command_status", Arguments: route})
 	if err != nil {
 		t.Fatal(err)
 	}

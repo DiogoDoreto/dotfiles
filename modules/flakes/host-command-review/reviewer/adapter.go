@@ -36,7 +36,7 @@ func (a *Adapter) View(ctx context.Context) (web.View, error) {
 		return out, e
 	}
 	for _, r := range rs {
-		out.Requests = append(out.Requests, web.RequestView{SnapshotID: r.Record.Snapshot.SnapshotID, Reason: "Guest request " + r.Record.Snapshot.RequestID, Phase: r.Record.Phase, Spec: r.Record.Spec, Binding: r.Binding, Held: r.Held})
+		out.Requests = append(out.Requests, web.RequestView{SnapshotID: r.Record.Snapshot.SnapshotID, Reason: r.Record.Snapshot.Proposal.Reason, Phase: r.Record.Phase, Spec: r.Record.Spec, Binding: r.Binding, Held: r.Held})
 	}
 	return out, nil
 }
