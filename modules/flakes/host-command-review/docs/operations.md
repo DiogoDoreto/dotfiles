@@ -59,8 +59,10 @@ maintenance (no listener/SSH/session advertisement).
 Run `agent-host-review` in the **active local dog Plasma session**, not over SSH,
 not as root and not as a service. The launcher verifies loginctl properties at
 startup and every five seconds. It opens a fresh fragment-capability URL through
-xdg-open; it does not print/log the URL. It prints only the routing session ID.
-Give that ID to the guest agent; every tool call supplies `session_id` and a
+xdg-open; it does not print/log the URL. Use the **Host Command Reviewer** desktop launcher for terminal-free use. Repeated
+activation reopens the existing application (including idle state), issues a fresh
+browser bootstrap and leaves the review session unchanged. The UI displays a short
+routing code and copyable agent instructions. Give that code to the guest agent; every tool call supplies `session_id` and a
 fresh guest-chosen 64-lowercase-hex `request_id`. No reviewer means submit returns
 `rejected/no_reviewer`. There is no queue for an eventual future reviewer.
 
@@ -83,7 +85,10 @@ SSH/MCP checks return identical published bytes and never run anything. Guest
 status is coarse before release; execution errors and private diagnostics are not
 forwarded. Guest timing still leaks coarse lifecycle timing.
 
-End with the web End button or Ctrl-C. Shutdown blocks admission, cancels and joins
+End with the web End button to leave an idle application. Start and Restart create
+fresh sessions only after successful end/reap/cleanup. Quit or Ctrl-C ends the
+session and exits the application. See [session experience](session-experience.md)
+for the detailed lifecycle, duplicate-tab policy and routing/retention adjustments. Shutdown blocks admission, cancels and joins
 execution goroutines, revokes web liveness, publishes final coarse/released ledger
 data while renewal continues where possible, closes the guest route, reaps SSH and
 dbus-monitor, and deletes raw captures. A network loss may prevent final status
@@ -98,7 +103,9 @@ publication; it never grants a new approval or reconnects an expired route.
 * Browser POST heartbeat: every three seconds while visible, advertised ten seconds;
   controller conservatively clamps to **five seconds**. Browser loss blocks new
   approvals/consume/release at expiry; already-consumed work may finish. Reload
-  loses in-memory auth; restart the reviewer for a new bootstrap capability.
+  restores bounded tab-scoped credentials and explicitly claims approval ownership
+  (newest loaded tab wins), requiring a fresh heartbeat. Auth has a fixed independent
+  four-hour cap; reopen via the application launcher after it expires.
 * Four-hour cap uses monotonic and suspend-inclusive clocks. dbus-monitor observes
   login1 PrepareForSleep, revoking epoch/browser lease on sleep/resume. The host
   also ticks every 250ms and detects clock discrepancies. Signals are asynchronous,
@@ -121,7 +128,9 @@ publication; it never grants a new approval or reconnects an expired route.
   of deleting bytes on a powered-off disk. Filesystem deletion is not secure erase.
 * Queue bounds are explicit: 100 nonterminal guest requests per session and
   sixteen live guest routes. Terminal request history and closed-route tombstones
-  do not consume admission slots; their seven-day retention is unchanged. The
+  do not consume admission slots. History retains its seven-day policy; short-code
+  reservations are permanent within the bounded guest database to prevent stale-code
+  redirection (see session experience). The
   host also limits outstanding work to 100 requests in the current session;
   released/denied/stopped/ambiguous history and previous sessions do not consume
   those slots. Host history has a separate 2 GiB encoded-file/name byte budget,

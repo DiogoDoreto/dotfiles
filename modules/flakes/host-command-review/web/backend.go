@@ -22,8 +22,12 @@ type Backend interface {
 }
 
 type View struct {
-	SessionID string        `json:"session_id"`
-	Requests  []RequestView `json:"requests"`
+	SessionID   string        `json:"session_id"`
+	Requests    []RequestView `json:"requests"`
+	RoutingCode string        `json:"routing_code"`
+	ExpiresUnix int64         `json:"expires_unix"`
+	State       string        `json:"state"`
+	Transport   string        `json:"transport"`
 }
 
 type RequestView struct {
@@ -46,7 +50,7 @@ type Operation struct {
 }
 
 func (o Operation) valid() bool {
-	if o.Action == "end" {
+	if o.Action == "end" || o.Action == "start" || o.Action == "restart" || o.Action == "quit" {
 		return o.Binding == (contracts.ApprovalBinding{}) && o.Proposal == nil && o.Artifact == nil
 	}
 	if o.Binding.Validate() != nil {

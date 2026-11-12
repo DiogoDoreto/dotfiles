@@ -13,29 +13,31 @@ class Element {
   querySelectorAll() { return this.children.flatMap(n => [n, ...n.querySelectorAll()]); }
   async emit(event) { for (const fn of this.events[event] || []) await fn(); }
 }
-function harness() {
-  const elements = Object.fromEntries(['status','detail','list','refresh','end'].map(id => [`#${id}`,new Element('div')]));
+function harness(options = {}) {
+ const stored = options.stored || new Map();
+ const storage = {setItem:(k,v)=>stored.set(k,v),getItem:k=>stored.get(k)||null,removeItem:k=>stored.delete(k)};
+  const elements = Object.fromEntries(['status','detail','list','refresh','start','end','restart','quit','session','connection','instructions','copy'].map(id => [`#${id}`,new Element('div')]));
   const calls = [], history = [];
   const view = {requests:[]};
   let now = Date.now();
   class Clock extends Date { static now() { return now; } }
   const context = vm.createContext({
     document: {querySelector: s => elements[s], createElement: tag => new Element(tag), addEventListener() {}, visibilityState:'visible'},
-    location: {hash:'#fragment-secret'}, history: {replaceState: (...args) => history.push(args)},
+    location: {hash: options.hash === undefined ? '#fragment-secret' : options.hash}, history: {replaceState: (...args) => history.push(args)},
     fetch: async (url, options) => {
       calls.push({url, options});
       return {ok:true,json:async () => url.endsWith('bootstrap') ? {auth:'auth-secret',csrf:'csrf-secret'} : url.endsWith('heartbeat') ? {lease_seconds:10} : structuredClone(view)};
-    }, structuredClone, TextEncoder, TextDecoder, atob, btoa, confirm:()=>true, setInterval() {}, Date: Clock, JSON, Uint8Array,
+    }, crypto: require('node:crypto').webcrypto, sessionStorage: storage, structuredClone, TextEncoder, TextDecoder, atob, btoa, confirm:()=>true, setInterval() {}, Date: Clock, JSON, Uint8Array,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'assets/app.js'),'utf8'), context);
-  return {context,elements,calls,history,view,advance:ms=>{now+=ms;},now:()=>now,run:code=>vm.runInContext(code,context)};
+  return {context,elements,calls,history,view,stored,advance:ms=>{now+=ms;},now:()=>now,run:code=>vm.runInContext(code,context)};
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function all(e) { return e.querySelectorAll(); }
 function button(e,label) { const b = all(e).find(n => n.tag==='button' && n.textContent.startsWith(label)); assert.ok(b,label); return b; }
 function input(e,label) { const l = all(e).find(n=>n.tag==='label' && n.textContent===label); assert.ok(l,label); return l.children[0]; }
 
-test('fragment removed, credentials kept in memory, polling GET only', async () => {
+test('fragment removed, bounded tab credentials and polling GET only', async () => {
   const h = harness(); await tick();
   assert.equal(h.history[0][2],'/');
   assert.equal(h.calls[0].url,'/api/bootstrap');
@@ -213,4 +215,27 @@ test('real held artifact changes invalidate preview/release and require explicit
   await h.run(`apply('release', {artifact:{}})`);assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
   await button(h.elements['#list'],'guest').emit('click');
   assert.equal(input(d,'Export stderr').value,'new private data');assert.equal(button(d,'Release reviewed').disabled,true);
+});
+
+test('reload uses bounded tab auth, claims once, and heartbeats before viewing', async()=>{
+ const creds={auth:'a'.repeat(64),csrf:'b'.repeat(64),expires_unix:Math.floor(Date.now()/1000)+600};
+ const stored=new Map([['host-review-auth-v1',JSON.stringify(creds)]]);
+ const h=harness({hash:'',stored});await tick();
+ assert.deepEqual(h.calls.map(c=>c.url),['/api/claim','/api/heartbeat','/api/view']);
+ assert.equal(h.calls[0].options.headers.Authorization,`Bearer ${creds.auth}`);
+ const tab=JSON.parse(h.calls[0].options.body).tab;assert.match(tab,/^[0-9a-f]{64}$/);
+ const clone=harness({hash:'',stored});await tick();assert.notEqual(JSON.parse(clone.calls[0].options.body).tab,tab);
+ assert.equal(JSON.parse(stored.get('host-review-auth-v1')).expires_unix,creds.expires_unix);
+});
+test('expired or oversized stored credentials are removed without network access',async()=>{
+ for(const value of ['x'.repeat(513),JSON.stringify({auth:'a'.repeat(64),csrf:'b'.repeat(64),expires_unix:1})]){
+ const stored=new Map([['host-review-auth-v1',value]]);const h=harness({hash:'',stored});await tick();
+ assert.equal(h.calls.length,0);assert.equal(stored.size,0);
+ }
+});
+test('session identity change discards drafts and bindings rather than transferring them',async()=>{
+ const h=harness();await tick();h.view.session_id='old';await select(h,review());
+ const d=h.elements['#detail'];input(d,'Script').value='private draft';await input(d,'Script').emit('input');
+ h.view.session_id='new';h.view.requests=[];await h.run('refresh()');
+ assert.equal(d.children.length,0);assert.equal(h.run('current'),null);assert.equal(h.run('leaseUntil'),0);
 });

@@ -68,6 +68,7 @@ func request(s *Server, method, path, body string, auth bool) *httptest.Response
 	if auth {
 		r.Header.Set("Authorization", "Bearer "+s.auth)
 		r.Header.Set("X-CSRF-Token", s.csrf)
+		r.Header.Set("X-Review-Tab", s.tab)
 	}
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, r)
@@ -78,6 +79,9 @@ func login(t *testing.T, s *Server, token string) {
 	w := request(s, "POST", "/api/bootstrap", `{"token":"`+token+`"}`, false)
 	if w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())
+	}
+	if w := request(s, "POST", "/api/claim", `{"tab":"`+strings.Repeat("1", 64)+`"}`, true); w.Code != 200 {
+		t.Fatal(w.Code)
 	}
 }
 func operation(t *testing.T, s *Server, o Operation) *httptest.ResponseRecorder {
@@ -234,8 +238,8 @@ func TestExpiryAndEnd(t *testing.T) {
 	if !m.lease.IsZero() {
 		t.Fatal("lease not revoked")
 	}
-	if w := request(s, "GET", "/api/view", "", true); w.Code != 401 {
-		t.Fatal(w.Code)
+	if w := request(s, "GET", "/api/view", "", true); w.Code != 200 {
+		t.Fatal("application auth must survive session end", w.Code)
 	}
 	s, _, token = fixture(t)
 	login(t, s, token)
@@ -260,7 +264,7 @@ func TestSecurityHeadersAssetsAndMethods(t *testing.T) {
 		}
 	}
 	js, _ := assets.ReadFile("assets/app.js")
-	for _, bad := range []string{"innerHTML", "insertAdjacentHTML", "localStorage", "sessionStorage", "eval("} {
+	for _, bad := range []string{"innerHTML", "insertAdjacentHTML", "localStorage.", "eval("} {
 		if strings.Contains(string(js), bad) {
 			t.Fatal(bad)
 		}

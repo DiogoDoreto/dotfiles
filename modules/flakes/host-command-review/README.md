@@ -1,7 +1,7 @@
 # Manual lapdog host-command reviewer — integrated, not live-certified
 
 The Agent VM proposes commands through native Pi MCP. A **manually started**
-foreground `agent-host-review` in dog's local active Plasma session pulls proposals
+`agent-host-review` application in dog's local active Plasma session pulls proposals
 using strict-pinned SSH, imports immutable host snapshots, and opens an authenticated
 loopback web reviewer. Only that host reviewer can approve execution or release
 results. Guest root controls all guest data; routing IDs are not credentials.
@@ -24,7 +24,8 @@ systemd/polkit/KDE/browser acceptance gates remain pending; see
 | `execution/`, `cmd/host-command-{root-runner,unit-helper}` | Fresh two-stage start gates, private framed stdio and leases, pkexec for root, systemd transient services, FD3 script, bounded capture/cleanup |
 | `web/` | Authenticated loopback HTTP + embedded plain-text UI, browser liveness, full execution/release preview, no frontend dependency |
 | `reviewer/` | Backend adapter and strict SSH client/worker; this is the only join between host authority, browser and untrusted guest |
-| `cmd/agent-host-review` | Manual foreground launcher, trusted runtime config, local Plasma checks, deliberate pin enrollment, sleep monitor, retention timer and shutdown/reaping |
+| `cmd/agent-host-review` | Manual idempotent desktop launcher/private control socket, trusted runtime config, local Plasma checks, pin enrollment, sleep monitor and shutdown/reaping |
+| `reviewer.Application` | Independent application/session lifetime; idle, start/end/restart/quit with joined cleanup before replacement |
 | `flake.nix` | `packages.x86_64-linux.{host,guest}`, `lib.mkHost`; immutable runner/helper/tool paths and UID injected at build time |
 | `hosts/lapdog/{reviewer-host.nix,vms/agent-vm/reviewer-guest.nix}` (repository root) | Dedicated noncached polkit action/rules and root runtime; guest package and Pi-owned named MCP entry merge |
 
@@ -53,7 +54,8 @@ codes, never raw host diagnostics.
   commands can defeat their own systemd limits; no malicious-root containment.
 
 Exact JSON bounds, canonical digest encoding and parsers are documented in source
-and component READMEs. IDs/nonces are random 32-byte lowercase hex; guest IDs are
+and component READMEs. Internal IDs/nonces are random 32-byte lowercase hex; a separate eight-symbol
+routing alias is accepted by MCP (see [session experience](docs/session-experience.md)). Guest IDs are
 untrusted data, never host paths. Before release, guest status carries no executed
 metadata, output, exit info, host errors or approval capabilities. Redaction is
 limited to script/cwd/stdout/stderr with explicit markers; sensitive non-redactable

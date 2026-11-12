@@ -33,6 +33,7 @@ type Request struct {
 	Operation string           `json:"operation"`
 	SessionID string           `json:"session_id"`
 	Label     string           `json:"label,omitempty"`
+	Alias     string           `json:"alias,omitempty"`
 	Reply     *contracts.Reply `json:"reply,omitempty"`
 }
 type Item struct {
@@ -54,15 +55,20 @@ func (r Request) Validate() error {
 	}
 	switch r.Operation {
 	case "announce":
+		if r.Alias != "" {
+			if a, e := CanonicalAlias(r.Alias); e != nil || a != r.Alias {
+				return fmt.Errorf("invalid alias")
+			}
+		}
 		if !label.MatchString(r.Label) || r.Reply != nil {
 			return fmt.Errorf("invalid announcement")
 		}
 	case "renew", "pull", "close":
-		if r.Label != "" || r.Reply != nil {
+		if r.Label != "" || r.Alias != "" || r.Reply != nil {
 			return fmt.Errorf("unexpected payload")
 		}
 	case "publish":
-		if r.Label != "" || r.Reply == nil || r.Reply.SessionID != r.SessionID {
+		if r.Label != "" || r.Alias != "" || r.Reply == nil || r.Reply.SessionID != r.SessionID {
 			return fmt.Errorf("invalid publication")
 		}
 		if err := r.Reply.Validate(); err != nil {

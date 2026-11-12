@@ -14,6 +14,7 @@ import (
 type Worker struct {
 	Controller *host.Controller
 	Exchange   Exchange
+	Alias      string
 }
 
 func (w Worker) call(ctx context.Context, op string) (transport.Response, error) {
@@ -87,7 +88,7 @@ func (w Worker) Publish(ctx context.Context) error {
 // Run renews independently of pulls/publications. Any lost renewal ends this
 // session, never reconnects it. Publication retries are data-only, not execution.
 func (w Worker) Run(ctx context.Context) error {
-	if _, e := w.Exchange.Call(ctx, transport.Request{Version: 1, Operation: "announce", SessionID: w.Controller.SessionID(), Label: "lapdog"}); e != nil {
+	if _, e := w.Exchange.Call(ctx, transport.Request{Version: 1, Operation: "announce", SessionID: w.Controller.SessionID(), Label: "lapdog", Alias: w.Alias}); e != nil {
 		return e
 	}
 	ctx, cancel := context.WithCancel(ctx)

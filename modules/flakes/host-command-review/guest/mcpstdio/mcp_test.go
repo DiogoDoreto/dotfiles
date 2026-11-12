@@ -12,6 +12,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"host-command-review/contracts"
 	"host-command-review/guest"
+	"host-command-review/transport"
 )
 
 func TestToolArgumentsClosedAndDefaults(t *testing.T) {
@@ -37,7 +38,9 @@ func TestToolArgumentsClosedAndDefaults(t *testing.T) {
 }
 func TestMCPNativeStdioReleasedDataIdentical(t *testing.T) {
 	s := store(t)
-	announce(t, s)
+	if r, e := s.Exchange(context.Background(), transport.Request{Version: 1, Operation: "announce", SessionID: sid, Label: "lapdog", Alias: "ABCD-EFGH"}); e != nil || r.Error != "" {
+		t.Fatal(r, e)
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 	client := mcp.NewClient(&mcp.Implementation{Name: "guest-test", Version: "1"}, nil)
@@ -50,12 +53,14 @@ func TestMCPNativeStdioReleasedDataIdentical(t *testing.T) {
 	if err != nil || len(tools.Tools) != 3 {
 		t.Fatalf("tools %v %v", tools, err)
 	}
-	args := map[string]any{"session_id": sid, "request_id": rid, "proposal": map[string]any{"script": "echo hello", "cwd": "/", "user": "dog"}}
+	args := map[string]any{"session_id": "abcdefgh", "request_id": rid, "proposal": map[string]any{"script": "echo hello", "cwd": "/", "user": "dog"}}
 	result, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "submit", Arguments: args})
 	if err != nil || result.IsError {
 		t.Fatalf("submit %v %v", result, err)
 	}
-	checkResult(t, result, contracts.Pending)
+	if got := checkResult(t, result, contracts.Pending); got.SessionID != sid {
+		t.Fatal("noncanonical route", got)
+	}
 	// Hold reveals no original proposal, reviewed metadata, output or exit.
 	r := reply(proposal(rid), "")
 	r.Status = contracts.Held
@@ -91,6 +96,15 @@ func TestMCPNativeStdioReleasedDataIdentical(t *testing.T) {
 		t.Fatal(err)
 	}
 	again, _ := json.Marshal(result)
+	if !bytes.Equal(first, again) {
+		t.Fatal("long-ID cancel changed release")
+	}
+	route["session_id"] = "abcd-efgh"
+	result, err = cs.CallTool(ctx, &mcp.CallToolParams{Name: "get", Arguments: route})
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, _ = json.Marshal(result)
 	if !bytes.Equal(first, again) {
 		t.Fatal("cancel changed immutable release")
 	}

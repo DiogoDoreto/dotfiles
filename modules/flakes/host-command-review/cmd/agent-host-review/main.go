@@ -1,4 +1,4 @@
-// agent-host-review is manual and foreground-only. It installs no daemon.
+// agent-host-review is an explicitly launched desktop application, not a daemon.
 package main
 
 import (
@@ -13,6 +13,7 @@ import (
 	"host-command-review/reviewer"
 	"host-command-review/web"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -23,7 +24,7 @@ import (
 )
 
 var shell, systemdRun, systemctl, helper, runner, rootRuntime, userRuntime, expectedUID string
-var ssh, loginctl, dbusMonitor, opener, guestAddress, guestUser, identity string
+var ssh, loginctl, dbusMonitor, opener, notifier, guestAddress, guestUser, identity string
 
 const state = "/home/dog/.local/state/agent-host-review"
 const knownHosts = "/home/dog/.local/state/agent-host-review-pins/known_hosts"
@@ -31,6 +32,11 @@ const knownHosts = "/home/dog/.local/state/agent-host-review-pins/known_hosts"
 func main() {
 	if e := run(); e != nil {
 		fmt.Fprintln(os.Stderr, "host reviewer stopped:", e)
+		if notifier != "" && len(os.Args) == 1 {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			_ = exec.CommandContext(ctx, notifier, "--error", "Host Command Reviewer could not start or stopped safely. Check the private store, SSH pin, and active local Plasma session. No automatic execution retry was attempted.").Run()
+		}
 		os.Exit(1)
 	}
 }
@@ -93,25 +99,54 @@ func run() error {
 	if e = os.Mkdir(userRuntime, 0700); e != nil && !os.IsExist(e) {
 		return e
 	}
+	controlStore, lock, owner, e := controlLock(userRuntime + "/application")
+	if e != nil {
+		return e
+	}
+	defer controlStore.Close()
+	defer lock.Close()
+	socketPath := userRuntime + "/application/control.sock"
+	if !owner {
+		url, err := controlOpen(socketPath)
+		if err != nil {
+			return err
+		}
+		return openBrowser(ctx, url)
+	}
+	// Only the owner of the stable lock may unlink a stale socket.
+	if st, err := os.Lstat(socketPath); err == nil {
+		if st.Mode()&os.ModeSocket == 0 {
+			return errors.New("unsafe control socket")
+		}
+		if err = os.Remove(socketPath); err != nil {
+			return err
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	listener, e := net.ListenUnix("unix", &net.UnixAddr{Name: socketPath, Net: "unix"})
+	if e != nil {
+		return e
+	}
+	defer listener.Close()
+	if e = os.Chmod(socketPath, 0600); e != nil {
+		return e
+	}
 	store, e := host.OpenStore(state, nil)
 	if e != nil {
 		return e
 	}
 	defer store.Close()
-	controller, e := host.NewController(store, host.Config{Shell: shell, BrowserLease: 5 * time.Second})
-	if e != nil {
-		return e
-	}
-	defer controller.CloseUnclean()
-	adapter := &reviewer.Adapter{Controller: controller, Execution: cfg, Context: ctx, Stop: cancel}
-	server, url, e := web.New(adapter)
+	app := &reviewer.Application{Store: store, Execution: cfg, Exchange: reviewer.SSH{Executable: ssh, Address: guestAddress, User: guestUser, Identity: identity, KnownHosts: knownHosts}, Quit: cancel}
+	defer app.Shutdown()
+	server, url, e := web.New(app)
 	if e != nil {
 		return e
 	}
 	defer server.Close()
 	monitorCtx, monitorStop := context.WithCancel(context.Background())
 	defer monitorStop()
-	monErr, ready, monitorDone := monitor(monitorCtx, controller)
+	monErr, ready, monitorDone := monitor(monitorCtx, app)
 	defer func() { monitorStop(); <-monitorDone }()
 	select {
 	case <-ready:
@@ -120,27 +155,20 @@ func run() error {
 	case <-time.After(3 * time.Second):
 		return errors.New("suspend monitor unavailable")
 	}
-	workerCtx, workerStop := context.WithCancel(context.Background())
-	defer workerStop()
-	worker := reviewer.Worker{Controller: controller, Exchange: reviewer.SSH{Executable: ssh, Address: guestAddress, User: guestUser, Identity: identity, KnownHosts: knownHosts}}
-	workerErr := make(chan error, 1)
-	workerDone := make(chan struct{})
-	go func() { defer close(workerDone); workerErr <- worker.Run(workerCtx) }()
-	defer func() { workerStop(); <-workerDone }()
+	if e = app.Start(); e != nil {
+		return e
+	}
+	controlDone := make(chan struct{})
+	go func() { defer close(controlDone); controlServe(listener, server.BootstrapURL) }()
+	defer func() { _ = listener.Close(); <-controlDone }()
 	serverErr := make(chan error, 1)
 	go func() { serverErr <- server.Serve() }()
 	// Do not print/log the bootstrap URL. The desktop opener alone receives it.
-	openCtx, openStop := context.WithTimeout(ctx, 10*time.Second)
-	cmd := exec.CommandContext(openCtx, opener, url)
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	cmd.WaitDelay = time.Second
-	e = cmd.Run()
-	openStop()
+	e = openBrowser(ctx, url)
 	if e != nil {
 		cancel()
 	}
-	fmt.Println("Manual lapdog reviewer running. Session routing ID:", controller.SessionID())
+	fmt.Println("Manual lapdog reviewer application running.")
 	tick := time.NewTicker(250 * time.Millisecond)
 	defer tick.Stop()
 	sweep := time.NewTicker(time.Minute)
@@ -156,19 +184,16 @@ loop:
 		case failure = <-serverErr:
 			cancel()
 			break loop
-		case failure = <-workerErr:
-			cancel()
-			break loop
 		case failure = <-monErr:
 			cancel()
 			break loop
 		case <-tick.C:
-			if failure = controller.Tick(); failure != nil {
+			if failure = app.Tick(); failure != nil {
 				cancel()
 				break loop
 			}
 		case <-sweep.C:
-			if failure = controller.Sweep(false); failure != nil {
+			if failure = app.Sweep(); failure != nil {
 				cancel()
 				break loop
 			}
@@ -182,17 +207,10 @@ loop:
 	// Keep the guest lease renewing while cancellation is reaped/reconciled. Then
 	// publish final coarse/released ledger data before closing the guest route.
 	_ = server.Close()
-	if e = adapter.Shutdown(); e != nil {
+	if e = app.Shutdown(); e != nil {
 		failure = e
 	}
-	finalCtx, finalStop := context.WithTimeout(context.Background(), 4*time.Second)
-	_ = worker.Publish(finalCtx)
-	finalStop()
-	workerStop()
 	monitorStop()
-	// Each SSH exchange has its own deadline; join rather than abandoning a
-	// goroutine that can still access the store. Also reap dbus-monitor above.
-	<-workerDone
 	return failure
 }
 
@@ -220,7 +238,7 @@ func cleanupStore(path, trustedShell string) error {
 	return c.End()
 }
 
-func monitor(ctx context.Context, c *host.Controller) (<-chan error, <-chan struct{}, <-chan struct{}) {
+func monitor(ctx context.Context, c interface{ Invalidate() error }) (<-chan error, <-chan struct{}, <-chan struct{}) {
 	errs := make(chan error, 1)
 	ready := make(chan struct{})
 	done := make(chan struct{})

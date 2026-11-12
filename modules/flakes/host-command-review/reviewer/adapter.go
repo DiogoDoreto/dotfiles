@@ -3,6 +3,7 @@ package reviewer
 
 import (
 	"context"
+	"errors"
 	"host-command-review/contracts"
 	"host-command-review/execution"
 	"host-command-review/host"
@@ -90,16 +91,23 @@ func (a *Adapter) Apply(ctx context.Context, o web.Operation) error {
 	}()
 	return nil
 }
-func (a *Adapter) Shutdown() error {
+
+// Quiesce stops authority and joins executions, keeping captures and the
+// singleton for final publication and route closure before cleanup.
+func (a *Adapter) Quiesce() error {
 	a.mu.Lock()
 	a.closing = true
 	a.Stop()
-	_ = a.Controller.End()
+	first := a.Controller.BeginEnd()
 	a.mu.Unlock()
 	a.wg.Wait()
+	return errors.Join(first, a.Controller.BeginEnd())
+}
+func (a *Adapter) Shutdown() error {
+	first := a.Quiesce()
 	if e := a.Controller.End(); e != nil {
 		_ = a.Controller.CloseUnclean()
-		return e
+		return errors.Join(first, e)
 	}
-	return nil
+	return first
 }

@@ -29,15 +29,17 @@ const BootstrapLifetime = 2 * time.Minute
 const maxBody = 9 << 20 // bounded base64 capture plus worst-case metadata escaping
 
 // Server owns a fresh IPv4 loopback listener. Do not wrap Handler behind a proxy
-// or expose it on another listener. Header capabilities live only in browser RAM.
+// or expose it on another listener. Browser credentials use bounded tab storage.
 type Server struct {
 	HTTP                          *http.Server
 	listener                      net.Listener
 	backend                       Backend
 	origin, bootstrap, auth, csrf string
 	created, exchanged, lease     time.Time
+	bootstrapIssued               time.Time
 	mu                            sync.Mutex
 	ended                         bool
+	tab                           string
 }
 
 // New binds 127.0.0.1:0 itself; callers cannot accidentally bind a public address.
@@ -50,7 +52,7 @@ func New(backend Backend) (*Server, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	s := &Server{listener: l, backend: backend, created: time.Now()}
+	s := &Server{listener: l, backend: backend, created: time.Now(), tab: "unclaimed"}
 	for _, p := range []*string{&s.bootstrap, &s.auth, &s.csrf} {
 		b := make([]byte, 32)
 		if _, err = rand.Read(b); err != nil {
@@ -126,7 +128,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write(b)
 		return
 	}
-	if r.URL.Path != "/api/bootstrap" && r.URL.Path != "/api/view" && r.URL.Path != "/api/heartbeat" && r.URL.Path != "/api/operation" {
+	if r.URL.Path != "/api/bootstrap" && r.URL.Path != "/api/view" && r.URL.Path != "/api/heartbeat" && r.URL.Path != "/api/operation" && r.URL.Path != "/api/claim" {
 		fail(w, 404)
 		return
 	}
@@ -149,7 +151,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock() // never concurrently renew/revoke a web lease
 	now := time.Now()
-	if s.ended || now.Sub(s.created) >= time.Duration(contracts.MaxSessionSeconds)*time.Second {
+	if s.ended || (r.URL.Path != "/api/bootstrap" && now.Sub(s.created) >= time.Duration(contracts.MaxSessionSeconds)*time.Second) {
 		fail(w, 401)
 		return
 	}
@@ -161,16 +163,33 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fail(w, 400)
 			return
 		}
-		if s.bootstrap == "" || now.Sub(s.created) > BootstrapLifetime || !equal(input.Token, s.bootstrap) {
+		issued := s.bootstrapIssued
+		if issued.IsZero() {
+			issued = s.created
+		}
+		if s.bootstrap == "" || now.Sub(issued) > BootstrapLifetime || !equal(input.Token, s.bootstrap) {
 			fail(w, 401)
 			return
 		}
+		if !s.bootstrapIssued.IsZero() {
+			_, auth, csrf, err := browserTokens()
+			if err != nil || s.backend.Reviewer(r.Context(), time.Time{}) != nil {
+				fail(w, 409)
+				return
+			}
+			s.auth, s.csrf = auth, csrf
+			s.created = now
+			s.lease = time.Time{}
+			s.tab = "unclaimed"
+		}
 		s.bootstrap = ""
+		s.bootstrapIssued = time.Time{}
 		s.exchanged = now
 		reply(w, struct {
-			Auth string `json:"auth"`
-			CSRF string `json:"csrf"`
-		}{s.auth, s.csrf})
+			Auth        string `json:"auth"`
+			CSRF        string `json:"csrf"`
+			ExpiresUnix int64  `json:"expires_unix"`
+		}{s.auth, s.csrf, s.created.Add(time.Duration(contracts.MaxSessionSeconds) * time.Second).Unix()})
 		return
 	}
 	if s.exchanged.IsZero() || len(r.Header.Values("Authorization")) != 1 || !equal(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), s.auth) || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
@@ -179,6 +198,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if post && (len(r.Header.Values("X-CSRF-Token")) != 1 || !equal(r.Header.Get("X-CSRF-Token"), s.csrf)) {
 		fail(w, 403)
+		return
+	}
+	if r.URL.Path == "/api/claim" {
+		var input struct {
+			Tab string `json:"tab"`
+		}
+		if strict(w, r, &input, 256) != nil || len(input.Tab) != 64 {
+			fail(w, 400)
+			return
+		}
+		if _, err := hex.DecodeString(input.Tab); err != nil {
+			fail(w, 400)
+			return
+		}
+		s.tab = input.Tab
+		s.lease = time.Time{}
+		if s.backend.Reviewer(r.Context(), time.Time{}) != nil {
+			fail(w, 409)
+			return
+		}
+		reply(w, struct{}{})
+		return
+	}
+	if len(r.Header.Values("X-Review-Tab")) != 1 || !equal(r.Header.Get("X-Review-Tab"), s.tab) {
+		fail(w, 409)
 		return
 	}
 	switch r.URL.Path {
@@ -222,8 +266,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fail(w, 409)
 			return
 		}
-		if op.Action == "end" {
-			s.ended = true
+		if op.Action == "end" || op.Action == "restart" || op.Action == "start" {
+			// Tab ownership survives session replacement; authority does not.
 			s.lease = time.Time{}
 			_ = s.backend.Reviewer(r.Context(), time.Time{})
 		}

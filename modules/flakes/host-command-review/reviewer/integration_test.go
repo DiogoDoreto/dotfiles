@@ -113,6 +113,7 @@ func (b *browser) request(path string, body any, want int) []byte {
 	req.Header.Set("Origin", b.origin)
 	req.Header.Set("Authorization", "Bearer "+b.auth)
 	req.Header.Set("X-CSRF-Token", b.csrf)
+	req.Header.Set("X-Review-Tab", strings.Repeat("1", 64))
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
@@ -164,6 +165,7 @@ func setup(t *testing.T) (*host.Controller, *guest.Store, Worker, *Adapter, *bro
 	json.Unmarshal(b.request("bootstrap", map[string]string{"token": u.Fragment}, 200), &credentials)
 	b.auth = credentials.Auth
 	b.csrf = credentials.CSRF
+	b.request("claim", map[string]string{"tab": strings.Repeat("1", 64)}, 200)
 	b.heartbeat()
 	g := &guest.Store{Dir: private(t)}
 	w := Worker{Controller: c, Exchange: fakeSSH(t, g.Dir, "normal")}

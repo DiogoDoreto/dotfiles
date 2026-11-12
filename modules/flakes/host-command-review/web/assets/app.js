@@ -1,5 +1,14 @@
 'use strict';
-// No storage, cookies, eval, HTML interpretation, guest links, or mutation GETs.
+// Only bounded auth/CSRF/expiry in tab sessionStorage. Never persist host text,
+// drafts, approvals, output, or routes. No cookies, localStorage or mutation GETs.
+const storageKey = 'host-review-auth-v1';
+const tab = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, '0')).join('');
+let sessionIdentity = null;
+function forgetAuth() { auth = ''; csrf = ''; leaseUntil = 0; try { sessionStorage.removeItem(storageKey); } catch (_) {} }
+function saveAuth(r) {
+ auth = r.auth; csrf = r.csrf;
+ try { sessionStorage.setItem(storageKey, JSON.stringify(r)); } catch (_) { /* RAM-only fallback; reopen from launcher on reload. */ }
+}
 const bootstrap = location.hash.slice(1);
 history.replaceState(null, '', '/');
 let auth = '', csrf = '', selected = '', current = null, leaseUntil = 0, busy = false;
@@ -43,14 +52,18 @@ function node(tag, text, parent) {
   return n;
 }
 async function api(path, body) {
-  const headers = {Authorization: `Bearer ${auth}`};
+  const headers = {Authorization: `Bearer ${auth}`, 'X-Review-Tab': tab};
   const options = {method: body === undefined ? 'GET' : 'POST', headers, cache: 'no-store', credentials: 'omit', redirect: 'error'};
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json'; headers['X-CSRF-Token'] = csrf;
     options.body = JSON.stringify(body);
   }
   const response = await fetch(`/api/${path}`, options);
-  if (!response.ok) throw new Error(`Host refused request (${response.status}). Refresh and review again; no automatic retry.`);
+  if (!response.ok) {
+ if (response.status === 401) forgetAuth();
+ if (response.status === 409) { leaseUntil = 0; throw new Error('Host refused request or another loaded tab owns browser approval. Reload to reclaim, then review again. No automatic retry.'); }
+ throw new Error(`Host refused request (${response.status}). Reopen from the application launcher if browser authentication expired. No automatic retry.`);
+ }
   return response.json();
 }
 async function heartbeat() {
@@ -206,6 +219,18 @@ function selectReview(r) {
 async function refresh(force = false) {
   try {
     const v = await api('view'); const list = document.querySelector('#list');
+ if (sessionIdentity !== null && sessionIdentity !== v.session_id) resetSession();
+ sessionIdentity = v.session_id;
+ const active = v.state === 'active' || (!v.state && !!v.session_id);
+ const session = document.querySelector('#session');
+ if (session) session.textContent = active ? `Routing code: ${v.routing_code || v.session_id} · Expires: ${new Date(v.expires_unix * 1000).toLocaleString()}` : v.state === 'cleanup_failed' ? 'Cleanup failed. Restart is blocked; quit and investigate the private store.' : 'No active review session.';
+ const connection = document.querySelector('#connection');
+ if (connection) connection.textContent = `Browser approval: ${Date.now() < leaseUntil ? 'connected' : 'disconnected — fresh heartbeat required'} · Agent transport: ${v.transport || 'unknown'}`;
+ const instructions = document.querySelector('#instructions');
+ if (instructions) instructions.value = active ? `Use host-review MCP with session_id "${v.routing_code || v.session_id}" and a fresh 64-lowercase-hex request_id. Submit proposals, then get status; execution and output release require my separate host review. The code only routes requests; it grants no authority.` : '';
+ if (document.querySelector('#start')) document.querySelector('#start').disabled = active || v.state === 'cleanup_failed';
+ if (document.querySelector('#restart')) document.querySelector('#restart').disabled = !active;
+ document.querySelector('#end').disabled = !active;
     const requests = v.requests || []; latestRequests = requests;
     const signature = JSON.stringify(requests.map(r => [r.snapshot_id, r.reason, r.phase, r.spec.user]));
     if (signature !== queueSignature) {
@@ -245,14 +270,34 @@ async function refresh(force = false) {
   } catch (e) { status.textContent = e.message; }
 }
 document.querySelector('#refresh').addEventListener('click', () => refresh());
-document.querySelector('#end').addEventListener('click', async () => {
-  if (!confirm('End session, revoke authentication and stop running work?')) return;
-  try { await api('operation', {action: 'end', binding: {version: 0, session_id: '', snapshot_id: '', revision: 0, digest: '', nonce: '', epoch: 0, expires_unix: 0}}); auth = ''; csrf = ''; detail.replaceChildren(); status.textContent = 'Session ended.'; }
-  catch (e) { status.textContent = e.message; }
+function resetSession() {
+ selected = ''; current = null; stale = false; bindingView = null; queueSignature = ''; latestRequests = []; leaseUntil = 0;
+ detail.replaceChildren(); document.querySelector('#list').replaceChildren();
+}
+async function lifecycle(action) {
+ if (busy) return;
+ if (action !== 'start' && !confirm(`${action === 'quit' ? 'Quit application' : action === 'restart' ? 'End and replace this session with a new code' : 'End this session'}? Running work (including root authentication) will be cancelled and reaped. Side effects cannot be undone. Unreleased output will be deleted, not sent to the agent.`)) return;
+ busy = true;
+ try { await api('operation', {action, binding: {version: 0, session_id: '', snapshot_id: '', revision: 0, digest: '', nonce: '', epoch: 0, expires_unix: 0}}); resetSession(); if (action === 'quit') { forgetAuth(); status.textContent = 'Application closed.'; } else { await heartbeat(); await refresh(); } }
+ catch (e) { status.textContent = e.message; }
+ finally { busy = false; }
+}
+for (const action of ['start', 'end', 'restart', 'quit']) document.querySelector(`#${action}`)?.addEventListener('click', () => lifecycle(action));
+document.querySelector('#copy')?.addEventListener('click', async () => {
+ try { await navigator.clipboard.writeText(document.querySelector('#instructions').value); }
+ catch (_) { status.textContent = 'Select and copy the instructions manually.'; }
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') leaseUntil = 0; else heartbeat(); });
 (async () => {
-  try { const r = await api('bootstrap', {token: bootstrap}); auth = r.auth; csrf = r.csrf; await heartbeat(); await refresh(); status.textContent = 'Connected to lapdog · Output stays private until you release it.'; }
+  try {
+ if (bootstrap) { forgetAuth(); saveAuth(await api('bootstrap', {token: bootstrap})); }
+ else {
+ let r; try { const raw = sessionStorage.getItem(storageKey); if (raw && raw.length <= 512) r = JSON.parse(raw); } catch (_) {}
+ if (!r || !/^[0-9a-f]{64}$/.test(r.auth) || !/^[0-9a-f]{64}$/.test(r.csrf) || !Number.isSafeInteger(r.expires_unix) || r.expires_unix * 1000 <= Date.now() || r.expires_unix * 1000 > Date.now() + 4 * 3600000) { forgetAuth(); throw new Error('Browser authentication expired or missing. Reopen from the application launcher.'); }
+ saveAuth(r);
+ }
+ await api('claim', {tab}); await heartbeat(); await refresh(); status.textContent = 'Connected to lapdog · This loaded tab owns browser approval. Output stays private until released.';
+ }
   catch (e) { status.textContent = e.message; }
 })();
 setInterval(heartbeat, 3000);

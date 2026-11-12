@@ -64,8 +64,11 @@ configuration. Nothing was activated; do not advertise a live-certified reviewer
   Default clock compares suspend-inclusive `/proc/uptime` with Go monotonic/wall
   time; discrepancies >1s also invalidate. This is defense in depth, not a claim
   to detect every sub-second suspend. Four-hour session cap uses both clocks.
-* `End()` first permanently blocks new work, revokes approval and cancels managed
-  runs. It returns an error until all starting/running records have been
+* `BeginEnd()` permanently blocks new work, revokes approval and cancels managed
+  runs without deleting raw capture or releasing the singleton. The application
+  joins runs and calls BeginEnd again (to settle auth-cancelled reviewing records),
+  publishes final permitted state and closes the guest route, then calls `End()`.
+  `End()` repeats BeginEnd defensively and applies clean raw cleanup. It returns an error until all starting/running records have been
   reconciled: await running goroutines, then call again. Successful clean end
   deletes raw artifacts immediately, retains releases, releases reviewer lock.
   `CloseUnclean()` is fatal shutdown: cancels managed contexts, releases singleton

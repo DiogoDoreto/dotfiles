@@ -30,7 +30,7 @@ It deliberately does not implement the authoritative backend's security guards.
 Fixtures include ordinary/root commands, held output with a private path, an
 uncertain outcome and completed work. Editing updates the revision; running
 simulates starting → running → held output. Reject, stop, release and end-session
-mutate only memory. Refresh the page freely in this sandbox (unlike production).
+mutate only memory. Refresh is also supported in production through bounded tab credentials; the sandbox does not enforce production ownership or authority.
 Change fixtures in `dev.cjs` to explore long reasons, errors or larger output.
 
 For repeatable real-browser flow checks, start a **fresh** sandbox, then:
@@ -60,10 +60,14 @@ err = reviewer.Serve()
 `New(Backend) (*Server, string, error)` creates fresh independent 256-bit bootstrap,
 auth and CSRF capabilities using crypto/rand. The bootstrap URL contains the
 one-use token in a **fragment**, never a query. Bootstrap expires two minutes after
-construction; successful exchange irreversibly spends it. The UI immediately
-removes the fragment from history before any fetch. Credentials live only in JS
-memory (no cookies/localStorage/sessionStorage); reload requires restarting the
-reviewer for a fresh session, not replaying the old fragment. A malicious local
+construction or protected local reissuance; successful exchange irreversibly spends it.
+Local reissuance leaves existing browser credentials valid until exchange succeeds,
+so a failed opener or lost control-socket response cannot revoke the current tab. The UI immediately
+removes the fragment from history before any fetch. Credentials now survive refresh in bounded tab-scoped `sessionStorage` (auth,
+CSRF, absolute expiry only; no host text or bindings). A fresh RAM-only tab claim
+revokes prior browser liveness; newest loaded tab owns approval. See
+[session experience](../docs/session-experience.md) for the deliberate policy
+change, duplicate-tab behavior and protected local bootstrap reissuance. A malicious local
 browser extension or host user with process access is outside this boundary.
 
 `Server.Serve()` serves its private loopback listener with bounded HTTP timeouts
@@ -101,7 +105,7 @@ stop a process tree: the host owns that duty and must supervise server failures.
 | `reject` | none | host state-machine guard; no execution |
 | `cancel` | none | serialize before-start cancellation vs consumption; request supervisor tree stop if already consumed; do not claim reversal |
 | `release` | artifact | exact held result/binding; independently validate allowed redactions and immutable original identity/metadata; publish separate immutable artifact, then mark released |
-| `end` | all-zero binding | end host session, cancel/reap work, revoke capabilities and lease; web session is invalidated only on backend success |
+| `end`, `start`, `restart`, `quit` | all-zero binding | application lifecycle; end/restart cancel and reap, publish and close route, delete raw before replacement; browser auth has an independent fixed cap |
 
 For `release`, the backend **must not trust the browser's artifact identity,
 redaction markers or executed history**. Compare with the held original. Only
@@ -127,7 +131,7 @@ independently of this HTTP server and browser JavaScript. Web construction time
 is not a substitute for the host's session creation deadline: use the earlier
 host deadline. Host liveness does not imply guest lease/SSH liveness.
 
-The HTTP session hard cap is four hours from construction. Authenticated POST
+The browser authentication hard cap is four hours from construction or successful exchange of an explicitly reissued local bootstrap, not extended by review-session restart. Authenticated POST
 heartbeats renew a **10-second** browser lease (clamped to that cap), every three
 seconds while the document is visible. Authenticated GET polling does not renew
 it or change backend state. Closing, hiding, suspending, disconnecting or killing
@@ -148,8 +152,9 @@ All API POSTs require exact `application/json` without parameters. After bootstr
 all API reads and writes require `Authorization: Bearer <auth>`; writes also need
 `X-CSRF-Token`. Duplicate auth/Origin/CSRF headers fail closed.
 
-* `POST /api/bootstrap`: `{ "token": "..." }` -> `{ "auth": "...", "csrf": "..." }`.
+* `POST /api/bootstrap`: `{ "token": "..." }` -> `{ "auth": "...", "csrf": "...", "expires_unix": 123 }`.
 * `GET /api/view`: authenticated host-private View, no lease renewal.
+* `POST /api/claim`: `{ "tab": "<64 hex>" }` claims this page's browser approval ownership, revoking the old lease. Authenticated APIs other than bootstrap/claim require the exact `X-Review-Tab` header (duplicates rejected).
 * `POST /api/heartbeat`: `{}` -> `{ "lease_seconds": 10 }`.
 * `POST /api/operation`: Operation -> `{}` on success. Backend refusal is 409;
   no automatic retry on failures (a network failure can follow committed intent).

@@ -41,13 +41,25 @@
               "-X=main.loginctl=${pkgs.systemd}/bin/loginctl"
               "-X=main.dbusMonitor=${pkgs.dbus}/bin/dbus-monitor"
               "-X=main.opener=${pkgs.xdg-utils}/bin/xdg-open"
+              "-X=main.notifier=${pkgs.kdePackages.kdialog}/bin/kdialog"
               "-X=main.guestAddress=${guestAddress}"
               "-X=main.guestUser=${guestUser}"
               "-X=main.identity=${identity}"
             )
           '';
           postInstall = ''
-            mkdir -p $out/share/polkit-1/actions
+            mkdir -p $out/share/polkit-1/actions $out/share/applications
+            cat > $out/share/applications/agent-host-review.desktop <<EOF
+            [Desktop Entry]
+            Type=Application
+            Name=Host Command Reviewer
+            Comment=Review Agent VM host commands and explicitly release output
+            Exec=$out/bin/agent-host-review
+            Icon=dialog-warning
+            Terminal=false
+            Categories=System;Security;
+            StartupNotify=false
+            EOF
             cat > $out/share/polkit-1/actions/br.com.doreto.host-command-review.policy <<EOF
             <?xml version="1.0" encoding="UTF-8"?>
             <!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN" "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">

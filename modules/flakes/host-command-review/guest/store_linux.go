@@ -30,6 +30,7 @@ type Store struct {
 }
 type session struct {
 	ID          string `json:"id"`
+	Alias       string `json:"alias,omitempty"`
 	Label       string `json:"label"`
 	Boot        string `json:"boot"`
 	Start       int64  `json:"start"`
@@ -156,6 +157,7 @@ func validateDB(d database) error {
 		return fmt.Errorf("invalid database")
 	}
 	sessions := map[string]bool{}
+	aliases := map[string]bool{}
 	records := map[string]bool{}
 	pending := map[string]int{}
 	liveSessions := 0
@@ -164,6 +166,13 @@ func validateDB(d database) error {
 			return fmt.Errorf("invalid session")
 		}
 		sessions[v.ID] = true
+		if v.Alias != "" {
+			a, e := transport.CanonicalAlias(v.Alias)
+			if e != nil || a != v.Alias || aliases[a] {
+				return fmt.Errorf("invalid alias")
+			}
+			aliases[a] = true
+		}
 		if !v.Closed {
 			liveSessions++
 		}
@@ -245,8 +254,11 @@ func (s *Store) transaction(ctx context.Context, fn func(*database, string, int6
 	kept := d.Sessions[:0]
 	valid := map[string]bool{}
 	for _, v := range d.Sessions {
-		if !v.Closed || time.Now().Unix()-v.CreatedUnix < contracts.ReleasedRetentionSeconds {
+		retain := !v.Closed || time.Now().Unix()-v.CreatedUnix < contracts.ReleasedRetentionSeconds
+		if retain || v.Alias != "" {
 			kept = append(kept, v)
+		}
+		if retain {
 			valid[v.ID] = true
 		}
 	}
@@ -385,12 +397,15 @@ func (s *Store) Exchange(ctx context.Context, q transport.Request) (transport.Re
 				if !live(v, boot, now) {
 					return fail("session_expired")
 				}
-				if v.Label != q.Label {
+				if v.Label != q.Label || v.Alias != q.Alias {
 					return fail("conflict")
 				}
 			} else {
 				liveSessions := 0
 				for _, v := range d.Sessions {
+					if q.Alias != "" && v.Alias == q.Alias {
+						return fail("conflict")
+					}
 					if live(v, boot, now) {
 						liveSessions++
 					}
@@ -398,7 +413,7 @@ func (s *Store) Exchange(ctx context.Context, q transport.Request) (transport.Re
 				if liveSessions >= transport.MaxLiveSessions {
 					return fail("queue_full")
 				}
-				d.Sessions = append(d.Sessions, session{ID: q.SessionID, Label: q.Label, Boot: boot, Start: now, Until: now + int64(transport.LeaseSeconds)*int64(time.Second), CreatedUnix: time.Now().Unix()})
+				d.Sessions = append(d.Sessions, session{ID: q.SessionID, Label: q.Label, Alias: q.Alias, Boot: boot, Start: now, Until: now + int64(transport.LeaseSeconds)*int64(time.Second), CreatedUnix: time.Now().Unix()})
 				idx = len(d.Sessions) - 1
 			}
 		}

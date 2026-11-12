@@ -6,9 +6,11 @@ remain pending (see operations.md and probe/FINDINGS.md).
 
 ## Session lifetime
 
-1. `dog` manually starts `agent-host-review` on lapdog in the local Plasma session.
-   Create a fresh random routing ID, epoch and browser auth capability; obtain a
-   single-reviewer lock. Session hard maximum: four hours, measured by a monotonic
+1. `dog` manually opens `agent-host-review` on lapdog in the local Plasma session.
+   Application, review-session and browser-authentication lifetimes are separate;
+   see [session experience](session-experience.md). Each new review session creates
+   a fresh random long routing ID, short routing alias and epoch, and obtains a
+   single-reviewer lock. Browser credentials have an independent fixed lifetime. Session hard maximum: four hours, measured by a monotonic
    clock. Wall-clock approval expiry is an additional check, not a substitute.
 2. Advertise active reviewer routing to the guest only while the host is alive.
    With no active reviewer, submissions get `rejected/no_reviewer`, never queued
@@ -135,8 +137,11 @@ JSON with different IDs or current edits.
   a missing PID means the script never ran; PIDs are reusable.
 * Supervisor ownership/lifetime needs boot/session identity and an independently
   enforced watchdog. A ledger record alone cannot stop an orphaned root process.
-* Clean end: cancel/reap work, delete raw capture immediately, revoke session and
-  browser capabilities. Do not delete a published release with the raw directory.
+* Clean end: revoke session authority and browser liveness, cancel/reap work,
+  publish final permitted state and close the route, then delete raw capture.
+  Browser authentication survives review-session End/Restart until its independent
+  deadline; credentials alone never restore liveness. Do not delete a published
+  release with the raw directory.
 * Crash leftovers: host-private raw data expires within 24 hours. Released
   artifacts and ledger records expire after seven days. Preserve raw references
   only while needed, never extend retention by guest polling. Sweep with the same

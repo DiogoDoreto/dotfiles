@@ -63,7 +63,10 @@ Hard bounds (deliberately conservative initial policy):
   rewrites the database on each transaction; this is a capacity bound, not a
   throughput or low-memory guarantee.
 * Guest session-based retention is seven days, not extended by polling. Closed
-  sessions and their records are removed under the lock after retention. Expired
+  legacy sessions without aliases and their records are removed under the lock after retention.
+  Alias-bearing session tombstones remain permanently reserved within the bounded
+  database; their records still expire normally. Reset/loss of guest state loses
+  these reservations, never host execution guards. Expired
   IDs cannot be announced again while their tombstones exist. The host **must
   always generate fresh random IDs**, including after retention, reset, guest
   reboot or loss of guest state; guest tombstones are not host replay protection.
@@ -112,10 +115,12 @@ Request shape:
 {"version":1,"operation":"announce","session_id":"<64 lowercase hex>","label":"lapdog"}
 ```
 
-* `announce`: requires ASCII label `[a-zA-Z0-9 ._-]{1,64}`. Creates a new 15s lease.
+* `announce`: requires ASCII label `[a-zA-Z0-9 ._-]{1,64}`. Optional canonical
+  `alias` is an eight-symbol routing code with a grouping hyphen; collision with
+  any retained reservation conflicts. See [session experience](../docs/session-experience.md). Creates a new 15s lease.
   Same ID/label while live is idempotent but does not extend the lease; changing
   label conflicts. Closed/expired retained IDs cannot be reused.
-* `renew`, `pull`, `close`: only `version`, `operation`, `session_id` are allowed.
+* `renew`, `pull`, `close`: only `version`, `operation`, `session_id` are allowed (no alias).
   `renew` extends a still-live lease, capped at the original four-hour maximum.
   `close` is idempotent for a known route; it expires unacknowledged pending work.
 * `publish`: those same three fields plus required `reply: contracts.Reply`.
@@ -168,7 +173,9 @@ response is data, never a path to open or execution instructions.
 negotiation, tools/list/call, ping, errors and request cancellation. No HTTP, OAuth
 endpoint, resource, prompt, model content, extension or Pi glue is started. Only
 `submit`, `get`, `cancel` tools are registered. Each tool takes explicit
-`session_id` and guest-chosen `request_id` (64 lowercase hex). A route is supplied
+`session_id` (long identity or short routing code, optional grouping hyphen/case)
+and guest-chosen `request_id` (64 lowercase hex). Short codes resolve exactly,
+never by prefix; successful replies retain the canonical long session identity. A route is supplied
 by future host/Pi integration; the guest does not discover or authenticate hosts.
 `submit` additionally requires `proposal` with script, cwd, dog/root user and
 optional timeout_seconds, defaulted to **120** before contract validation. There

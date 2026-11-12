@@ -214,7 +214,8 @@ func NewController(s *Store, cfg Config) (c *Controller, err error) {
 	}
 	return c, nil
 }
-func (c *Controller) SessionID() string { return c.session }
+func (c *Controller) SessionID() string  { return c.session }
+func (c *Controller) ExpiresUnix() int64 { return c.started.Add(4 * time.Hour).Unix() }
 func (c *Controller) records() ([]Record, error) {
 	ids, e := c.store.names("records")
 	if e != nil {
@@ -707,9 +708,10 @@ func (c *Controller) Sweep(cleanEnd bool) error {
 	})
 }
 
-// End must be called after stop/reap/reconciliation. If any intent is still live
-// it fails without claiming cleanup; the supervisor's leases remain mandatory.
-func (c *Controller) End() error {
+// BeginEnd permanently revokes admission and cancels managed work without
+// deleting capture or releasing the singleton. Call again after joining runs to
+// reconcile auth-cancelled reviewing records before final publication.
+func (c *Controller) BeginEnd() error {
 	c.store.mu.Lock()
 	c.ended = true
 	for _, cancel := range c.executions {
@@ -735,6 +737,15 @@ func (c *Controller) End() error {
 		return nil
 	}); e != nil {
 		return e
+	}
+	return nil
+}
+
+// End must be called after stop/reap/reconciliation. If any intent is still live
+// it fails without claiming cleanup; the supervisor's leases remain mandatory.
+func (c *Controller) End() error {
+	if err := c.BeginEnd(); err != nil {
+		return err
 	}
 	if e := c.Sweep(true); e != nil {
 		return e

@@ -64,7 +64,14 @@ func toolRequest(name string, b []byte) (contracts.Request, error) {
 	default:
 		return q, fmt.Errorf("invalid tool")
 	}
-	return q, q.Validate()
+	check := q
+	if !transport.ValidID(q.SessionID) {
+		if _, err := transport.CanonicalAlias(q.SessionID); err != nil {
+			return q, err
+		}
+		check.SessionID = fmt.Sprintf("%064x", 0)
+	}
+	return q, check.Validate()
 }
 func toolError(code string) *mcp.CallToolResult {
 	b, _ := json.Marshal(struct {
@@ -96,7 +103,7 @@ func NewMCPServer(s *guest.Store) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "host-review", Version: "1.0.0"}, &mcp.ServerOptions{Capabilities: &mcp.ServerCapabilities{}})
 	for _, name := range []string{"submit", "get", "cancel"} {
 		schema := map[string]any{"type": "object", "additionalProperties": false, "required": []string{"session_id", "request_id"}, "properties": map[string]any{
-			"session_id": map[string]any{"type": "string", "pattern": "^[0-9a-f]{64}$"}, "request_id": map[string]any{"type": "string", "pattern": "^[0-9a-f]{64}$"},
+			"session_id": map[string]any{"type": "string", "pattern": "^([0-9a-f]{64}|[2-9A-HJ-NP-Za-hj-np-z]{4}-?[2-9A-HJ-NP-Za-hj-np-z]{4})$"}, "request_id": map[string]any{"type": "string", "pattern": "^[0-9a-f]{64}$"},
 		}}
 		if name == "submit" {
 			schema["required"] = []string{"session_id", "request_id", "proposal"}
@@ -111,6 +118,10 @@ func NewMCPServer(s *guest.Store) *mcp.Server {
 			}
 			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel()
+			q.SessionID, err = s.ResolveRoute(ctx, q.SessionID)
+			if err != nil {
+				return toolError("no_reviewer"), nil
+			}
 			out, err := s.Handle(ctx, q)
 			if err != nil {
 				return toolError("unavailable"), nil

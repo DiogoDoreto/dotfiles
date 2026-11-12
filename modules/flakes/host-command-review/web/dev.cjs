@@ -15,7 +15,7 @@ const requests = [
 ];
 function held(r) { return {version:1,artifact_id:'mock-artifact',snapshot_id:r.snapshot_id,revision:r.binding.revision,execution_digest:'mock-only',executed:structuredClone(r.spec),stdout:Buffer.from('Filesystem      Size  Used Avail Use% Mounted on\n/dev/nvme0n1p2  920G  712G  161G  82% /\n384G\t/nix/store\n').toString('base64'),stderr:Buffer.from('Note: private host path /home/dog/backups is not included.\n').toString('base64'),exit:{kind:'exited',code:0,signal:0},truncated:false,redacted_fields:[]}; }
 requests[1].held=held(requests[1]);
-let ended=false;
+let ended=false, generation=1;
 const assets = {'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css']};
 const server=http.createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
@@ -30,15 +30,20 @@ const server=http.createServer(async(req,res)=>{
   try {
     let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>9*1024*1024)throw Error();}
     const body=raw?JSON.parse(raw):{};
-    if(ended)throw Error();
-    if(req.url==='/api/bootstrap')return res.end(JSON.stringify({auth:'demo',csrf:'demo'}));
+    if(req.url==='/api/bootstrap')return res.end(JSON.stringify({auth:'a'.repeat(64),csrf:'b'.repeat(64),expires_unix:Math.floor(Date.now()/1000)+14400}));
+ if(req.url==='/api/claim')return res.end('{}');
     if(req.url==='/api/heartbeat')return res.end(JSON.stringify({lease_seconds:10}));
     if(req.url==='/api/view'){
       for(const r of requests)r.binding.expires_unix=Math.floor(Date.now()/1000)+300;
-      return res.end(JSON.stringify({session_id:'demo',requests}));
+      return res.end(JSON.stringify({session_id:ended?'':`demo-${generation}`,state:ended?'idle':'active',routing_code:'DEMO-CODE',expires_unix:Math.floor(Date.now()/1000)+14400,transport:ended?'closed':'mock connected',requests:ended?[]:requests}));
     }
     if(req.url!=='/api/operation'||req.method!=='POST')throw Error();
-    if(body.action==='end'){ended=true;return res.end('{}');}
+    if(['end','quit','start','restart'].includes(body.action)){
+ if(['end','quit','restart'].includes(body.action)){ended=true;requests.splice(0);}
+ if(['start','restart'].includes(body.action)){ended=false;generation++;}
+ return res.end('{}');
+ }
+ if(ended)throw Error();
     const r=requests.find(r=>r.snapshot_id===body.binding.snapshot_id);if(!r)throw Error();
     if(body.action==='edit'){Object.assign(r.spec,body.proposal);r.binding.revision++;}
     else if(['run','run_root'].includes(body.action)){
