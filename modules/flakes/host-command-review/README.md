@@ -59,6 +59,15 @@ codes, never raw host diagnostics.
 * Fixed store bash `--noprofile --norc /proc/self/fd/3`, unlinked immutable script
   FD3, stdin `/dev/null`, no PTY/startup files/inherited environment. This explicitly
   amends unreleased v1's former `-c` wording; digest encoding is unchanged.
+* Dog payloads use the fixed `PATH`:
+  `/etc/profiles/per-user/dog/bin:/home/dog/.nix-profile/bin:/run/current-system/sw/bin`.
+  This exposes Home Manager and user-profile packages without sourcing shell
+  configuration. Root payloads keep `/run/current-system/sw/bin` only, never
+  searching dog-writable profiles. Profile contents remain mutable, not frozen.
+  New dog specs use this policy and its digest. Existing frozen v1 dog specs
+  with the former system-only PATH remain valid with their original inputs and
+  digests; startup never rewrites them. To use profile tools, submit a new
+  proposal or explicitly edit/review an existing one.
 * Combined 4-MiB stdout/stderr retention, concurrent drain/discard after cap.
 * While starting/running, authenticated host-only polling can display bounded,
   incomplete live stdout/stderr snapshots. These are not artifacts, have no exit

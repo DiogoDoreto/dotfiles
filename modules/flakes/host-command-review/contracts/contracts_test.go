@@ -39,6 +39,39 @@ func encoded(t *testing.T, v any) []byte {
 	}
 	return b
 }
+func TestFrozenEnvironmentIncludesDogPackageProfiles(t *testing.T) {
+	s := spec(t)
+	want := "/etc/profiles/per-user/dog/bin:/home/dog/.nix-profile/bin:/run/current-system/sw/bin"
+	if s.Environment.PATH != want {
+		t.Fatalf("dog payload PATH = %q; want package profiles: %q", s.Environment.PATH, want)
+	}
+	if root := CleanEnvironment(Root); root.PATH != "/run/current-system/sw/bin" {
+		t.Fatalf("root must not search dog-writable package profiles: %q", root.PATH)
+	}
+	currentDigest, err := s.Digest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Old frozen dog specs remain valid without silently changing their PATH.
+	s.Environment.PATH = "/run/current-system/sw/bin"
+	legacyDigest, err := s.Digest()
+	if err != nil || legacyDigest == currentDigest {
+		t.Fatalf("legacy policy must remain valid with a distinct digest: %v", err)
+	}
+	for _, mutate := range []func(*ExecutionSpec){
+		func(s *ExecutionSpec) { s.Environment.PATH += ":/tmp" },
+		func(s *ExecutionSpec) { s.Environment.HOME = "/tmp" },
+		func(s *ExecutionSpec) { s.Environment.LANG = "other" },
+		func(s *ExecutionSpec) { s.User = Root; s.Environment = CleanEnvironment(Dog) },
+	} {
+		bad := s
+		mutate(&bad)
+		if bad.Validate() == nil {
+			t.Fatal("accepted environment outside the two fixed policies")
+		}
+	}
+}
+
 func TestFixtures(t *testing.T) {
 	req, err := ParseRequest(bytes.NewReader(fixture(t, "submit")))
 	if err != nil || req.Proposal.TimeoutSeconds != DefaultTimeoutSeconds {
@@ -144,7 +177,7 @@ func TestFreezeAndDigest(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Golden protects field order, escaping and absence of trailing newline.
-	const golden = "f1a4b32dd1b32057389f180e256b440baed6c85079d3adafe72e6c59da9d9317"
+	const golden = "64bebf539a33f340e728e5994fb662094b996ab1bf2d9859e95ab183893dcd81"
 	if digest != golden {
 		t.Fatalf("digest = %s", digest)
 	}

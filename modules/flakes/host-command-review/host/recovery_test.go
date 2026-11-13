@@ -2,6 +2,9 @@ package host
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -76,6 +79,46 @@ func TestReleasePublicationFaultsWithholdOrComplete(t *testing.T) {
 		})
 	}
 }
+func TestRecoverLegacyDogEnvironment(t *testing.T) {
+	c, _ := setup(t)
+	r := imported(t, c, "1")
+	// Recreate the canonical record written before user profiles were added.
+	r.Spec.Environment.PATH = "/run/current-system/sw/bin"
+	b, err := json.Marshal(r.Spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(b)
+	r.Digest = hex.EncodeToString(sum[:])
+	b, err = json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := c.store.root.Name()
+	if err = os.WriteFile(filepath.Join(path, "records", r.Snapshot.SnapshotID+".json"), b, 0600); err != nil {
+		t.Fatal(err)
+	}
+	c.CloseUnclean()
+	c.store.Close()
+	s, err := OpenStore(path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	next, err := NewController(s, c.cfg)
+	if err != nil {
+		t.Fatalf("startup with legacy dog record: %v", err)
+	}
+	defer next.CloseUnclean()
+	got, err := next.View(r.Snapshot.SnapshotID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Spec != r.Spec || got.Digest != r.Digest {
+		t.Fatal("recovery rewrote previously reviewed execution inputs")
+	}
+}
+
 func TestRecoverInterruptedHardLink(t *testing.T) {
 	c, _ := setup(t)
 	r := imported(t, c, "1")

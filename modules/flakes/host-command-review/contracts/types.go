@@ -93,10 +93,13 @@ type Environment struct {
 
 func CleanEnvironment(user User) Environment {
 	home := "/home/dog"
+	searchPath := "/etc/profiles/per-user/dog/bin:/home/dog/.nix-profile/bin:/run/current-system/sw/bin"
 	if user == Root {
 		home = "/root"
+		// Never resolve root commands through dog-writable package profiles.
+		searchPath = "/run/current-system/sw/bin"
 	}
-	return Environment{PATH: "/run/current-system/sw/bin", HOME: home, LANG: "C.UTF-8"}
+	return Environment{PATH: searchPath, HOME: home, LANG: "C.UTF-8"}
 }
 
 func Freeze(p Proposal, shell string) (ExecutionSpec, error) {
@@ -156,7 +159,14 @@ func (s ExecutionSpec) Validate() error {
 	if err := (Proposal{Script: s.Script, Cwd: s.Cwd, User: s.User, TimeoutSeconds: s.TimeoutSeconds}).validateExecutionFields(); err != nil {
 		return err
 	}
-	if s.Version != Version || len(s.Shell) > 4096 || !shellPattern.MatchString(s.Shell) || s.Environment != CleanEnvironment(s.User) || s.StopGraceSeconds != StopGraceSeconds || s.CaptureBytes != CaptureBytes {
+	wantEnvironment := CleanEnvironment(s.User)
+	// Persisted v1 dog specs used a system-only PATH. Keep accepting that
+	// exact policy without rewriting approved inputs or their digests. New
+	// Freeze calls always use the current package-profile policy.
+	legacyEnvironment := wantEnvironment
+	legacyEnvironment.PATH = "/run/current-system/sw/bin"
+	validEnvironment := s.Environment == wantEnvironment || (s.User == Dog && s.Environment == legacyEnvironment)
+	if s.Version != Version || len(s.Shell) > 4096 || !shellPattern.MatchString(s.Shell) || !validEnvironment || s.StopGraceSeconds != StopGraceSeconds || s.CaptureBytes != CaptureBytes {
 		return fmt.Errorf("invalid execution policy")
 	}
 	return nil

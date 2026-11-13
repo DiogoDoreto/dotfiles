@@ -97,7 +97,16 @@ repeat or replace existing services. Stop confirmation without a framed payload
 terminal is still uncertain; no inferred success from an exit code/PID.
 
 Helper starts fixed bash, no PTY/startup files, exact reviewed cwd/environment,
-stdin `/dev/null`, script fd3. Separate concurrent stdout/stderr capture shares
+stdin `/dev/null`, script fd3. Dog payload PATH is fixed to
+`/etc/profiles/per-user/dog/bin:/home/dog/.nix-profile/bin:/run/current-system/sw/bin`,
+so Home Manager and user-profile tools are available without inheriting desktop
+variables or sourcing shell configuration. Root payload PATH stays
+`/run/current-system/sw/bin`; it never searches dog-writable profiles. This is
+separate from the runner/systemd CLI environment above. Changing this unreleased
+v1 policy changes new dog spec digests. Existing frozen v1 dog specs with the
+former system-only PATH remain valid with their original inputs and digests;
+startup does not upgrade them. Submit a new proposal or explicitly edit/review
+one to use the expanded PATH. Profile contents are mutable, not snapshotted. Separate concurrent stdout/stderr capture shares
 4MiB budget; excess is discarded while draining. Main-process completion allows
 one second bounded drain, marks truncation if descendant-held pipes require
 closure, then helper exits and systemd deactivation cleans the remaining cgroup
