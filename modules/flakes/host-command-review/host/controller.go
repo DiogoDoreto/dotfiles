@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -130,6 +131,8 @@ type Controller struct {
 	reviewer            *os.File
 	executions          map[string]context.CancelFunc
 	offers              map[string]reviewOffer
+	liveMu              sync.Mutex
+	live                map[string]*LiveCapture
 }
 
 // NewController takes the singleton reviewer lock and recovers dead-session
@@ -259,6 +262,9 @@ func (c *Controller) load(id string) (Record, error) {
 func (c *Controller) save(r Record) error {
 	if e := r.validate(); e != nil {
 		return e
+	}
+	if r.Phase != contracts.Starting && r.Phase != contracts.Running {
+		c.clearLive(r.Snapshot.SnapshotID, "")
 	}
 	return c.store.put("records", r.Snapshot.SnapshotID, r, false)
 }
@@ -818,13 +824,22 @@ func (c *Controller) Run(ctx context.Context, a contracts.ApprovalBinding, cfg e
 // RunConsumed reconciles a spec already durably consumed by the trusted UI adapter.
 // It is not a guest API. Call exactly once, even when the context is cancelled.
 func (c *Controller) RunConsumed(ctx context.Context, a contracts.ApprovalBinding, spec contracts.ExecutionSpec, cfg execution.Config) error {
-	return c.RunConsumedWithExecutor(ctx, a, spec, cfg, execution.Execute)
+	return c.RunConsumedWithObservedExecutor(ctx, a, spec, cfg, execution.ExecuteObserved)
 }
 
 // RunConsumedWithExecutor is a trusted in-process test seam, never wire input.
 func (c *Controller) RunConsumedWithExecutor(ctx context.Context, a contracts.ApprovalBinding, spec contracts.ExecutionSpec, cfg execution.Config, execute func(context.Context, execution.Config, contracts.ExecutionSpec) execution.Report) error {
+	return c.RunConsumedWithObservedExecutor(ctx, a, spec, cfg, func(ctx context.Context, cfg execution.Config, spec contracts.ExecutionSpec, _ execution.Observer) execution.Report {
+		return execute(ctx, cfg, spec)
+	})
+}
+
+// RunConsumedWithObservedExecutor is a trusted in-process seam, never wire input.
+func (c *Controller) RunConsumedWithObservedExecutor(ctx context.Context, a contracts.ApprovalBinding, spec contracts.ExecutionSpec, cfg execution.Config, execute func(context.Context, execution.Config, contracts.ExecutionSpec, execution.Observer) execution.Report) error {
 	var e error
-	runCtx, cancel := context.WithTimeout(ctx, time.Duration(spec.TimeoutSeconds)*time.Second+execution.AuthTimeout+30*time.Second)
+	token := randomID()
+	runCtx, stop := context.WithTimeout(ctx, time.Duration(spec.TimeoutSeconds)*time.Second+execution.AuthTimeout+30*time.Second)
+	cancel := func() { c.clearLive(a.SnapshotID, token); stop() }
 	defer cancel()
 	var sessionTimer *time.Timer
 	defer func() {
@@ -841,9 +856,16 @@ func (c *Controller) RunConsumedWithExecutor(ctx context.Context, a contracts.Ap
 			return ErrGuard
 		}
 		c.executions[a.SnapshotID] = cancel
+		c.liveMu.Lock()
+		if c.live == nil {
+			c.live = map[string]*LiveCapture{}
+		}
+		c.live[a.SnapshotID] = &LiveCapture{RunID: token, Stdout: []byte{}, Stderr: []byte{}}
+		c.liveMu.Unlock()
 		boot, e := c.cfg.Clock.BootElapsed()
 		if e != nil {
 			cancel()
+			delete(c.executions, a.SnapshotID)
 			return e
 		}
 		remaining := 4*time.Hour - (boot - c.bootStart)
@@ -865,7 +887,17 @@ func (c *Controller) RunConsumedWithExecutor(ctx context.Context, a contracts.Ap
 		return e
 	}
 	defer func() { c.store.mu.Lock(); delete(c.executions, a.SnapshotID); c.store.mu.Unlock() }()
-	report := execute(runCtx, cfg, spec)
+	defer c.clearLive(a.SnapshotID, token)
+	stopCleanup := context.AfterFunc(runCtx, func() { c.clearLive(a.SnapshotID, token) })
+	defer stopCleanup()
+	report := execute(runCtx, cfg, spec, func(p execution.Progress) {
+		if runCtx.Err() != nil {
+			c.clearLive(a.SnapshotID, token)
+			return
+		}
+		c.observeLive(a.SnapshotID, token, p)
+	})
+	c.clearLive(a.SnapshotID, token)
 	if report.AuthCancelled {
 		return c.Reconcile(a.SnapshotID, contracts.AuthDenied, nil)
 	}

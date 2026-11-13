@@ -51,7 +51,13 @@ func UnitHelper(c Config, digest string, in, out *os.File) error {
 			}
 		}
 	}()
-	r := runPayload(ctx, c, s)
+	failed := false
+	r := runPayloadObserved(ctx, c, s, func(p Progress) {
+		if !failed && send(out, "progress", progressBytes(p)) != nil {
+			failed = true
+			cancel()
+		}
+	})
 	if e = send(out, "result", resultBytes(r)); e != nil {
 		return e
 	}
@@ -142,6 +148,10 @@ func stringHex(b []byte) string {
 // Main-process cancellation is complemented by systemd's cgroup deactivation,
 // five-second grace and independent RuntimeMaxSec, not a process-group promise.
 func runPayload(ctx context.Context, c Config, s contracts.ExecutionSpec) Result {
+	return runPayloadObserved(ctx, c, s, nil)
+}
+
+func runPayloadObserved(ctx context.Context, c Config, s contracts.ExecutionSpec, observe Observer) Result {
 	script, e := privateScript(c.RuntimeDir, s.Script)
 	if e != nil {
 		return unknown(false)
@@ -178,6 +188,46 @@ func runPayload(ctx context.Context, c Config, s contracts.ExecutionSpec) Result
 	ow.Close()
 	ew.Close()
 	cap := &capture{stdout: []byte{}, stderr: []byte{}}
+	// Drainers only retain the bounded capture. A single publisher coalesces
+	// deltas from it; transport backpressure never blocks a payload pipe.
+	stopProgress := make(chan struct{})
+	progressDone := make(chan struct{})
+	go func() {
+		defer close(progressDone)
+		if observe == nil {
+			return
+		}
+		ticker := time.NewTicker(20 * time.Millisecond)
+		defer ticker.Stop()
+		var so, se int
+		truncated := false
+		flush := func() {
+			for {
+				cap.mu.Lock()
+				n := min(ProgressBytes, len(cap.stdout)-so)
+				m := min(ProgressBytes-n, len(cap.stderr)-se)
+				p := Progress{uint32(so), uint32(se), append([]byte{}, cap.stdout[so:so+n]...), append([]byte{}, cap.stderr[se:se+m]...), cap.truncated}
+				cap.mu.Unlock()
+				if n+m == 0 && p.Truncated == truncated {
+					return
+				}
+				so += n
+				se += m
+				truncated = p.Truncated
+				observe(p)
+			}
+		}
+		for {
+			select {
+			case <-ticker.C:
+				flush()
+			case <-stopProgress:
+				flush()
+				return
+			}
+		}
+	}()
+	defer func() { close(stopProgress); <-progressDone }()
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() { defer wg.Done(); io.Copy(captureWriter{cap, false}, stdout) }()

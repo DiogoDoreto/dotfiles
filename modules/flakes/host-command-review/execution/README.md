@@ -109,6 +109,34 @@ extra terminal data is not success. Payload exit126/127 is framed, not auth.
 Transport diagnostics are discarded, never mixed into payload framing/output.
 All framed results remain host-private until explicit controller Release.
 
+### Host-private live progress
+
+`ExecuteObserved(ctx, config, spec, Observer)` preserves the `Execute` result and
+its authentication/uncertainty rules. `Execute` remains a nil-observer wrapper.
+The trusted synchronous observer must do only small in-memory work: it must not
+block on application lifecycle locks, disk, network, or user interaction.
+
+After each START gate the output channel can carry canonical closed `progress`
+frames before its authoritative `result`. Each delta contains exact uint32
+per-stream offsets, non-null stdout/stderr byte arrays, and monotonic truncation;
+the combined delta is at most 32 KiB. Each receiver rejects gaps, replay,
+oversized capture, unknown/noncanonical fields, truncation regression and a
+terminal capture that does not extend the observed prefixes. Invalid progress is
+transport loss, never a guessed payload result. Receiving progress does not
+confirm the final outcome or create a durable running transition.
+
+Payload pipe drainers retain the combined 4 MiB capture independently of
+transport and continue draining/discarding after the cap. One publisher samples
+that bounded capture every 20ms, coalesces retained bytes into bounded deltas,
+and flushes remaining deltas before the terminal frame. No per-write queue is
+allocated. The runner forwards each validated frame synchronously; all writes
+on each output channel are serialized, with five-second write deadlines. Failed
+progress writes cancel the existing helper/supervisor lifecycle; no further
+progress writes are attempted after failure. Existing lease/stop/reap rules
+still apply. Both receive loops use a single absolute terminal deadline, never
+a timeout renewed by each event. Final validation and successful CLI completion
+remain authoritative even when live bytes have already been observed.
+
 Pre-runner-ready pkexec126 is classified as auth cancellation under the runner's
 reserved exit convention (runner voluntarily uses only0/70). Pre-ready127 is
 ambiguous, not proven auth denial. After READY, missing terminal is execution
@@ -129,6 +157,13 @@ Byte freezing does not freeze mutable filesystem semantics.
 go test -race ./host ./execution ./cmd/host-command-root-runner ./cmd/host-command-unit-helper
 go vet ./host ./execution ./cmd/host-command-root-runner ./cmd/host-command-unit-helper
 ```
+
+Progress tests additionally exercise real unprivileged payload pipes before a
+blocked child finishes, nested fake-CLI helper→runner→client framed forwarding,
+full capture/drain with validated deltas, bad offsets/oversized/unknown frames,
+terminal-prefix and truncation mismatch, absolute deadlines despite events, and
+controller live copies/cleanup/guest non-disclosure. They do not establish actual
+desktop live-output latency or systemd/polkit behavior; that acceptance is pending.
 
 Fake backend and actual unprivileged child-process tests exercise outer fresh
 gate/EOF/partial lease, nested full4MiB result framing, payload126/127, no stdin /

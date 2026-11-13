@@ -25,6 +25,10 @@ type Report struct {
 // Execute must only be called after a successful durable Controller.Consume.
 // ctx cancellation requests stop; it never promises to reverse side effects.
 func Execute(ctx context.Context, c Config, s contracts.ExecutionSpec) Report {
+	return ExecuteObserved(ctx, c, s, nil)
+}
+
+func ExecuteObserved(ctx context.Context, c Config, s contracts.ExecutionSpec, observe Observer) Report {
 	report := Report{Result: unknown(false)}
 	if c.Validate() != nil || os.Getuid() != c.ExpectedUID || os.Geteuid() != c.ExpectedUID {
 		return report
@@ -123,16 +127,12 @@ func Execute(ctx context.Context, c Config, s contracts.ExecutionSpec) Report {
 						}
 					}
 				}()
-				f, e = receive(out, time.Duration(s.TimeoutSeconds)*time.Second+30*time.Second)
+				r, readErr := receiveResult(out, time.Now().Add(time.Duration(s.TimeoutSeconds)*time.Second+30*time.Second), observe)
+				e = readErr
 				close(stopLease)
 				<-exited
-				if e == nil && f.Type == "result" {
-					r, err := parseResult(f.Data)
-					if err == nil {
-						report.Result = r
-					} else {
-						report.Result = unknown(true)
-					}
+				if e == nil {
+					report.Result = r
 				} else {
 					report.Result = unknown(true)
 				}

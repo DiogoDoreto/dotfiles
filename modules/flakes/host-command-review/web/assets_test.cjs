@@ -17,7 +17,7 @@ function harness(options = {}) {
  const stored = options.stored || new Map();
  const storage = {setItem:(k,v)=>stored.set(k,v),getItem:k=>stored.get(k)||null,removeItem:k=>stored.delete(k)};
   const elements = Object.fromEntries(['status','detail','list','refresh','start','end','restart','quit','session','connection','instructions','copy'].map(id => [`#${id}`,new Element('div')]));
-  const calls = [], history = [];
+  const calls = [], history = [], intervals = [];
   const view = {requests:[]};
   let now = Date.now();
   class Clock extends Date { static now() { return now; } }
@@ -27,12 +27,19 @@ function harness(options = {}) {
     fetch: async (url, options) => {
       calls.push({url, options});
       return {ok:true,json:async () => url.endsWith('bootstrap') ? {auth:'auth-secret',csrf:'csrf-secret'} : url.endsWith('heartbeat') ? {lease_seconds:10} : structuredClone(view)};
-    }, crypto: require('node:crypto').webcrypto, sessionStorage: storage, structuredClone, TextEncoder, TextDecoder, atob, btoa, confirm:()=>true, setInterval() {}, Date: Clock, JSON, Uint8Array,
+    }, crypto: require('node:crypto').webcrypto, sessionStorage: storage, structuredClone, TextEncoder, TextDecoder, atob, btoa, confirm:()=>true, setInterval(fn, ms) { intervals.push({fn, ms}); }, Date: Clock, JSON, Uint8Array,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'assets/app.js'),'utf8'), context);
-  return {context,elements,calls,history,view,stored,advance:ms=>{now+=ms;},now:()=>now,run:code=>vm.runInContext(code,context)};
+  return {context,elements,calls,history,view,stored,intervals,advance:ms=>{now+=ms;},now:()=>now,run:code=>vm.runInContext(code,context)};
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
+const live = (sequence, stdout = 'partial', stderr = '', run_id = 'run-a') => ({run_id, sequence, stdout: Buffer.from(stdout).toString('base64'), stderr: Buffer.from(stderr).toString('base64'), truncated: false});
+function liveText(h, name) { return h.run(`liveView.streams.${name}.text`); }
+function deferredViews(h) {
+  const pending = [];
+  h.context.fetch = async () => new Promise(resolve => pending.push(v => resolve({ok:true,json:async()=>structuredClone(v)})));
+  return pending;
+}
 function all(e) { return e.querySelectorAll(); }
 function button(e,label) { const b = all(e).find(n => n.tag==='button' && n.textContent.startsWith(label)); assert.ok(b,label); return b; }
 function input(e,label) { const l = all(e).find(n=>n.tag==='label' && n.textContent===label); assert.ok(l,label); return l.children[0]; }
@@ -269,4 +276,115 @@ test('copyable instructions use generated IDs and warn against ambiguous resubmi
   const copy=h.elements['#instructions'].value;
   for(const term of ['propose_command','reason','get_command_status','request_cancellation','server-generated request_id','do not blindly repeat']) assert.ok(copy.includes(term),term);
   assert.ok(!copy.includes('fresh 64-lowercase-hex'));
+});
+
+test('live snapshots update independently, keep stop/focus nodes, and ignore old sequences/runs',async()=>{
+ const h=harness();await tick();const r={...review('starting'),live:live(1)};await select(h,r);
+ const d=h.elements['#detail'], stop=button(d,'Stop command'), out=liveText(h,'stdout');
+ assert.equal(out.textContent,'partial');assert.equal(stop.disabled,false);
+ const warning=h.run('liveView.warning');
+ h.view.requests[0].live=live(1,'must not repaint');await h.run('refresh()');assert.equal(out.textContent,'partial');
+ h.view.requests[0].live={...live(2,'next'),truncated:true};await rotate(h);
+ assert.equal(liveText(h,'stdout'),out);assert.equal(out.textContent,'next');assert.equal(button(d,'Stop command'),stop);assert.equal(stop.disabled,false);
+ assert.match(warning.textContent,/Truncated/);assert.equal(h.run('stale'),false);
+ for(const l of [live(1,'old'),live(3,'wrong run','','run-b')]){h.view.requests[0].live=l;await h.run('refresh()');assert.equal(out.textContent,'next');}
+ assert.deepEqual(all(d).filter(n=>n.tag==='button').map(n=>n.textContent),['Stop command']);
+ assert.ok(all(d).some(n=>n.textContent.includes('NOT released · incomplete')));
+ assert.ok(![...h.stored.values()].some(v=>v.includes('partial')||v.includes('next')));
+});
+
+test('view polling runs every second without changing heartbeat cadence',async()=>{
+ const h=harness();await tick();
+ assert.deepEqual(h.intervals.map(i=>i.ms),[3000,1000]);
+ const before=h.calls.length;await h.intervals[1].fn();await tick();
+ assert.equal(h.calls.length,before+1);assert.equal(h.calls.at(-1).url,'/api/view');
+});
+
+test('live panes follow output only when already at the end, independently per stream',async()=>{
+ const h=harness();await tick();await select(h,{...review('running'),live:live(1)});
+ const out=liveText(h,'stdout'),err=liveText(h,'stderr');
+ // Model layout growth when textContent is replaced (the DOM harness has no layout).
+ for(const el of [out,err]){
+  let value=el.textContent;el.clientHeight=100;el.scrollHeight=300;
+  Object.defineProperty(el,'textContent',{get:()=>value,set:v=>{value=v;el.scrollHeight+=100;}});
+ }
+ out.scrollTop=199.5;err.scrollTop=40;
+ h.view.requests[0].live=live(2,'more stdout','more stderr');await h.run('refresh()');
+ assert.equal(out.scrollTop,out.scrollHeight);assert.equal(err.scrollTop,40);
+ // An unscrollable/empty pane also starts following; a user can opt out by scrolling up.
+ out.scrollTop=20;err.scrollHeight=100;err.scrollTop=0;
+ h.view.requests[0].live=live(3,'new stdout','new stderr');await h.run('refresh()');
+ assert.equal(out.scrollTop,20);assert.equal(err.scrollTop,err.scrollHeight);
+ // Returning to the bottom resumes following.
+ out.scrollTop=out.scrollHeight-out.clientHeight;
+ h.view.requests[0].live=live(4,'latest','latest');await h.run('refresh()');
+ assert.equal(out.scrollTop,out.scrollHeight);
+});
+
+test('live to final held transition requires explicit normal fresh review and never releases',async()=>{
+ const h=harness();await tick();await select(h,{...review('running'),live:live(1)});
+ h.view.requests=[review('output_held')];await h.run('refresh()');
+ assert.equal(h.run('stale'),true);assert.equal(button(h.elements['#detail'],'Stop command').disabled,true);
+ assert.ok(!all(h.elements['#detail']).some(n=>n.textContent.startsWith('Release reviewed')));
+ await button(h.elements['#detail'],'Review updated request').emit('click');
+ assert.equal(h.run('liveView'),null);assert.equal(button(h.elements['#detail'],'Release reviewed').disabled,true);
+ assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+});
+
+test('completion paints final captured bytes in live panes without approving release',async()=>{
+ const h=harness();await tick();await select(h,{...review('running'),live:live(1,'before final','before final')});
+ const out=liveText(h,'stdout'),err=liveText(h,'stderr');
+ out.clientHeight=100;out.scrollHeight=400;out.scrollTop=300;
+ err.clientHeight=100;err.scrollHeight=400;err.scrollTop=50;
+ const final=review('output_held');final.held.stdout=btoa('STDOUT FINAL MARKER');final.held.stderr=btoa('STDERR FINAL MARKER');
+ h.view.requests=[final];await h.run('refresh()');
+ assert.equal(out.textContent,'STDOUT FINAL MARKER');assert.equal(err.textContent,'STDERR FINAL MARKER');
+ assert.match(h.run('liveView.warning.textContent'),/finished/i);
+ assert.equal(out.scrollTop,out.scrollHeight);assert.equal(err.scrollTop,50);
+ assert.equal(h.run('stale'),true);
+ assert.ok(!all(h.elements['#detail']).some(n=>n.textContent.startsWith('Release reviewed')));
+ assert.ok(!h.calls.some(c=>c.url.endsWith('/operation')));
+});
+
+test('completion cannot paint capture from a different execution into live panes',async()=>{
+ for(const change of [r=>{r.binding.revision++;},r=>{r.held.execution_digest='other';},r=>{r.spec.script='other';}]){
+  const h=harness();await tick();await select(h,{...review('running'),live:live(1,'original')});
+  const out=liveText(h,'stdout'),final=review('output_held');change(final);
+  h.view.requests=[final];await h.run('refresh()');
+  assert.equal(out.textContent,'original');assert.equal(h.run('stale'),true);
+ }
+});
+
+test('ephemeral live-only changes preserve command draft and held preview/confirmation',async()=>{
+ for(const phase of ['reviewing','output_held']){
+  const h=harness();await tick();await select(h,review(phase));const d=h.elements['#detail'];
+  const editor=input(d,phase==='reviewing'?'Script':'Export stdout');editor.value='private draft';await editor.emit('input');
+  let confirmation;
+  if(phase==='output_held'){await button(d,'Preview whole').emit('click');await button(d,'Release reviewed').emit('click');confirmation=button(d,'Confirm release to guest');}
+  h.view.requests[0].live=live(2);await rotate(h);
+  assert.equal(input(d,phase==='reviewing'?'Script':'Export stdout'),editor);assert.equal(editor.value,'private draft');assert.equal(h.run('stale'),false);
+  if(confirmation)assert.equal(button(d,'Confirm release to guest'),confirmation);
+  else assert.equal(button(d,'Run as dog').disabled,true);
+ }
+});
+
+test('live text is inert HTML/ANSI/binary and whole snapshots repair split UTF8',async()=>{
+ const h=harness();await tick();const bytes=Buffer.from('<img onerror=bad>\x1b[31m\x00');
+ const split=Buffer.concat([bytes,Buffer.from([0xe2,0x82])]);
+ await select(h,{...review('running'),live:live(1,split,Buffer.from([0xff]))});
+ const out=liveText(h,'stdout');assert.equal(out.textContent,bytes.toString()+'\ufffd');assert.equal(liveText(h,'stderr').textContent,'\ufffd');
+ h.view.requests[0].live=live(2,Buffer.concat([split,Buffer.from([0xac])]));await h.run('refresh()');
+ assert.equal(out.textContent,bytes.toString()+'€');assert.equal(out.children.length,0);
+ assert.equal(h.run('liveView.streams.stdout.count.textContent'),`${bytes.length+3} bytes captured`);
+});
+
+test('polling is single-flight; late responses across reset/restart cannot restore old session or live DOM',async()=>{
+ const h=harness();await tick();h.view.session_id='old';await select(h,{...review('running'),live:live(1,'old private')});
+ const pending=deferredViews(h);const old=h.run('refresh()');assert.equal(h.run('refresh()'),old);assert.equal(pending.length,1);
+ h.run('resetSession()');assert.equal(h.run('liveView'),null);assert.equal(h.run('current'),null);
+ const fresh=h.run('refresh()');assert.equal(pending.length,2);
+ pending[1]({session_id:'new',requests:[{...review('running'),live:live(1,'new private','','new-run')}]});await fresh;
+ await button(h.elements['#list'],'guest').emit('click');const out=liveText(h,'stdout');
+ pending[0]({session_id:'old',requests:[{...review('running'),live:live(99,'old private')}]});await old;
+ assert.equal(h.run('sessionIdentity'),'new');assert.equal(liveText(h,'stdout'),out);assert.equal(out.textContent,'new private');assert.equal(h.run('stale'),false);
 });

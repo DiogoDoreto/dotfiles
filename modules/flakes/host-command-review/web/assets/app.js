@@ -3,7 +3,7 @@
 // drafts, approvals, output, or routes. No cookies, localStorage or mutation GETs.
 const storageKey = 'host-review-auth-v1';
 const tab = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, '0')).join('');
-let sessionIdentity = null;
+let sessionIdentity = null, generation = 0, viewFlight = null, liveView = null;
 function forgetAuth() { auth = ''; csrf = ''; leaseUntil = 0; try { sessionStorage.removeItem(storageKey); } catch (_) {} }
 function saveAuth(r) {
  auth = r.auth; csrf = r.csrf;
@@ -58,7 +58,9 @@ async function api(path, body) {
     headers['Content-Type'] = 'application/json'; headers['X-CSRF-Token'] = csrf;
     options.body = JSON.stringify(body);
   }
+  const epoch = generation;
   const response = await fetch(`/api/${path}`, options);
+  if (epoch !== generation) throw new Error('Obsolete browser response ignored.');
   if (!response.ok) {
  if (response.status === 401) forgetAuth();
  if (response.status === 409) { leaseUntil = 0; throw new Error('Host refused request or another loaded tab owns browser approval. Reload to reclaim, then review again. No automatic retry.'); }
@@ -68,8 +70,9 @@ async function api(path, body) {
 }
 async function heartbeat() {
   if (!auth || document.visibilityState !== 'visible') { leaseUntil = 0; return; }
-  try { const r = await api('heartbeat', {}); leaseUntil = Date.now() + r.lease_seconds * 1000; }
-  catch (e) { leaseUntil = 0; status.textContent = e.message; }
+  const epoch = generation;
+  try { const r = await api('heartbeat', {}); if (epoch === generation) leaseUntil = Date.now() + r.lease_seconds * 1000; }
+  catch (e) { if (epoch === generation) { leaseUntil = 0; status.textContent = e.message; } }
 }
 function button(label, action, parent, disabled = false) {
   const b = node('button', label, parent); b.disabled = disabled;
@@ -85,12 +88,13 @@ async function apply(action, extra = {}) {
   busy = true;
   // Copy the exact host-provided binding, never build an approval in the browser.
   const binding = structuredClone(current.binding);
-  try { await api('operation', {action, binding, ...extra}); await refresh(true); }
-  catch (e) { status.textContent = e.message; }
+  const epoch = generation;
+  try { await api('operation', {action, binding, ...extra}); if (epoch === generation) await refresh(true); }
+  catch (e) { if (epoch === generation) status.textContent = e.message; }
   finally { busy = false; }
 }
 function render(r) {
-  current = r; stale = false; detail.replaceChildren();
+  current = r; stale = false; liveView = null; detail.replaceChildren();
   status.textContent = r.phase === 'output_held' ? 'Output is private. Review, redact if needed, then preview before release.' : ['reviewing', 'approved'].includes(r.phase) ? 'Review the command before running. Save any edits first.' : (phaseNames[r.phase] || r.phase);
   node('p', phaseNames[r.phase] || r.phase, detail).className = 'eyebrow';
   node('p', 'Original reason · agent-provided, untrusted text · read-only', detail).className = 'muted';
@@ -127,6 +131,18 @@ function render(r) {
     node('pre', r.spec.script, detail);
     button('Stop command', () => { if (confirm('Request a process-tree stop? Changes already made cannot be undone.')) apply('cancel'); }, detail).className = 'danger';
   }
+  if (locked) {
+    const panel = node('section', undefined, detail); panel.className = 'live-capture'; panel.hidden = true;
+    const heading = node('h3', 'Live capture — host-private · NOT released · incomplete', panel);
+    node('p', 'Read-only stdout/stderr snapshots, not a final result. UTF-8 replacement display: invalid or incomplete bytes appear as replacement characters; later snapshots may repair split characters. Plain text only; no HTML/ANSI interpretation or PTY.', panel);
+    const streams = {};
+    for (const name of ['stdout', 'stderr']) {
+      node('h4', name, panel);
+      streams[name] = {text: node('pre', '', panel), count: node('p', '', panel)};
+    }
+    liveView = {panel, heading, streams, warning: node('strong', '', panel), run: null, sequence: -1};
+    updateLive(r.live);
+  }
   if (r.phase === 'output_held' && r.held) renderHeld(r.held);
   if (r.phase === 'ambiguous') {
     node('strong', 'Execution outcome is uncertain. Check the host before submitting another request; side effects may have occurred. This request cannot be retried here.', detail);
@@ -136,6 +152,45 @@ function render(r) {
     node('p', r.phase === 'released' ? 'The reviewed result has been shared with the guest. This cannot be undone.' : 'No further action is needed for this request.', detail);
     node('pre', r.spec.script, detail);
   }
+}
+function updateLive(live) {
+  if (!liveView || !live || !live.run_id || !Number.isSafeInteger(live.sequence) || live.sequence < 0) return;
+  if (liveView.run !== null && liveView.run !== live.run_id) return;
+  if (live.sequence <= liveView.sequence) return;
+  liveView.run = live.run_id; liveView.sequence = live.sequence;
+  paintCapture(live);
+  liveView.warning.textContent = live.truncated ? 'Truncated — capture limit reached; some output was not retained.' : 'Incomplete — command has not finished.';
+}
+function paintCapture(capture) {
+  liveView.panel.hidden = false;
+  for (const name of ['stdout', 'stderr']) {
+    // Decode the entire retained stream, never concatenate decoded deltas.
+    const bytes = capture[name] || '';
+    const text = liveView.streams[name].text;
+    // Check before replacing content; tolerate fractional scroll coordinates.
+    const atEnd = text.scrollHeight - text.clientHeight - text.scrollTop <= 1;
+    const previousTop = text.scrollTop;
+    text.textContent = decode(bytes) || '(empty)';
+    text.scrollTop = atEnd ? text.scrollHeight : previousTop;
+    liveView.streams[name].count.textContent = `${atob(bytes).length} bytes captured`;
+  }
+}
+function finishLive(next) {
+  // Read-only observation only: never adopt the new binding or build a release
+  // candidate. The final artifact is authoritative, including bytes produced
+  // after the last running poll. A substantive change still needs fresh review.
+  if (!liveView || !current || !['starting', 'running'].includes(current.phase) ||
+      next.phase !== 'output_held' || !next.held ||
+      next.snapshot_id !== current.snapshot_id ||
+      next.binding.session_id !== current.binding.session_id ||
+      next.binding.revision !== current.binding.revision ||
+      next.held.execution_digest !== current.binding.digest ||
+      JSON.stringify(next.spec) !== JSON.stringify(current.spec)) return;
+  paintCapture(next.held);
+  liveView.heading.textContent = 'Final capture — host-private · NOT released';
+  liveView.warning.textContent = next.held.truncated
+    ? 'Finished — capture truncated; some output was not retained. Reopen to review the final result.'
+    : 'Finished — final captured output. Reopen to review the final result.';
 }
 function decode(b64) { const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); return new TextDecoder().decode(bytes); }
 function encode(text) { const bytes = new TextEncoder().encode(text); let binary = ''; for (const b of bytes) binary += String.fromCharCode(b); return btoa(binary); }
@@ -191,13 +246,14 @@ function renderHeld(original) {
     status.textContent = 'Still held. No release operation sent.';
   }, releaseActions);
 }
-// Only nonce/expiry are disposable offers. Epoch, revision, digest, phase,
+// Live is ephemeral; nonce/expiry are disposable offers. Epoch, revision, digest, phase,
 // complete spec and held artifact still identify the state being reviewed.
 function sameReview(a, b) {
-  const state = r => JSON.stringify({...r, binding: {...r.binding, nonce: undefined, expires_unix: undefined}});
+  const state = r => JSON.stringify({...r, live: undefined, binding: {...r.binding, nonce: undefined, expires_unix: undefined}});
   return state(a) === state(b);
 }
 function renewOffer(next) {
+  updateLive(next.live);
   if (JSON.stringify(current.binding) !== JSON.stringify(next.binding)) {
     current = next;
     bindingView.textContent = `Revision ${next.binding.revision || 1} · Frozen by the host`;
@@ -216,9 +272,23 @@ function selectReview(r) {
     b.setAttribute('aria-pressed', String(active));
   }
 }
-async function refresh(force = false) {
+function refresh(force = false) {
+  const epoch = generation;
+  if (viewFlight) {
+    // Explicit review after a mutation/reselection must use a fresh snapshot,
+    // not a poll that was already in flight before the action.
+    return force ? viewFlight.then(() => { if (epoch === generation) return refresh(true); }) : viewFlight;
+  }
+  const flight = refreshView(force, epoch);
+  viewFlight = flight;
+  flight.finally(() => { if (viewFlight === flight) viewFlight = null; });
+  return flight;
+}
+async function refreshView(force, epoch) {
   try {
-    const v = await api('view'); const list = document.querySelector('#list');
+    const v = await api('view');
+    if (epoch !== generation) return;
+    const list = document.querySelector('#list');
  if (sessionIdentity !== null && sessionIdentity !== v.session_id) resetSession();
  sessionIdentity = v.session_id;
  const active = v.state === 'active' || (!v.state && !!v.session_id);
@@ -259,18 +329,19 @@ async function refresh(force = false) {
     // substantive changes require discarding the form via explicit selection.
     if (force && next) render(next);
     else if (current && !stale && (!next || !sameReview(next, current))) {
+      if (next) finishLive(next);
       stale = true;
       for (const control of detail.querySelectorAll('button,input,textarea,select')) control.disabled = true;
       status.textContent = 'This request has changed. Reopen it to review the latest host state; your draft has not been overwritten.';
       if (next) button('Review updated request', async () => {
-        try { const latest = await api('view'); const request = latest.requests.find(r => r.snapshot_id === selected); if (request) selectReview(request); }
-        catch (e) { status.textContent = e.message; }
+        await refresh(true);
       }, detail);
     } else if (next && current && !stale) renewOffer(next);
-  } catch (e) { status.textContent = e.message; }
+  } catch (e) { if (epoch === generation) status.textContent = e.message; }
 }
 document.querySelector('#refresh').addEventListener('click', () => refresh());
 function resetSession() {
+ generation++; viewFlight = null; liveView = null; sessionIdentity = null;
  selected = ''; current = null; stale = false; bindingView = null; queueSignature = ''; latestRequests = []; leaseUntil = 0;
  detail.replaceChildren(); document.querySelector('#list').replaceChildren();
 }
@@ -278,6 +349,7 @@ async function lifecycle(action) {
  if (busy) return;
  if (action !== 'start' && !confirm(`${action === 'quit' ? 'Quit application' : action === 'restart' ? 'End and replace this session with a new code' : 'End this session'}? Running work (including root authentication) will be cancelled and reaped. Side effects cannot be undone. Unreleased output will be deleted, not sent to the agent.`)) return;
  busy = true;
+ resetSession();
  try { await api('operation', {action, binding: {version: 0, session_id: '', snapshot_id: '', revision: 0, digest: '', nonce: '', epoch: 0, expires_unix: 0}}); resetSession(); if (action === 'quit') { forgetAuth(); status.textContent = 'Application closed.'; } else { await heartbeat(); await refresh(); } }
  catch (e) { status.textContent = e.message; }
  finally { busy = false; }
@@ -301,4 +373,4 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
   catch (e) { status.textContent = e.message; }
 })();
 setInterval(heartbeat, 3000);
-setInterval(() => { if (auth) refresh(); }, 3000);
+setInterval(() => { if (auth) refresh(); }, 1000);

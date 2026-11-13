@@ -60,6 +60,10 @@ codes, never raw host diagnostics.
   FD3, stdin `/dev/null`, no PTY/startup files/inherited environment. This explicitly
   amends unreleased v1's former `-c` wording; digest encoding is unchanged.
 * Combined 4-MiB stdout/stderr retention, concurrent drain/discard after cap.
+* While starting/running, authenticated host-only polling can display bounded,
+  incomplete live stdout/stderr snapshots. These are not artifacts, have no exit
+  or release identity, and never enter guest status/publication. Completion still
+  requires explicit fresh held-output review, preview and confirmed release.
 * Exact current snapshot/revision/digest/epoch/nonce and browser lease checked
   before durable nonce consumption; retries and recovery **never reexecute**.
 * Raw capture deleted on clean end; crash raw expires after 24 hours; ledger and
@@ -113,5 +117,9 @@ release metadata tampering, browser loss at consumption, cancellation, active
 shutdown/join, auth-cancel active-to-pending publication with spent nonce retention,
 non-starving per-record publication errors, closed guest routes and
 malicious/blocked/oversized SSH peers. The dependency-free DOM polling tests cover
-binding expiry/rotation without draft loss and substantive-state invalidation.
+binding expiry/rotation without draft loss, live-only updates without control or
+preview replacement, single-flight/generation-fenced polling, inert byte display,
+and substantive-state invalidation. An observed-executor HTTP integration test
+checks live visibility while execution is blocked, final held replacement and
+absence of live/output data from guest publication.
 These tests deliberately do not run privileged payloads or real transient units.

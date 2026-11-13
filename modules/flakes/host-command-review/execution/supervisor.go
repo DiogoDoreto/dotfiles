@@ -67,7 +67,20 @@ func Supervisor(c Config, digest string, root bool, in, out *os.File, b Backend)
 	if b == nil {
 		b = Systemd{}
 	}
-	r := b.Run(ctx, c, s, fManifest(s), digest)
+	var r Result
+	failed := false
+	if observed, ok := b.(interface {
+		RunObserved(context.Context, Config, contracts.ExecutionSpec, []byte, string, Observer) Result
+	}); ok {
+		r = observed.RunObserved(ctx, c, s, fManifest(s), digest, func(p Progress) {
+			if !failed && send(out, "progress", progressBytes(p)) != nil {
+				failed = true
+				cancel()
+			}
+		})
+	} else {
+		r = b.Run(ctx, c, s, fManifest(s), digest)
+	}
 	if r.Validate() != nil {
 		r = unknown(true)
 	}
@@ -76,6 +89,10 @@ func Supervisor(c Config, digest string, root bool, in, out *os.File, b Backend)
 func fManifest(s contracts.ExecutionSpec) []byte { b, _, _ := Manifest(s); return b }
 
 func (backend Systemd) Run(ctx context.Context, c Config, s contracts.ExecutionSpec, manifest []byte, digest string) Result {
+	return backend.RunObserved(ctx, c, s, manifest, digest, nil)
+}
+
+func (backend Systemd) RunObserved(ctx context.Context, c Config, s contracts.ExecutionSpec, manifest []byte, digest string, observe Observer) Result {
 	unit := "host-review-" + stringHex(nonce()[:16]) + ".service"
 	args, e := c.UnitArgs(s, unit, digest)
 	if e != nil {
@@ -156,13 +173,10 @@ func (backend Systemd) Run(ctx context.Context, c Config, s contracts.ExecutionS
 						}
 					}
 				}()
-				f, e = receive(out, time.Duration(s.TimeoutSeconds)*time.Second+Handshake+8*time.Second)
+				result, e = receiveResult(out, time.Now().Add(time.Duration(s.TimeoutSeconds)*time.Second+Handshake+8*time.Second), observe)
 				close(leaseDone)
 				<-leaseExited
-				if e == nil && f.Type == "result" {
-					result, e = parseResult(f.Data)
-					transportOK = e == nil
-				}
+				transportOK = e == nil
 			}
 		}
 	}

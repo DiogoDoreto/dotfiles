@@ -91,7 +91,12 @@ stop a process tree: the host owns that duty and must supervise server failures.
 * `View(context.Context) (View, error)` returns bounded **host-private** review
   records, complete frozen specs and current host-minted `ApprovalBinding`s.
   `RequestView.Reason` is untrusted guest text. `Held` is the original host-private
-  capture in `contracts.Artifact` shape; it is **not** a released artifact or a
+  capture in `contracts.Artifact` shape; optional `Live` contains ephemeral
+  `run_id`, monotonic `sequence`, base64 `stdout`/`stderr` whole-stream byte
+  snapshots and `truncated`, only while starting/running. Live is not an artifact:
+  no exit, artifact ID, editing/redaction or release operation. It is carried only
+  by the existing authenticated/current-tab, no-store `GET /api/view`, not a new
+  stream endpoint or guest publication. `Held` is **not** a released artifact or a
   `contracts.Reply`. The adapter must prepare the candidate artifact identity and
   explicit empty streams/redaction list. Never route View over guest RPC.
 * `Reviewer(context.Context, time.Time) error` updates the authenticated browser
@@ -193,12 +198,25 @@ remain internal, not user-facing descriptors. Command text, cwd, user and timeou
 can be edited (save then review the new host spec before run). Defaults belong to host admission:
 120 seconds, maximum 1800; one command, four-hour session maximum. Distinct dog
 and root run actions; no prompt or password in browser. Starting/running shows
-read-only metadata plus explicit stop request. Polling never silently overwrites
+read-only metadata plus explicit stop request. If live capture is available,
+separate plain-text stdout/stderr panels show captured byte counts, host-private /
+not released / incomplete labels, and a truncation warning. No HTML, ANSI or PTY
+interpretation; invalid UTF-8 is replacement-decoded for display, never rewritten
+in the backend. Each update decodes whole-stream bytes so later snapshots repair
+split UTF-8 characters. Unchanged/older sequences and mismatched run identities
+are ignored without repainting controls. There are no live release controls.
+
+Polling is single-flight and generation-fenced across session resets and lifecycle
+operations; late old-session responses cannot restore discarded host text or
+bindings. Live DOM references and data are cleared on reset and never persisted.
+Live-only changes update panels independently; final held/phase transitions remain
+substantive and require explicit fresh review. Polling never silently overwrites
 unsaved review. Nonce/expiry-only offer renewal updates the host-provided binding
 in place without discarding command drafts, redactions, or the unsaved-command run
 interlock. Selecting the same unchanged request also preserves drafts. Expired
-bindings cannot be submitted; a renewed release offer requires a fresh complete
-preview and confirmation. Revision, epoch, digest, phase, spec or held artifact
+bindings cannot be submitted; nonce/expiry-only renewal preserves an already
+reviewed preview and its in-page confirmation. A substantive change requires a
+fresh complete preview and confirmation. Revision, epoch, digest, phase, spec or held artifact
 changes disable stale forms until explicit reselection and fresh review.
 
 **All output is held initially; no skip-output-review option exists.** Successful

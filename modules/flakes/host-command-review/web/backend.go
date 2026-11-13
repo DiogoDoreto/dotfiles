@@ -30,6 +30,16 @@ type View struct {
 	Transport   string        `json:"transport"`
 }
 
+// LiveCapture is an ephemeral, host-private whole-stream snapshot, not an
+// Artifact: it has no exit, release identity, or redaction/release semantics.
+type LiveCapture struct {
+	RunID     string `json:"run_id"`
+	Sequence  uint64 `json:"sequence"`
+	Stdout    []byte `json:"stdout"`
+	Stderr    []byte `json:"stderr"`
+	Truncated bool   `json:"truncated"`
+}
+
 type RequestView struct {
 	SnapshotID string                  `json:"snapshot_id"`
 	Reason     string                  `json:"reason"` // guest-controlled, never HTML
@@ -40,6 +50,7 @@ type RequestView struct {
 	// Held is host-private original capture, NOT a guest Reply. It remains held
 	// until a separately reviewed immutable artifact is explicitly published.
 	Held *contracts.Artifact `json:"held,omitempty"`
+	Live *LiveCapture        `json:"live,omitempty"`
 }
 
 type Operation struct {

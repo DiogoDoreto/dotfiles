@@ -74,6 +74,30 @@ configuration. Nothing was activated; do not advertise a live-certified reviewer
   `CloseUnclean()` is fatal shutdown: cancels managed contexts, releases singleton
   lock even on a poisoned Store; next controller recovers ambiguously.
 
+## Ephemeral host-private live capture
+
+Production `RunConsumed` uses `execution.ExecuteObserved`.
+`RunConsumedWithObservedExecutor` is the trusted in-process observed test seam;
+`RunConsumedWithExecutor` remains a compatibility wrapper for terminal-only
+executors. `Reviews` adds an optional `Live *LiveCapture` for starting/running
+records. Live data has a fresh random run ID (including fresh attempts after auth
+cancellation), an increasing sequence, retained stdout/stderr prefixes and a
+monotonic truncation flag. It is not proof of a successful outcome.
+
+The controller validates delta offsets, 32 KiB combined delta bounds, the 4 MiB
+combined retained cap, non-null streams and truncation monotonicity. Invalid
+updates discard that live entry; they never create a new entry. Review reads
+return defensive copies. Old callbacks cannot modify later runs or resurrect
+an entry after completion, uncertainty, cancellation or shutdown. Terminal
+reconciliation and every executor return clear live data; end/unclean shutdown
+cancel-and-clear managed runs even if the store is unusable. Context expiry also
+clears live capture. The callback takes only a dedicated live mutex: never the
+store or application lifecycle locks. Store operations may take the live mutex,
+never the inverse. Live output is never persisted or included in `StatusBytes`;
+only explicit artifact release discloses output to the guest. No durable running
+transition is required to display progress. Browser rendering and actual desktop
+live-output acceptance still require the integration/live gates.
+
 ## Private layout / durability
 
 `store.lock` and `reviewer.lock` are stable inodes; never remove/rename them.

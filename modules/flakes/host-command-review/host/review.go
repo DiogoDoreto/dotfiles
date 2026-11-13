@@ -17,6 +17,7 @@ type Review struct {
 	Record  Record
 	Binding contracts.ApprovalBinding
 	Held    *contracts.Artifact
+	Live    *LiveCapture
 }
 
 func (c *Controller) Reviews() (out []Review, err error) {
@@ -39,6 +40,9 @@ func (c *Controller) Reviews() (out []Review, err error) {
 				c.offers[r.Snapshot.SnapshotID] = offer
 			}
 			v := Review{Record: r, Binding: offer.Binding}
+			if r.Phase == contracts.Starting || r.Phase == contracts.Running {
+				v.Live = c.copyLive(r.Snapshot.SnapshotID)
+			}
 			if r.Phase == contracts.OutputHeld {
 				b, e := c.store.read("raw", r.Snapshot.SnapshotID)
 				if e != nil {

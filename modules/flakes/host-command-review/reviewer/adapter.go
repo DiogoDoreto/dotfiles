@@ -15,13 +15,16 @@ import (
 type Adapter struct {
 	Controller *host.Controller
 	Execution  execution.Config
-	// Execute is a trusted test seam; production always uses RunConsumed.
-	Execute func(context.Context, execution.Config, contracts.ExecutionSpec) execution.Report
-	Stop    context.CancelFunc
-	Context context.Context
-	mu      sync.Mutex
-	wg      sync.WaitGroup
-	closing bool
+	// Execute preserves the original trusted test seam. ExecuteObserved is the
+	// progress-aware test seam and takes precedence if both are provided.
+	// Production leaves both nil and always uses RunConsumed.
+	Execute         func(context.Context, execution.Config, contracts.ExecutionSpec) execution.Report
+	ExecuteObserved func(context.Context, execution.Config, contracts.ExecutionSpec, execution.Observer) execution.Report
+	Stop            context.CancelFunc
+	Context         context.Context
+	mu              sync.Mutex
+	wg              sync.WaitGroup
+	closing         bool
 }
 
 func (a *Adapter) View(ctx context.Context) (web.View, error) {
@@ -36,7 +39,11 @@ func (a *Adapter) View(ctx context.Context) (web.View, error) {
 		return out, e
 	}
 	for _, r := range rs {
-		out.Requests = append(out.Requests, web.RequestView{SnapshotID: r.Record.Snapshot.SnapshotID, Reason: r.Record.Snapshot.Proposal.Reason, Phase: r.Record.Phase, Spec: r.Record.Spec, Binding: r.Binding, Held: r.Held})
+		v := web.RequestView{SnapshotID: r.Record.Snapshot.SnapshotID, Reason: r.Record.Snapshot.Proposal.Reason, Phase: r.Record.Phase, Spec: r.Record.Spec, Binding: r.Binding, Held: r.Held}
+		if r.Live != nil {
+			v.Live = &web.LiveCapture{RunID: r.Live.RunID, Sequence: r.Live.Sequence, Stdout: r.Live.Stdout, Stderr: r.Live.Stderr, Truncated: r.Live.Truncated}
+		}
+		out.Requests = append(out.Requests, v)
 	}
 	return out, nil
 }
@@ -80,7 +87,9 @@ func (a *Adapter) Apply(ctx context.Context, o web.Operation) error {
 	go func() {
 		defer a.wg.Done()
 		var e error
-		if a.Execute != nil {
+		if a.ExecuteObserved != nil {
+			e = a.Controller.RunConsumedWithObservedExecutor(a.Context, o.Binding, spec, a.Execution, a.ExecuteObserved)
+		} else if a.Execute != nil {
 			e = a.Controller.RunConsumedWithExecutor(a.Context, o.Binding, spec, a.Execution, a.Execute)
 		} else {
 			e = a.Controller.RunConsumed(a.Context, o.Binding, spec, a.Execution)

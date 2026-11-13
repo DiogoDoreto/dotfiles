@@ -45,6 +45,46 @@ not that every queue publication succeeded or the guest is trustworthy.
 * Session expiry/lost renewal ends that session, leaving an idle application.
   Review sessions retain the four-hour monotonic/suspend-inclusive cap.
 
+## Host-private live capture
+
+Starting/running requests can show read-only live stdout and stderr through the
+existing authenticated/current-tab, no-store `GET /api/view`. Snapshots are bounded
+whole-stream retained bytes, identified by an ephemeral run ID and monotonic
+sequence. Panels label the data **host-private, NOT released, incomplete**, show
+byte counts and warn when truncated. Stop remains usable. No exit, artifact ID,
+redaction, release or automatic disclosure is attached to live capture; guest
+contracts, status and publication do not contain it. Completion replaces live with
+the normal held artifact, requiring explicit fresh review, whole-export preview
+and confirmed release. Running side effects still cannot be undone.
+
+Output is inert plain text, never HTML/ANSI/PTY interpretation. UTF-8 replacement
+characters may represent invalid bytes or a partially captured character. Each
+snapshot decodes the whole retained byte stream, so later bytes repair split
+characters without concatenating corrupted decoded chunks. The display does not
+alter captured bytes. The UI polls snapshots every second; this is not a terminal
+or a promise of immediate output (the command itself may buffer). Each live-output
+pane follows new output only if it was already scrolled to the bottom. Scrolling
+up preserves the reading position; returning to the bottom resumes following.
+On completion, the existing panes display the authoritative final held capture,
+including bytes produced since the last running poll, and are labeled finished.
+This read-only update preserves the same scroll behavior and does not adopt a
+release binding: reopen the updated request for normal final review and release.
+
+Live-only changes do not invalidate substantive review or replace controls,
+focusable nodes, command/redaction drafts, previews or in-page confirmation.
+Repeated/older sequences and mismatched run IDs do not repaint panels. Revision,
+epoch, phase, spec, reason or final held-artifact changes still invalidate review
+normally. Polling is single-flight; browser-generation checks fence pending reads
+across End/Restart/reset. Session reset deletes live DOM references and RAM data.
+No live content or routing/binding data is stored in browser persistence.
+
+DOM tests cover live updates, stale sequence/run rejection, late old-session
+responses, final held transition, inert HTML/ANSI/binary and split UTF-8. A real
+HTTP/guest-publication test uses a blocked observed fake executor to prove live
+visibility before return and final held replacement with no guest disclosure.
+These tests do not certify real-browser rendering/throttling or desktop execution;
+those remain manual acceptance gates. No deployment was performed.
+
 ## Deliberate browser-storage policy change
 
 Previously refresh lost RAM-only credentials. The UI now stores **only** auth,

@@ -64,6 +64,21 @@ func TestFakeSystemdChild(t *testing.T) {
 	if e = os.WriteFile(marker, []byte("gate crossed"), 0600); e != nil {
 		os.Exit(94)
 	}
+	if mode == "progress" {
+		if send(out, "progress", progressBytes(Progress{Stdout: []byte("captured"), Stderr: []byte{}})) != nil {
+			os.Exit(96)
+		}
+		deadline := time.Now().Add(3 * time.Second)
+		for {
+			if _, err := os.Stat(marker + ".release"); err == nil {
+				break
+			}
+			if time.Now().After(deadline) {
+				os.Exit(97)
+			}
+			time.Sleep(time.Millisecond)
+		}
+	}
 	r := Result{Started: true, Stdout: []byte("captured"), Stderr: []byte{}, Exit: contracts.ExitInfo{Kind: "exited", Code: 126}}
 	if e = send(out, "result", resultBytes(r)); e != nil {
 		os.Exit(95)
