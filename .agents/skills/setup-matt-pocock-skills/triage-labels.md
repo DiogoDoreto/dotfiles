@@ -1,15 +1,19 @@
-# Triage Labels
+# Triage roles: Local Markdown
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
+Use the canonical role strings without aliases. These are fields in local issue files, not labels to create on a remote Git host.
 
-| Label in mattpocock/skills | Label in our tracker | Meaning                                  |
-| -------------------------- | -------------------- | ---------------------------------------- |
-| `needs-triage`             | `needs-triage`       | Maintainer needs to evaluate this issue  |
-| `needs-info`               | `needs-info`         | Waiting on reporter for more information |
-| `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
-| `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
-| `wontfix`                  | `wontfix`            | Will not be actioned                     |
+| Role | Local field/value | Meaning |
+| --- | --- | --- |
+| `bug` | `Category: bug` | Something is broken |
+| `enhancement` | `Category: enhancement` | New feature or improvement |
+| `needs-triage` | `Status: needs-triage` | Maintainer needs to evaluate |
+| `needs-info` | `Status: needs-info` | Waiting on reporter information |
+| `ready-for-agent` | `Status: ready-for-agent` | Fully specified and ready for an agent |
+| `ready-for-human` | `Status: ready-for-human` | Needs human implementation |
+| `wontfix` | `Status: wontfix` | Rejected or already implemented; closed |
 
-When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
+Every triaged implementation issue has one category and one state. Update the existing field rather than adding a second one. A missing category or status is untriaged; conflicting values need maintainer direction.
 
-Edit the right-hand column to match whatever vocabulary you actually use.
+`Status: resolved` closes completed implementation work. `wontfix` also closes work and satisfies a dependency, but any dependent ticket must be checked for assumptions invalidated by the rejection. Append explanations under `## Comments`.
+
+Wayfinding tickets use `Type:` and `Status: claimed` / `Status: resolved` instead. They are decisions, not implementation issues, and do not receive triage roles. See `docs/agents/issue-tracker.md`.

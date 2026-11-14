@@ -57,6 +57,12 @@ direnv allow
 
 ## Agent skills
 
+Before using the imported engineering/productivity skills, read `docs/agents/skill-runtime.md` for local tool and orchestration conventions.
+
+### Triage labels
+
+Triage uses the canonical category/state roles recorded in `docs/agents/triage-labels.md`.
+
 ### Issue tracker
 
 Issues are tracked as local Markdown files under `.private/`. See `docs/agents/issue-tracker.md`.
