@@ -4,9 +4,9 @@
 
 (package! tts :recipe (:host github :repo "DiogoDoreto/emacs-tts"))
 
-(package! modus-themes :pin "b1647b2980f4f27c3c81ac1531d992a14fefd06a")
+(package! modus-themes :pin "782743415b3eedac0b99db2342fb35703deb752f")
 
-(package! ef-themes :pin "48920f6ca277a0f55b3e21eefa04bdb57bfd8509")
+(package! ef-themes :pin "724b598825f8908d9d69a1251fc975da70560dee")
 
 (package! consult-gh :recipe (:host github :repo "armindarvish/consult-gh")
   :pin "c8707e86d36ea4ec38e177ca8fa0313a5374a0a9")
@@ -32,7 +32,7 @@
 
 (package! daemons :pin "4900fe1ec64ab339da29082e8fd4545fc6e48ec4")
 
-(package! hnreader :pin "3a1ad5f3711b89e3e2f8506cc485ce9f8e8ca216")
+(package! hnreader :pin "79c29e6b5a46c9cfb899f80ebc272f7e552adbc5")
 
 (package! writegood-mode :pin "d54eadeedb8bf3aa0e0a584c0a7373c69644f4b8")
 
@@ -40,7 +40,7 @@
 (package! elfeed-protocol-freshrss :recipe (:host codeberg :repo "lou/elfeed-protocol-freshrss")
   :pin "5b282ae09f994d9d63ac2f7aa0d07414d9802464")
 
-(package! evil-textobj-tree-sitter :pin "fecc0e11615df31a6651ce11b012388e53cad4e9")
+(package! evil-textobj-tree-sitter :pin "08ff3afa85a19bfbf95baaf21bd2f2516de7af54")
 
 (package! alert :pin "31fc56855289d0846e73d7ca9b84b628aeac16a0")
 
