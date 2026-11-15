@@ -69,7 +69,11 @@
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
           inherit (inputs.forgejo-cli.packages.${system}) forgejo-cli;
-          handy = inputs.handy.packages.${system}.default;
+          handy = inputs.handy.packages.${system}.default.overrideAttrs (old: {
+            # Upstream's flake omits SQLite; the final link fails with
+            # "cannot find -lsqlite3" against this nixpkgs revision.
+            buildInputs = (old.buildInputs or [ ]) ++ [ final.sqlite ];
+          });
 
           llama-cpp-vulkan =
             (inputs.llama-cpp.packages.${system}.vulkan.override {
