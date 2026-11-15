@@ -71,9 +71,14 @@
           inherit (inputs.forgejo-cli.packages.${system}) forgejo-cli;
           handy = inputs.handy.packages.${system}.default;
 
-          llama-cpp-vulkan = inputs.llama-cpp.packages.${system}.vulkan.override {
-            useWebUi = false;
-          };
+          llama-cpp-vulkan =
+            (inputs.llama-cpp.packages.${system}.vulkan.override {
+              useWebUi = false;
+            }).overrideAttrs
+              {
+                # Upstream passes webui as a build input even when disabled.
+                webui = null;
+              };
           llama-cpp-sycl =
             let
               gcc = final.stdenv.cc.cc;
@@ -95,6 +100,8 @@
             in
             base.overrideAttrs (old: {
               pname = "llama-cpp-sycl";
+              # Upstream passes webui as a build input even when disabled.
+              webui = null;
               # Upstream selects both languages' warning flags using the C++
               # compiler, but we use GCC for C and IntelLLVM for C++.
               postPatch = (old.postPatch or "") + ''

@@ -42,9 +42,14 @@
         inputs.pi-web-access.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
-          llama-cpp = inputs.llama-cpp.packages.${system}.cuda.override {
-            useWebUi = false;
-          };
+          llama-cpp =
+            (inputs.llama-cpp.packages.${system}.cuda.override {
+              useWebUi = false;
+            }).overrideAttrs
+              {
+                # Upstream passes webui as a build input even when disabled.
+                webui = null;
+              };
           llm-agents = inputs.llm-agents.packages.${system};
         })
       ];
