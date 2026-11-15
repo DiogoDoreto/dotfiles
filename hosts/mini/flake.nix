@@ -84,7 +84,11 @@
             })
           ];
           inherit (inputs.home-manager.packages.${system}) home-manager;
-          handy = inputs.handy.packages.${system}.default;
+          handy = inputs.handy.packages.${system}.default.overrideAttrs (old: {
+            # Upstream's flake omits SQLite; the final link fails with
+            # "cannot find -lsqlite3" against this nixpkgs revision.
+            buildInputs = (old.buildInputs or [ ]) ++ [ final.sqlite ];
+          });
           llm-agents = inputs.llm-agents.packages.${system};
           my = (prev.my or { }) // {
             denon = final.callPackage ./packages/denon.nix { };
