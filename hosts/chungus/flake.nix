@@ -42,7 +42,9 @@
         inputs.pi-web-access.overlays.default
         (final: prev: {
           inherit (inputs.home-manager.packages.${system}) home-manager;
-          llama-cpp = inputs.llama-cpp.packages.${system}.cuda;
+          llama-cpp = inputs.llama-cpp.packages.${system}.cuda.override {
+            useWebUi = false;
+          };
           llm-agents = inputs.llm-agents.packages.${system};
         })
       ];

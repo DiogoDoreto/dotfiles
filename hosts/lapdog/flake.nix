@@ -71,7 +71,9 @@
           inherit (inputs.forgejo-cli.packages.${system}) forgejo-cli;
           handy = inputs.handy.packages.${system}.default;
 
-          llama-cpp-vulkan = inputs.llama-cpp.packages.${system}.vulkan;
+          llama-cpp-vulkan = inputs.llama-cpp.packages.${system}.vulkan.override {
+            useWebUi = false;
+          };
           llama-cpp-sycl =
             let
               gcc = final.stdenv.cc.cc;
@@ -88,6 +90,7 @@
               base = inputs.llama-cpp.packages.${system}.default.override {
                 effectiveStdenv = oneapi.stdenv;
                 useBlas = false;
+                useWebUi = false;
               };
             in
             base.overrideAttrs (old: {
