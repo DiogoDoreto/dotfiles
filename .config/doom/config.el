@@ -280,6 +280,7 @@ Based on the code of `doom/bump-package-at-point'"
 (load! "dd/magit-delta")
 (load! "dd/nix")
 (load! "dd/pandoc")
+(load! "dd/projectile")
 (load! "dd/terminal")
 (load! "dd/tree-sitter")
 
